@@ -1,17 +1,22 @@
+/**
+ ************************************************************************************************************
+ * @file    SomeIp_Header.h
+ * @brief   SOME/IP header codec: public API.
+ *
+ * @details - Header (16 bytes) <-> SomeIp_Header_t                     [PRS_SOMEIP_00030] [PRS_SOMEIP_00368]
+ *          - Split one UDP datagram / TCP chunk into SOME/IP messages  [PRS_SOMEIP_00535] [PRS_SOMEIP_00910]
+ *          - TP header (4 bytes) <-> SomeIp_TpHeader_t                 [PRS_SOMEIP_00723] [PRS_SOMEIP_00931]
+ *
+ *          Function documentation (Doxygen) is in SomeIp_Header.c.
+ *
+ * @see     AUTOSAR_PRS_SOMEIPProtocol (R22-11), chapter 4.1.2 / 4.2.1 / 4.2.1.4 / 4.2.6.3
+ ************************************************************************************************************
+ */
+
 /* GUARD/BEGIN **********************************************************************************************
  ************************************************************************************************************/
 #ifndef __SOMEIP_HEADER_H__
 #define __SOMEIP_HEADER_H__
-
-/*
- * SOME/IP header codec.
- *
- *  - Header (16 bytes) <-> SomeIp_Header_t                                    [PRS_SOMEIP_00030] [PRS_SOMEIP_00368]
- *  - Split one UDP datagram / TCP chunk into SOME/IP messages                 [PRS_SOMEIP_00535] [PRS_SOMEIP_00910]
- *  - TP header (4 bytes) <-> SomeIp_TpHeader_t                                [PRS_SOMEIP_00723] [PRS_SOMEIP_00931]
- *
- * Reference : AUTOSAR_PRS_SOMEIPProtocol, chapter 4.1.2 / 4.2.1 / 4.2.1.4 / 4.2.6.3
- */
 
 /* INCLUDES *************************************************************************************************
  ************************************************************************************************************/

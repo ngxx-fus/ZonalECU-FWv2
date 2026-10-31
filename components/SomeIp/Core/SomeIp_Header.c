@@ -1,3 +1,20 @@
+/**
+ ************************************************************************************************************
+ * @file    SomeIp_Header.c
+ * @brief   SOME/IP header codec.
+ *
+ * @details This file provides the functions to:
+ *          - Decode / encode the 16-byte SOME/IP header             [PRS_SOMEIP_00030] [PRS_SOMEIP_00368]
+ *          - Split one UDP datagram / TCP chunk into SOME/IP messages [PRS_SOMEIP_00535] [PRS_SOMEIP_00910]
+ *          - Decode / encode the 4-byte SOME/IP-TP header             [PRS_SOMEIP_00723] [PRS_SOMEIP_00931]
+ *
+ *          Scope: STRUCTURE only (sizes, Length field consistency).
+ *          Protocol Version / Service / Method / Message Type checks belong to SomeIp_Validate (Figure 4.21).
+ *
+ * @see     AUTOSAR_PRS_SOMEIPProtocol (R22-11), chapter 4.1.2 / 4.2.1 / 4.2.1.4
+ ************************************************************************************************************
+ */
+
 /* GUARD/BEGIN **********************************************************************************************
  ************************************************************************************************************/
 
@@ -32,6 +49,28 @@
 /* FUNCTION IMPLEMENTATIONS *********************************************************************************
  ************************************************************************************************************/
 
+/**
+ * @brief   Decode the 16-byte SOME/IP header into a SomeIp_Header_t.
+ *
+ * @details Reads every field at its fixed offset (SOMEIP_OFS_*) and converts the 16/32-bit fields from
+ *          network byte order (big-endian) to host byte order. Access is byte-wise, so @p buf may be
+ *          unaligned [PRS_SOMEIP_00142].
+ *
+ * @param[in]  buf  Pointer to the first byte of the SOME/IP header.
+ * @param[in]  len  Number of valid bytes available at @p buf.
+ * @param[out] hdr  Decoded header (host byte order).
+ *
+ * @retval SOMEIP_RES_OK             Header decoded successfully.
+ * @retval SOMEIP_RES_E_PARAM        @p buf or @p hdr is NULL.
+ * @retval SOMEIP_RES_E_SHORT_INPUT  @p len is less than SOMEIP_HEADER_SIZE (16).
+ *
+ * @note    Field values are NOT validated (Protocol Version, Message Type, ...). That is the job of
+ *          SomeIp_Validate (Figure 4.21), so that an error response can still echo the Request ID
+ *          [PRS_SOMEIP_00704].
+ * @note    The Length field is NOT checked against @p len; see SomeIp_Message_Next().
+ *
+ * @see     [PRS_SOMEIP_00030] [PRS_SOMEIP_00031] [PRS_SOMEIP_00368], Figure 4.1
+ */
 SomeIp_Result_t SomeIp_Header_Decode(const uint8_t *buf, uint32_t len, SomeIp_Header_t *hdr)
 {
     /* Check NULL */
@@ -76,6 +115,26 @@ SomeIp_Result_t SomeIp_Header_Decode(const uint8_t *buf, uint32_t len, SomeIp_He
     return SOMEIP_RES_OK;
 }
 
+/**
+ * @brief   Encode a SomeIp_Header_t into 16 bytes (big-endian).
+ *
+ * @details Mirror of SomeIp_Header_Decode(): every field is written at its fixed offset (SOMEIP_OFS_*),
+ *          16/32-bit fields in network byte order. The payload is NOT written.
+ *          All checks are done before the first byte is written, so @p buf is untouched on error.
+ *
+ * @param[in]  hdr  Header to encode. hdr->length must be SOMEIP_HEADER_PART2_SIZE + payload length.
+ * @param[out] buf  Destination buffer (may be unaligned).
+ * @param[in]  cap  Capacity of @p buf in bytes.
+ *
+ * @retval SOMEIP_RES_OK          Header encoded successfully (16 bytes written).
+ * @retval SOMEIP_RES_E_PARAM     @p hdr or @p buf is NULL, or hdr->length < SOMEIP_LENGTH_MIN (8).
+ * @retval SOMEIP_RES_E_NO_SPACE  @p cap is less than SOMEIP_HEADER_SIZE (16).
+ *
+ * @note    Field values are written as given. Setting the correct Protocol Version, Message Type,
+ *          Return Code and copying the Request ID [PRS_SOMEIP_00704] is the caller's responsibility.
+ *
+ * @see     [PRS_SOMEIP_00030] [PRS_SOMEIP_00042] [PRS_SOMEIP_00368]
+ */
 SomeIp_Result_t SomeIp_Header_Encode(const SomeIp_Header_t *hdr, uint8_t *buf, uint32_t cap)
 {
     /* Check NULL */
@@ -126,6 +185,45 @@ SomeIp_Result_t SomeIp_Header_Encode(const SomeIp_Header_t *hdr, uint8_t *buf, u
     return SOMEIP_RES_OK;
 }
 
+/**
+ * @brief   Get the next SOME/IP message from a buffer that may hold several messages back to back.
+ *
+ * @details One UDP datagram / TCP segment may carry more than one SOME/IP message [PRS_SOMEIP_00535].
+ *          The end of each message is found with its Length field [PRS_SOMEIP_00140].
+ *          Checks performed [PRS_SOMEIP_00910]:
+ *          - remaining bytes >= SOMEIP_HEADER_SIZE
+ *          - Length          >= SOMEIP_LENGTH_MIN
+ *          - Length          <= remaining - SOMEIP_HEADER_PART1_SIZE  (written as a subtraction: no overflow)
+ *
+ *          Usage:
+ *          @code
+ *          uint32_t pos = 0u;
+ *          while (pos < len)
+ *          {
+ *              SomeIp_Message_t msg;
+ *              if (SomeIp_Message_Next(buf, len, &pos, &msg) != SOMEIP_RES_OK)
+ *              {
+ *                  break;      // malformed: drop the rest of the datagram
+ *              }
+ *              // ... process msg ...
+ *          }
+ *          @endcode
+ *
+ * @param[in]     buf  Received datagram / stream chunk.
+ * @param[in]     len  Number of valid bytes in @p buf.
+ * @param[in,out] pos  In: offset of the message to read. Out: offset of the next message (success only).
+ * @param[out]    msg  Decoded header, payload pointer and payload length.
+ *
+ * @retval SOMEIP_RES_OK           Message extracted, @p pos advanced by SOMEIP_HEADER_PART1_SIZE + Length.
+ * @retval SOMEIP_RES_E_PARAM      @p buf, @p pos or @p msg is NULL, or *pos > @p len.
+ * @retval SOMEIP_RES_E_MALFORMED  One of the [PRS_SOMEIP_00910] checks failed.
+ *
+ * @note    Zero-copy: msg->payload points INTO @p buf and is only valid while @p buf is alive.
+ *          When msg->payloadLength is 0, msg->payload must not be dereferenced.
+ * @note    On error *pos is unchanged; msg content must not be used.
+ *
+ * @see     [PRS_SOMEIP_00140] [PRS_SOMEIP_00142] [PRS_SOMEIP_00535] [PRS_SOMEIP_00910]
+ */
 SomeIp_Result_t SomeIp_Message_Next(const uint8_t *buf, uint32_t len, uint32_t *pos, SomeIp_Message_t *msg)
 {
     SomeIp_Result_t res;
@@ -177,6 +275,34 @@ SomeIp_Result_t SomeIp_Message_Next(const uint8_t *buf, uint32_t len, uint32_t *
     return SOMEIP_RES_OK;
 }
 
+/**
+ * @brief   Decode the 4-byte SOME/IP-TP header found at the start of the payload of a TP segment.
+ *
+ * @details Only called for messages with the TP-Flag (0x20) set in the Message Type [PRS_SOMEIP_00367].
+ *          Layout (big-endian [PRS_SOMEIP_00931]), bits from highest to lowest [PRS_SOMEIP_00723]:
+ *          @verbatim
+ *           31                                4   3   2   1   0
+ *          +-----------------------------------+---+---+---+---+
+ *          |          Offset [28 bit]          | R | R | R | M |
+ *          +-----------------------------------+---+---+---+---+
+ *          @endverbatim
+ *          - offset       = raw & SOMEIP_TP_OFFSET_MASK, already in bytes, no shift  [PRS_SOMEIP_00724] [PRS_SOMEIP_00725]
+ *          - moreSegments = raw & SOMEIP_TP_MORE_SEGMENTS_MASK                      [PRS_SOMEIP_00727]
+ *          - Reserved bits are ignored and not checked                              [PRS_SOMEIP_00726]
+ *
+ * @param[in]  p    Pointer to the TP header (= msg->payload of the segment).
+ * @param[in]  len  Number of valid bytes available at @p p (= msg->payloadLength).
+ * @param[out] tp   Decoded TP header.
+ *
+ * @retval SOMEIP_RES_OK             TP header decoded successfully.
+ * @retval SOMEIP_RES_E_PARAM        @p p or @p tp is NULL.
+ * @retval SOMEIP_RES_E_SHORT_INPUT  @p len is less than SOMEIP_TP_HEADER_SIZE (4).
+ *
+ * @note    tp->offset is not range-checked here. The reassembly module must check
+ *          offset + segment length against its buffer size before copying.
+ *
+ * @see     [PRS_SOMEIP_00723] .. [PRS_SOMEIP_00727] [PRS_SOMEIP_00931], Figure 4.16
+ */
 SomeIp_Result_t SomeIp_TpHeader_Decode(const uint8_t *p, uint32_t len, SomeIp_TpHeader_t *tp)
 {
     uint32_t raw;
@@ -205,6 +331,25 @@ SomeIp_Result_t SomeIp_TpHeader_Decode(const uint8_t *p, uint32_t len, SomeIp_Tp
     return SOMEIP_RES_OK;
 }
 
+/**
+ * @brief   Encode a SomeIp_TpHeader_t into 4 bytes (big-endian).
+ *
+ * @details raw = offset | (moreSegments ? SOMEIP_TP_MORE_SEGMENTS_MASK : 0)
+ *          - offset is written as is (in bytes, no shift)          [PRS_SOMEIP_00725]
+ *          - Reserved bits are always written as 0                  [PRS_SOMEIP_00726]
+ *          - More Segments = 1 for all segments but the last one    [PRS_SOMEIP_00727]
+ *          All checks are done before writing, so @p p is untouched on error.
+ *
+ * @param[in]  tp   TP header to encode. tp->offset must be a multiple of 16.
+ * @param[out] p    Destination (normally SOMEIP_OFS_PAYLOAD of the segment buffer).
+ * @param[in]  cap  Capacity of @p p in bytes.
+ *
+ * @retval SOMEIP_RES_OK          TP header encoded successfully (4 bytes written).
+ * @retval SOMEIP_RES_E_PARAM     @p tp or @p p is NULL, or tp->offset is not a multiple of 16 [PRS_SOMEIP_00724].
+ * @retval SOMEIP_RES_E_NO_SPACE  @p cap is less than SOMEIP_TP_HEADER_SIZE (4).
+ *
+ * @see     [PRS_SOMEIP_00723] .. [PRS_SOMEIP_00729] [PRS_SOMEIP_00931], Figure 4.16
+ */
 SomeIp_Result_t SomeIp_TpHeader_Encode(const SomeIp_TpHeader_t *tp, uint8_t *p, uint32_t cap)
 {
     uint32_t raw;
