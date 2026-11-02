@@ -237,7 +237,6 @@ SomeIp_Result_t SomeIp_Message_Next(const uint8_t *buf, uint32_t len, uint32_t *
 
     /* Set Payload pointer and length */
     msg->payload = &buf[*pos + SOMEIP_OFS_PAYLOAD];
-
     msg->payloadLength = msg->header.length - SOMEIP_HEADER_PART2_SIZE;
 
     /* Update position */
