@@ -164,3 +164,4 @@ Defined in `components/Common/Macros.h`:
   - `0x1200`: CAN / CAN-FD base (`ZECU_ERR_BASE_CAN`).
   - `0x1300`: Storage / NVS base (`ZECU_ERR_BASE_STORAGE`).
   - `0x1400`: GPIO / ADC / IO base (`ZECU_ERR_BASE_IO`).
+
