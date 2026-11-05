@@ -1,0 +1,52 @@
+/* GUARD/BEGIN **********************************************************************************************
+ ************************************************************************************************************/
+
+/* INCLUDES *************************************************************************************************
+ ************************************************************************************************************/
+#include "Error.h"
+#include <string.h>
+
+/* HEADERS **************************************************************************************************
+ ************************************************************************************************************/
+HEADER_CPP
+
+/* PUBLIC FUNCTIONS *****************************************************************************************
+ ************************************************************************************************************/
+
+const char * ZECU_ErrToStr(IN zecu_err_t err)
+{
+    switch (err) {
+        case ZECU_OK:                   return "ZECU_OK";
+        case ZECU_FAIL:                 return "ZECU_FAIL";
+        case ZECU_ERR_NO_MEM:           return "ZECU_ERR_NO_MEM";
+        case ZECU_ERR_INVALID_ARG:      return "ZECU_ERR_INVALID_ARG";
+        case ZECU_ERR_INVALID_STATE:    return "ZECU_ERR_INVALID_STATE";
+        case ZECU_ERR_INVALID_SIZE:     return "ZECU_ERR_INVALID_SIZE";
+        case ZECU_ERR_NOT_FOUND:        return "ZECU_ERR_NOT_FOUND";
+        case ZECU_ERR_NOT_SUPPORTED:    return "ZECU_ERR_NOT_SUPPORTED";
+        case ZECU_ERR_TIMEOUT:          return "ZECU_ERR_TIMEOUT";
+        case ZECU_ERR_INVALID_RESPONSE: return "ZECU_ERR_INVALID_RESPONSE";
+        case ZECU_ERR_INVALID_CRC:      return "ZECU_ERR_INVALID_CRC";
+        case ZECU_ERR_INVALID_VERSION:  return "ZECU_ERR_INVALID_VERSION";
+        case ZECU_ERR_INVALID_MAC:      return "ZECU_ERR_INVALID_MAC";
+        case ZECU_ERR_NOT_FINISHED:     return "ZECU_ERR_NOT_FINISHED";
+        case ZECU_ERR_NOT_ALLOWED:      return "ZECU_ERR_NOT_ALLOWED";
+        default:                        return "ZECU_ERR_UNKNOWN";
+    }
+}
+
+zecu_err_t ZECU_Err2Str(IN zecu_err_t err, OUT char * str)
+{
+    if (str == NULL) {
+        return ZECU_ERR_INVALID_ARG;
+    }
+    strcpy(str, ZECU_ErrToStr(err));
+    return ZECU_OK;
+}
+
+/* FOOTERS **************************************************************************************************
+ ************************************************************************************************************/
+FOOTER_CPP
+
+/* EOF ******************************************************************************************************
+ ************************************************************************************************************/

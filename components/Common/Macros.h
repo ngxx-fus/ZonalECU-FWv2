@@ -52,6 +52,26 @@
     #define ZE_FOOTER FOOTER_CPP
 #endif
 
+/* Macros for permission */
+#ifndef RO 
+    #define   RO  const             /* Read only permission */
+#endif
+#ifndef WO 
+    #define   WO                    /* Write only permission */
+#endif
+#ifndef RW 
+    #define   RW                    /* Read/Write permission */
+#endif
+#ifndef IN 
+    #define   IN   const            /* Input parameter */
+#endif
+#ifndef OUT 
+    #define   OUT                   /* Output parameter, shall be a pointer */
+#endif
+#ifndef INOUT
+    #define   INOUT                 /* Input/Output parameter, shall be a pointer */
+#endif
+
 /* EXPORTED VARIABLES ***************************************************************************************
  ************************************************************************************************************/
 
