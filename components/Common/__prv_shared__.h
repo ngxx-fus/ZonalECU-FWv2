@@ -1,3 +1,9 @@
+/**
+ * @file __prv_shared__.h
+ * @ingroup Common
+ * @brief Private common shared definitions and type includes.
+ */
+
 /* GUARD/BEGIN **********************************************************************************************
  ************************************************************************************************************/
 #ifndef __COMMON_PRV_SHARED_H__

@@ -1,4 +1,4 @@
-# About
+# Project Information
 
 T.B.U
 

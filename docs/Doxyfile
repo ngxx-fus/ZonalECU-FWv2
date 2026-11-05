@@ -1,0 +1,132 @@
+# ==============================================================================
+# Doxygen Configuration for Zonal ECU Firmware v2
+# ==============================================================================
+
+# Project Information
+PROJECT_NAME           = "Zonal ECU | FW | v2"
+PROJECT_NUMBER         =
+PROJECT_BRIEF          =
+PROJECT_LOGO           = ./doxygen_assets/doxygen_logo.svg
+# PROJECT_ICON         = ./doxygen_assets/doxygen.ico
+OUTPUT_DIRECTORY       = ./doxygen_html
+OUTPUT_LANGUAGE        = English
+
+# Build & Parsing Configuration
+OPTIMIZE_OUTPUT_FOR_C  = YES
+MARKDOWN_SUPPORT       = YES
+JAVADOC_BANNER         = YES
+AUTOLINK_SUPPORT       = YES
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+CASE_SENSE_NAMES       = NO
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+SORT_MEMBER_DOCS       = YES
+SORT_BRIEF_DOCS        = YES
+
+# Warning & Diagnostics Configuration
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+WARN_FORMAT            = "$file:$line: $text"
+
+# Input Files & Directories
+# Note: Paths are relative to this docs/ directory
+INPUT                  = components.dox \
+                         ../readme.md \
+                         ../CodingRules.md \
+                         ../main \
+                         ../components
+
+USE_MDFILE_AS_MAINPAGE = ../readme.md
+
+FILE_PATTERNS          = *.c \
+                         *.h \
+                         *.md
+
+RECURSIVE              = YES
+
+EXCLUDE_PATTERNS       = */.template/* \
+                         */build/* \
+                         */.git/* \
+                         */.vscode/*
+
+EXAMPLE_PATH           = ./doxygen_assets
+
+STRIP_FROM_PATH        = ..
+STRIP_FROM_INC_PATH    = ../components
+
+# HTML Output Settings
+GENERATE_HTML          = YES
+HTML_OUTPUT            = .
+HTML_FILE_EXTENSION    = .html
+HTML_COLORSTYLE        = TOGGLE
+HTML_COLORSTYLE_SAT    = 40
+GENERATE_TREEVIEW      = YES
+FULL_SIDEBAR           = YES
+SEARCHENGINE           = YES
+DISABLE_INDEX          = NO
+
+# Disable Unused Output Formats
+GENERATE_LATEX         = NO
+GENERATE_RTF           = NO
+GENERATE_MAN           = NO
+GENERATE_XML           = NO
+
+# Preprocessor Configuration (ESP32 / Macros expansion)
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+SEARCH_INCLUDES        = YES
+INCLUDE_PATH           = ../components/Common \
+                         ../components
+
+PREDEFINED             = __cplusplus \
+                         HEADER_CPP= \
+                         FOOTER_CPP= \
+                         EXTERN_C_BEGIN= \
+                         EXTERN_C_END= \
+                         ZE_HEADER= \
+                         ZE_FOOTER= \
+                         RO=const \
+                         WO= \
+                         RW= \
+                         IN=const \
+                         OUT= \
+                         INOUT= \
+                         "AtomicUint32_t=uint32_t"
+
+TYPEDEF_HIDES_STRUCT = YES
+
+LAYOUT_FILE = DoxygenLayout.xml
+
+HTML_EXTRA_STYLESHEET = custom.css
+HTML_EXTRA_FILES       = ./doxygen_assets/svg.min.js
+
+# ==============================================================================
+# Graphviz & Diagram Configuration (DOT)
+# ==============================================================================
+HAVE_DOT               = YES
+DOT_PATH               =
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+DOT_MULTI_TARGETS      = YES
+GENERATE_LEGEND        = YES
+DOT_CLEANUP            = YES
+
+# Graph Types
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+DIRECTORY_GRAPH        = YES
+GROUP_GRAPHS           = YES
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = YES
+
+# Search Engine Configuration
+SEARCHENGINE           = YES
+SERVER_BASED_SEARCH    = NO

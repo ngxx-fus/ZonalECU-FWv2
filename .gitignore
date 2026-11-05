@@ -2,6 +2,7 @@
 build/
 sdkconfig.old
 sdkconfig.ci
+docs/doxygen_html/
 
 # ESP-IDF Component Manager
 managed_components/
