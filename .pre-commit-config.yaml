@@ -1,0 +1,113 @@
+# ============================================================================================================
+# ZonalECU-FWv2 Pre-Commit Configuration (.pre-commit-config.yaml)
+# ============================================================================================================
+# Purpose:
+#   Automatically enforces repository hygiene, spell checking, and the C coding standards defined in
+#   `CodingRules.md` before every `git commit`.
+#
+# Quick Start / Setup Commands:
+#   1. Install pre-commit (once per machine / Python environment):
+#        pip install pre-commit
+#   2. Install the Git hook into `.git/hooks/pre-commit`:
+#        pre-commit install
+#   3. Run all checks manually on all tracked files at any time:
+#        pre-commit run --all-files
+#   4. Run only the ZonalECU custom C coding rules checker:
+#        pre-commit run zecu-coding-rules --all-files
+#   5. Bypass hooks temporarily for an emergency/WIP commit (use sparingly):
+#        git commit -m "WIP: message" --no-verify
+#
+# Maintenance Notes:
+#   - Standard file-hygiene hooks are pulled from `pre-commit/pre-commit-hooks`.
+#   - Spell checking is provided both by `codespell-project/codespell` (below) and by `R12_SPELL_CHECK`
+#     inside `tools/check_coding_rules.py` (which also reads allowed words from `.vscode/settings.json`).
+#   - Project-specific C coding standard checks are executed via the local Python script
+#     `tools/check_coding_rules.py` (zero third-party dependencies required).
+# ============================================================================================================
+
+default_stages: [pre-commit]
+fail_fast: false
+
+# Global exclusions: never run hooks on generated build outputs, clangd index caches, or HTML reference docs
+exclude: >
+  (?x)^(
+      build/.*|
+      \.cache/.*|
+      sdkconfig(\.old|\.defaults)?|
+      C\ Coding\ Standard\.html|
+      drawio/.*
+  )$
+
+repos:
+  # ----------------------------------------------------------------------------------------------------------
+  # 1. Standard Repository Hygiene Hooks
+  # ----------------------------------------------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Prevents committing unresolved git merge conflict markers (<<<<<<<, =======, >>>>>>>)
+      - id: check-merge-conflict
+        name: Check for merge conflict markers
+
+      # Removes trailing whitespace at the end of lines (preserves Markdown intentional line breaks)
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+        args: [--markdown-linebreak-ext=md]
+
+      # Ensures every non-empty file ends with a single newline character
+      - id: end-of-file-fixer
+        name: Ensure files end with a newline
+
+      # Validates YAML syntax (e.g., idf_component.yml, .pre-commit-config.yaml)
+      - id: check-yaml
+        name: Validate YAML files
+
+      # Validates JSON syntax (allow comments for VS Code .vscode/*.json files)
+      - id: check-json
+        name: Validate JSON files
+        exclude: ^\.vscode/.*\.json$
+
+      # Prevents accidentally committing huge binary files (> 1 MB)
+      - id: check-added-large-files
+        name: Check for large added files (>1MB)
+        args: ['--maxkb=1024']
+
+      # Detects files that would conflict on case-insensitive filesystems (Windows/macOS vs Linux)
+      - id: check-case-conflict
+        name: Check for filename case conflicts
+
+  # ----------------------------------------------------------------------------------------------------------
+  # 2. Automated Spell Checker (codespell)
+  # ----------------------------------------------------------------------------------------------------------
+  # Checks source code comments, identifiers, and documentation for common English/technical typos.
+  # To ignore additional domain-specific acronyms, append them to `-L` (comma-separated, lowercase)
+  # or add them to `"cSpell.words"` in `.vscode/settings.json`.
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        name: Spell check source code and docs (codespell)
+        args:
+          - --ignore-words-list=zecu,someip,prv,inout,ro,wo,rw,nvs,xtensa,freertos,autoneg
+          - --skip=*.idx,*.bin,*.elf,*.map,sdkconfig*
+
+  # ----------------------------------------------------------------------------------------------------------
+  # 3. ZonalECU-FWv2 Custom C Coding Standard Hook (Enforces CodingRules.md)
+  # ----------------------------------------------------------------------------------------------------------
+  # Runs `tools/check_coding_rules.py` against all staged `.c` and `.h` files.
+  # To customize, enable/disable specific rules, or tune regex patterns, edit `tools/check_coding_rules.py`.
+  - repo: local
+    hooks:
+      - id: zecu-coding-rules
+        name: ZonalECU-FWv2 C Coding Standard Checker (CodingRules.md)
+        description: >
+          Validates 108-col line width, section banners, HEADER_CPP/FOOTER_CPP pairing,
+          compact Doxygen comments, <module>_<name>_t typedefs, p_ pointer prefixes,
+          PascalCase public functions, no bare #if 0, mandatory comments before branching statements,
+          tabsize=4 indentation (including macros), empty line before standalone comments, and spell check.
+        entry: python tools/check_coding_rules.py
+        language: system
+        types_or: [c, header]
+        files: \.(c|h)$
+        # Exclude template blueprints or third-party vendor files if needed in the future:
+        exclude: ^components/\.template/.*$
