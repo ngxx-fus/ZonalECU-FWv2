@@ -1,170 +1,83 @@
-/**
- ************************************************************************************************************
- * @file    SomeIp_Session.c
- * @brief   SOME/IP Session ID handling.
- *
- * @details This file provides the functions to:
- *          - Generate Session IDs for outgoing messages              [PRS_SOMEIP_00932] [PRS_SOMEIP_00933]
- *          - Wrap-around 0xFFFF -> 0x0001                             [PRS_SOMEIP_00521]
- *          - Match a received response with its request              [PRS_SOMEIP_00739]
- *
- * @see     AUTOSAR_PRS_SOMEIPProtocol (R22-11), chapter 4.1.2.4
- ************************************************************************************************************
- */
-
-/* GUARD/BEGIN **********************************************************************************************
- ************************************************************************************************************/
-
 /* INCLUDES *************************************************************************************************
  ************************************************************************************************************/
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #include "SomeIp_Session.h"
 #include "SomeIp_Types.h"
-#include <stdint.h>
-
-/* HEADERS **************************************************************************************************
- ************************************************************************************************************/
-
-/* MACROS ***************************************************************************************************
- ************************************************************************************************************/
-
-/* EXPORTED VARIABLES ***************************************************************************************
- ************************************************************************************************************/
-
-/* PRIVATE VARIABLES ****************************************************************************************
- ************************************************************************************************************/
-
-/* PRIVATE FUNCTIONS ****************************************************************************************
- ************************************************************************************************************/
-
-/* PUBLIC VARIABLES *****************************************************************************************
- ************************************************************************************************************/
-
-/* PUBLIC FUNCTIONS *****************************************************************************************
- ************************************************************************************************************/
 
 /* FUNCTION IMPLEMENTATIONS *********************************************************************************
  ************************************************************************************************************/
 
-/**
- * @brief   Initialize a session counter.
- *
- * @details active = 1: the first SomeIp_Session_Next() returns SOMEIP_SESSION_ID_MIN (0x0001).
- *          active = 0: SomeIp_Session_Next() always returns SOMEIP_SESSION_ID_INACTIVE (0x0000).
- *
- * @param[out] s       Session counter to initialize.
- * @param[in]  active  1 = session handling active, 0 = not active. Any non-zero value counts as 1.
- *
- * @retval SOMEIP_RES_OK       Counter initialized.
- * @retval SOMEIP_RES_E_PARAM  @p s is NULL.
- *
- * @see     [PRS_SOMEIP_00932] [PRS_SOMEIP_00933]
- */
-SomeIp_Result_t SomeIp_Session_Init(SomeIp_Session_t *s, uint8_t active)
+someip_result_t SOMEIP_SessionInit(OUT someip_session_t * p_session, IN uint8_t active)
 {
     /* Check parameter */
-    if (s == NULL)
-    {
+    if (NULL == p_session) {
+        /* Invalid parameter */
         return SOMEIP_RES_E_PARAM;
     }
 
     /* Initialize active state */
-    s->active = (active != 0u) ? 1u : 0u;
+    p_session->active = (0U != active) ? 1U : 0U;
 
     /* Initialize next Session ID */
-    s->nextId = (s->active != 0u) ? SOMEIP_SESSION_ID_MIN : SOMEIP_SESSION_ID_INACTIVE;
+    p_session->next_id = (0U != p_session->active) ? SOMEIP_SESSION_ID_MIN : SOMEIP_SESSION_ID_INACTIVE;
 
+    /* Counter initialized */
     return SOMEIP_RES_OK;
 }
 
-/**
- * @brief   Get the Session ID for the next outgoing message, then advance the counter.
- *
- * @details Sequence when active:  0x0001, 0x0002, ..., 0xFFFE, 0xFFFF, 0x0001, ...
- *          0x0000 is never returned when active [PRS_SOMEIP_00933], the counter wraps to 0x0001
- *          [PRS_SOMEIP_00521].
- *          When not active: always 0x0000 [PRS_SOMEIP_00932].
- *
- * @param[in,out] s   Session counter.
- * @param[out]    id  Session ID to put in the header of the message being sent.
- *
- * @retval SOMEIP_RES_OK       @p id is valid.
- * @retval SOMEIP_RES_E_PARAM  @p s or @p id is NULL.
- *
- * @note    Request/Response must use session handling [PRS_SOMEIP_00533]: keep the returned id with
- *          the pending request, it is needed by SomeIp_Session_IsMatch() when the response arrives.
- *
- * @see     [PRS_SOMEIP_00521] [PRS_SOMEIP_00533] [PRS_SOMEIP_00932] [PRS_SOMEIP_00933] [PRS_SOMEIP_00934]
- */
-SomeIp_Result_t SomeIp_Session_Next(SomeIp_Session_t *s, SomeIp_SessionId_t *id)
+someip_result_t SOMEIP_SessionNext(INOUT someip_session_t * p_session, OUT someip_session_id_t * p_id)
 {
     /* Validate parameters */
-    if (s == NULL || id == NULL)
-    {
+    if ((NULL == p_session) || (NULL == p_id)) {
+        /* Invalid parameter */
         return SOMEIP_RES_E_PARAM;
     }
 
     /* Session handling is inactive */
-    if (s->active == 0u)
-    {
-        *id = SOMEIP_SESSION_ID_INACTIVE;
+    if (0U == p_session->active) {
+        *p_id = SOMEIP_SESSION_ID_INACTIVE;
+
+        /* Always 0x0000 */
         return SOMEIP_RES_OK;
     }
 
     /* Get current Session ID */
-    *id = s->nextId;
+    *p_id = p_session->next_id;
 
     /* Advance Session ID counter */
-    if (s->nextId == SOMEIP_SESSION_ID_MAX)
-    {
-        s->nextId = SOMEIP_SESSION_ID_MIN;
-    }
-    else
-    {
-        s->nextId++;
+    if ((someip_session_id_t)SOMEIP_SESSION_ID_MAX == p_session->next_id) {
+        p_session->next_id = SOMEIP_SESSION_ID_MIN;
     }
 
+    /* Not at the end: count up */
+    else {
+        p_session->next_id++;
+    }
+
+    /* *p_id is valid */
     return SOMEIP_RES_OK;
 }
 
-/**
- * @brief   Check whether a received response belongs to a sent request.
- *
- * @details The response must carry the same Request ID (Client ID + Session ID) as the request
- *          [PRS_SOMEIP_00704]. A client shall ignore a response whose Session ID does not match
- *          [PRS_SOMEIP_00739].
- *
- * @param[in]  request   Header of the request that was sent.
- * @param[in]  response  Header of the received RESPONSE / ERROR.
- *
- * @retval 1  Client ID and Session ID match.
- * @retval 0  No match, or @p request / @p response is NULL.
- *
- * @note    Service ID / Method ID matching and Message Type checks are done by the Rpc layer.
- *
- * @see     [PRS_SOMEIP_00704] [PRS_SOMEIP_00739]
- */
-uint8_t SomeIp_Session_IsMatch(const SomeIp_Header_t *request, const SomeIp_Header_t *response)
+bool SOMEIP_SessionIsMatch(IN someip_header_t * p_request, IN someip_header_t * p_response)
 {
     /* Validate parameters */
-    if (request == NULL || response == NULL)
-    {
-        return 0u;
+    if ((NULL == p_request) || (NULL == p_response)) {
+        /* Invalid parameter: no match */
+        return false;
     }
 
     /* Compare Client ID and Session ID */
-    if ((request->clientId == response->clientId) && (request->sessionId == response->sessionId))
-    {
-        return 1u;
+    if ((p_request->client_id == p_response->client_id) &&
+        (p_request->session_id == p_response->session_id)) {
+        /* Match */
+        return true;
     }
-    
-    return 0u;
+
+    /* No match */
+    return false;
 }
-
-/* FOOTERS **************************************************************************************************
- ************************************************************************************************************/
-
-/* GUARD/END ************************************************************************************************
- ************************************************************************************************************/
 
 /* EOF ******************************************************************************************************
  ************************************************************************************************************/

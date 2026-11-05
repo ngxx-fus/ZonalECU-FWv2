@@ -1,148 +1,116 @@
-/**
- ************************************************************************************************************
- * @file    SomeIp_Check.c
- * @brief   SOME/IP message validation and error message.
- *
- * @details This file provides the functions to:
- *          - Check a received header in the order of Figure 4.21     [PRS_SOMEIP_00195] [PRS_SOMEIP_00576]
- *          - Decide whether an ERROR message may be sent back         [PRS_SOMEIP_00188] [PRS_SOMEIP_00189]
- *                                                                    [PRS_SOMEIP_00537] [PRS_SOMEIP_00539]
- *          - Build the header of the ERROR message                    [PRS_SOMEIP_00190]
- *
- * @see     AUTOSAR_PRS_SOMEIPProtocol (R22-11), chapter 4.2.6, Figure 4.21
- ************************************************************************************************************
- */
-
-/* GUARD/BEGIN **********************************************************************************************
- ************************************************************************************************************/
-
 /* INCLUDES *************************************************************************************************
  ************************************************************************************************************/
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #include "SomeIp_Check.h"
 #include "SomeIp_Types.h"
-#include <stdint.h>
-
-/* HEADERS **************************************************************************************************
- ************************************************************************************************************/
-
-/* MACROS ***************************************************************************************************
- ************************************************************************************************************/
-
-/* EXPORTED VARIABLES ***************************************************************************************
- ************************************************************************************************************/
-
-/* PRIVATE VARIABLES ****************************************************************************************
- ************************************************************************************************************/
 
 /* PRIVATE FUNCTIONS ****************************************************************************************
  ************************************************************************************************************/
-static uint8_t SomeIp_Check_IsTypeSupported(SomeIp_MessageType_t mt);
-static uint8_t SomeIp_Check_IsTypeAsConfigured(SomeIp_MessageType_t mt, SomeIp_MessageType_t expectedType);
-static const SomeIp_ServiceConfig_t *SomeIp_Check_FindService(const SomeIp_ServiceConfig_t *services,
-                                                              uint16_t serviceCount, SomeIp_ServiceId_t serviceId);
-static const SomeIp_MethodConfig_t *SomeIp_Check_FindMethod(const SomeIp_ServiceConfig_t *service,
-                                                            SomeIp_MethodId_t methodId);
-
-/* PUBLIC VARIABLES *****************************************************************************************
- ************************************************************************************************************/
-
-/* PUBLIC FUNCTIONS *****************************************************************************************
- ************************************************************************************************************/
+static bool prv_is_type_supported(IN someip_message_type_t msg_type);
+static bool prv_is_type_as_configured(
+    IN someip_message_type_t msg_type, IN someip_message_type_t expected_type);
+static someip_service_cfg_t const * prv_find_service(
+    IN someip_service_cfg_t * p_services, IN uint16_t service_len, IN someip_service_id_t service_id);
+static someip_method_cfg_t const * prv_find_method(
+    IN someip_service_cfg_t * p_service, IN someip_method_id_t method_id);
 
 /* FUNCTION IMPLEMENTATIONS *********************************************************************************
  ************************************************************************************************************/
 
-/**
- * @brief   Check whether a Message Type is one of the values of Table 4.4 (step 5 of Figure 4.21).
- *
- * @details Supported values:
- *          REQUEST 0x00, REQUEST_NO_RETURN 0x01, NOTIFICATION 0x02, RESPONSE 0x80, ERROR 0x81
- *          and the same with the TP-Flag: 0x20, 0x21, 0x22, 0xA0, 0xA1           [PRS_SOMEIP_00367]
- *
- * @param[in]  mt  Received Message Type.
- *
- * @retval 1  Supported.
- * @retval 0  Not supported (e.g. 0x03, 0x40, 0xFF).
- *
- * @see     [PRS_SOMEIP_00055] Table 4.4
- */
-static uint8_t SomeIp_Check_IsTypeSupported(SomeIp_MessageType_t mt)
+/* Private helpers */
+
+/** @brief Check whether a Message Type is one of Table 4.4 (step 5 of Figure 4.21)
+ *  @details Supported: REQUEST 0x00, REQUEST_NO_RETURN 0x01, NOTIFICATION 0x02, RESPONSE 0x80, ERROR 0x81
+ *           and the same with the TP-Flag: 0x20, 0x21, 0x22, 0xA0, 0xA1 [PRS_SOMEIP_00055] [PRS_SOMEIP_00367]
+ *  @param msg_type Received Message Type
+ *  @retval true  Supported
+ *  @retval false Not supported (e.g. 0x03, 0x40, 0xFF) */
+static bool prv_is_type_supported(IN someip_message_type_t msg_type)
 {
-    SomeIp_MessageType_t base;
-    uint8_t status;
+    someip_message_type_t base   = 0U;
+    bool                  status = false;
 
     /* Clear TP-Flag */
-    base = (SomeIp_MessageType_t)(mt & (SomeIp_MessageType_t)(~SOMEIP_MT_FLAG_TP));
+    base = (someip_message_type_t)(msg_type & (someip_message_type_t)(~SOMEIP_MT_FLAG_TP));
 
-    switch (base)
-    {
+    /* Base types of Table 4.4 */
+    switch (base) {
         case SOMEIP_MT_REQUEST:
         case SOMEIP_MT_REQUEST_NO_RETURN:
         case SOMEIP_MT_NOTIFICATION:
         case SOMEIP_MT_RESPONSE:
         case SOMEIP_MT_ERROR:
-            status = 1u;
+            status = true;
+
+            /* Supported */
             break;
 
         default:
-            status = 0u;
+            status = false;
+
+            /* Not supported */
             break;
     }
 
+    /* Result of the check */
     return status;
 }
 
-/**
- * @brief   Check whether a Message Type matches the configuration of the method (step 6 of Figure 4.21).
- *
- * @details The TP-Flag is ignored. Accepted combinations:
- *          @verbatim
- *          expectedType (config)        accepted received base type
- *          ---------------------------  ------------------------------------
- *          SOMEIP_MT_REQUEST            REQUEST, RESPONSE, ERROR
- *          SOMEIP_MT_REQUEST_NO_RETURN  REQUEST_NO_RETURN
- *          SOMEIP_MT_NOTIFICATION       NOTIFICATION
- *          @endverbatim
- *          RESPONSE / ERROR are accepted for a request/response method because the client receives them
- *          for the same Message ID.
- *
- * @param[in]  mt            Received Message Type.
- * @param[in]  expectedType  Configured type of the method.
- *
- * @retval 1  As configured.
- * @retval 0  Not as configured.
- *
- * @see     Figure 4.21 ("Message Type as Configured?")
- */
-static uint8_t SomeIp_Check_IsTypeAsConfigured(SomeIp_MessageType_t mt, SomeIp_MessageType_t expectedType)
+/** @brief Check whether a Message Type matches the configuration of the method (step 6 of Figure 4.21)
+ *  @details The TP-Flag is ignored. Accepted combinations:
+ *           @verbatim
+ *           expected_type (config)       accepted received base type
+ *           ---------------------------  ------------------------------------
+ *           SOMEIP_MT_REQUEST            REQUEST, RESPONSE, ERROR
+ *           SOMEIP_MT_REQUEST_NO_RETURN  REQUEST_NO_RETURN
+ *           SOMEIP_MT_NOTIFICATION       NOTIFICATION
+ *           @endverbatim
+ *           RESPONSE / ERROR are accepted for a request/response method because the client receives them
+ *           for the same Message ID.
+ *  @param msg_type      Received Message Type
+ *  @param expected_type Configured type of the method
+ *  @retval true  As configured
+ *  @retval false Not as configured */
+static bool prv_is_type_as_configured(
+    IN someip_message_type_t msg_type, IN someip_message_type_t expected_type)
 {
-    SomeIp_MessageType_t base;
-    uint8_t status = 0u;
+    someip_message_type_t base   = 0U;
+    bool                  status = false;
 
     /* Clear TP-Flag */
-    base = (SomeIp_MessageType_t)(mt & (SomeIp_MessageType_t)(~SOMEIP_MT_FLAG_TP));
+    base = (someip_message_type_t)(msg_type & (someip_message_type_t)(~SOMEIP_MT_FLAG_TP));
 
-    switch (expectedType)
-    {
+    /* Accepted types depend on the configured type */
+    switch (expected_type) {
         case SOMEIP_MT_REQUEST:
-            if ((base == SOMEIP_MT_REQUEST) || (base == SOMEIP_MT_RESPONSE) || (base == SOMEIP_MT_ERROR))
-            {
-                status = 1u;
+            /* Request/response method: REQUEST, RESPONSE or ERROR */
+            if (((someip_message_type_t)SOMEIP_MT_REQUEST == base) ||
+                ((someip_message_type_t)SOMEIP_MT_RESPONSE == base) ||
+                ((someip_message_type_t)SOMEIP_MT_ERROR == base)) {
+                status = true;
             }
+
+            /* Request/response checked */
             break;
-        
+
         case SOMEIP_MT_REQUEST_NO_RETURN:
-            if (base == SOMEIP_MT_REQUEST_NO_RETURN)
-            {
-                status = 1u;
+            /* Fire & forget method: REQUEST_NO_RETURN only */
+            if ((someip_message_type_t)SOMEIP_MT_REQUEST_NO_RETURN == base) {
+                status = true;
             }
+
+            /* Fire & forget checked */
             break;
-        
+
         case SOMEIP_MT_NOTIFICATION:
-            if (base == SOMEIP_MT_NOTIFICATION)
-            {
-                status = 1u;
+            /* Event: NOTIFICATION only */
+            if ((someip_message_type_t)SOMEIP_MT_NOTIFICATION == base) {
+                status = true;
             }
+
+            /* Event checked */
             break;
 
         default:
@@ -150,296 +118,223 @@ static uint8_t SomeIp_Check_IsTypeAsConfigured(SomeIp_MessageType_t mt, SomeIp_M
             break;
     }
 
+    /* Result of the check */
     return status;
 }
 
-/**
- * @brief   Find a service in the configuration table.
- *
- * @param[in]  services      Configuration table (may be NULL if @p serviceCount is 0).
- * @param[in]  serviceCount  Number of entries in @p services.
- * @param[in]  serviceId     Service ID to look for.
- *
- * @return  Pointer to the entry, or NULL if not found.
- */
-static const SomeIp_ServiceConfig_t *SomeIp_Check_FindService(const SomeIp_ServiceConfig_t *services,
-                                                              uint16_t serviceCount, SomeIp_ServiceId_t serviceId)
+/** @brief Find a service in the configuration table
+ *  @param p_services  Configuration table, may be NULL if service_len is 0
+ *  @param service_len Number of entries in p_services
+ *  @param service_id  Service ID to look for
+ *  @return Pointer to the entry, or NULL if not found */
+static someip_service_cfg_t const * prv_find_service(
+    IN someip_service_cfg_t * p_services, IN uint16_t service_len, IN someip_service_id_t service_id)
 {
-    uint16_t i;
+    uint16_t i = 0U;
 
-    for (i = 0u; i < serviceCount; i++)
-    {
-        if (services[i].serviceId == serviceId)
-        {
-            return &services[i];
+    for (i = 0U; i < service_len; i++) {
+        /* Compare Service ID */
+        if (service_id == p_services[i].service_id) {
+            /* Found */
+            return &p_services[i];
         }
     }
 
+    /* Not found */
     return NULL;
 }
 
-/**
- * @brief   Find a method / event in the configuration of one service.
- *
- * @param[in]  service   Service entry (never NULL here, checked by the caller).
- * @param[in]  methodId  Method ID / Event ID to look for.
- *
- * @return  Pointer to the entry, or NULL if not found (or service->methods is NULL).
- */
-static const SomeIp_MethodConfig_t *SomeIp_Check_FindMethod(const SomeIp_ServiceConfig_t *service,
-                                                            SomeIp_MethodId_t methodId)
+/** @brief Find a method / event in the configuration of one service
+ *  @param p_service Service entry
+ *  @param method_id Method ID / Event ID to look for
+ *  @return Pointer to the entry, or NULL if not found (or p_service / p_service->p_methods is NULL) */
+static someip_method_cfg_t const * prv_find_method(
+    IN someip_service_cfg_t * p_service, IN someip_method_id_t method_id)
 {
-    uint16_t i;
+    uint16_t i = 0U;
 
     /* Check parameters */
-    if ((service == NULL) || (service->methods == NULL))
-    {
+    if ((NULL == p_service) || (NULL == p_service->p_methods)) {
+        /* No method table */
         return NULL;
     }
 
-    for (i = 0u; i < service->methodCount; i++)
-    {
-        if (service->methods[i].methodId == methodId)
-        {
-            return &service->methods[i];
+    for (i = 0U; i < p_service->method_len; i++) {
+        /* Compare Method ID */
+        if (method_id == p_service->p_methods[i].method_id) {
+            /* Found */
+            return &p_service->p_methods[i];
         }
     }
 
+    /* Not found */
     return NULL;
 }
 
-/**
- * @brief   Check a received header against the configuration (steps 1..6 of Figure 4.21).
- *
- * @details The checks are done in this exact order, the first failing check gives the Return Code:
- *          @verbatim
- *          #  check                                  failed -> *rc
- *          -  -------------------------------------  --------------------------------
- *          1  Protocol Version == 0x01               SOMEIP_E_WRONG_PROTOCOL_VERSION
- *          2  Service ID known                       SOMEIP_E_UNKNOWN_SERVICE
- *          3  Interface Version == configured        SOMEIP_E_WRONG_INTERFACE_VERSION
- *          4  Method ID known                        SOMEIP_E_UNKNOWN_METHOD
- *          5  Message Type supported (Table 4.4)     SOMEIP_E_WRONG_MESSAGE_TYPE
- *          6  Message Type as configured             SOMEIP_E_WRONG_MESSAGE_TYPE
- *          @endverbatim
- *          All checks pass -> *rc = SOMEIP_E_OK.
- *
- * @param[in]  rx            Received header.
- * @param[in]  services      Configuration table (may be NULL if @p serviceCount is 0).
- * @param[in]  serviceCount  Number of entries in @p services.
- * @param[out] rc            SOMEIP_E_OK or the Return Code of the first failing check.
- * @param[out] method        Configured method if step 4 passed, otherwise NULL.
- *                           Needed by SomeIp_Check_ShouldReplyError() [PRS_SOMEIP_00537].
- *
- * @retval SOMEIP_RES_OK       *rc and *method are valid.
- * @retval SOMEIP_RES_E_PARAM  @p rx, @p rc or @p method is NULL, or @p services is NULL with
- *                             @p serviceCount > 0.
- *
- * @note    SOMEIP_RES_OK does NOT mean the message is valid: always look at *rc.
- *
- * @see     [PRS_SOMEIP_00195] [PRS_SOMEIP_00576] Figure 4.21
- */
-SomeIp_Result_t SomeIp_Check_Header(const SomeIp_Header_t       *rx,
-                                    const SomeIp_ServiceConfig_t *services,
-                                    uint16_t                      serviceCount,
-                                    SomeIp_ReturnCode_t          *rc,
-                                    const SomeIp_MethodConfig_t **method)
+/* Public functions */
+
+someip_result_t SOMEIP_CheckHeader(
+    IN someip_header_t * p_rx, IN someip_service_cfg_t * p_services, IN uint16_t service_len,
+    OUT someip_return_code_t * p_rc, OUT someip_method_cfg_t const ** pp_method)
 {
-    const SomeIp_ServiceConfig_t *svc;
-    const SomeIp_MethodConfig_t *m;
+    someip_service_cfg_t const * p_svc = NULL;
+    someip_method_cfg_t const  * p_m   = NULL;
 
     /* Validate parameters */
-    if ((rx == NULL) || (rc == NULL) || (method == NULL) || ((services == NULL) && (serviceCount > 0u)))
-    {
+    if ((NULL == p_rx) || (NULL == p_rc) || (NULL == pp_method) ||
+        ((NULL == p_services) && (0U < service_len))) {
+        /* Invalid parameter */
         return SOMEIP_RES_E_PARAM;
     }
-    
+
     /* Initialize output parameter */
-    *method = NULL;
+    *pp_method = NULL;
 
     /* Check Protocol Version */
-    if (rx->protocolVersion != SOMEIP_PROTOCOL_VERSION)
-    {
-        *rc = SOMEIP_E_WRONG_PROTOCOL_VERSION;
+    if ((someip_protocol_version_t)SOMEIP_PROTOCOL_VERSION != p_rx->protocol_version) {
+        *p_rc = SOMEIP_E_WRONG_PROTOCOL_VERSION;
+
+        /* Check done, result in *p_rc */
         return SOMEIP_RES_OK;
     }
 
     /* Find Service */
-    svc = SomeIp_Check_FindService(services, serviceCount, rx->serviceId);
-    if (svc == NULL)
-    {
-        *rc = SOMEIP_E_UNKNOWN_SERVICE;
+    p_svc = prv_find_service(p_services, service_len, p_rx->service_id);
+
+    /* Service unknown */
+    if (NULL == p_svc) {
+        *p_rc = SOMEIP_E_UNKNOWN_SERVICE;
+
+        /* Check done, result in *p_rc */
         return SOMEIP_RES_OK;
     }
 
     /* Check Interface Version */
-    if (rx->interfaceVersion != svc->interfaceVersion)
-    {
-        *rc = SOMEIP_E_WRONG_INTERFACE_VERSION;
+    if (p_svc->interface_version != p_rx->interface_version) {
+        *p_rc = SOMEIP_E_WRONG_INTERFACE_VERSION;
+
+        /* Check done, result in *p_rc */
         return SOMEIP_RES_OK;
     }
 
     /* Find Method */
-    m = SomeIp_Check_FindMethod(svc, rx->methodId);
-    if (m == NULL)
-    {
-        *rc = SOMEIP_E_UNKNOWN_METHOD;
+    p_m = prv_find_method(p_svc, p_rx->method_id);
+
+    /* Method unknown */
+    if (NULL == p_m) {
+        *p_rc = SOMEIP_E_UNKNOWN_METHOD;
+
+        /* Check done, result in *p_rc */
         return SOMEIP_RES_OK;
     }
 
-    *method = m;
+    *pp_method = p_m;
 
     /* Check whether Message Type is supported */
-    if (SomeIp_Check_IsTypeSupported(rx->messageType) == 0u)
-    {
-        *rc = SOMEIP_E_WRONG_MESSAGE_TYPE;
+    if (!prv_is_type_supported(p_rx->message_type)) {
+        *p_rc = SOMEIP_E_WRONG_MESSAGE_TYPE;
+
+        /* Check done, result in *p_rc */
         return SOMEIP_RES_OK;
     }
 
     /* Check Message Type against configuration */
-    if (SomeIp_Check_IsTypeAsConfigured(rx->messageType, m->expectedType) == 0u)
-    {
-        *rc = SOMEIP_E_WRONG_MESSAGE_TYPE;
+    if (!prv_is_type_as_configured(p_rx->message_type, p_m->expected_type)) {
+        *p_rc = SOMEIP_E_WRONG_MESSAGE_TYPE;
+
+        /* Check done, result in *p_rc */
         return SOMEIP_RES_OK;
     }
 
     /* All checks passed */
-    *rc = SOMEIP_E_OK;
+    *p_rc = SOMEIP_E_OK;
 
+    /* Check done, result in *p_rc */
     return SOMEIP_RES_OK;
 }
 
-/**
- * @brief   Decide whether an ERROR message may be sent back for a message that failed a check.
- *
- * @details Only a REQUEST (0x00, or 0x20 with TP-Flag) is answered with an ERROR message:
- *          @verbatim
- *          received                                       reply ERROR?   spec
- *          ---------------------------------------------  -------------  ------------------
- *          NOTIFICATION                                   no             [PRS_SOMEIP_00188]
- *          REQUEST_NO_RETURN                              no             [PRS_SOMEIP_00189]
- *          RESPONSE / ERROR                               no             [PRS_SOMEIP_00539]
- *          REQUEST, but method configured as event or     no             [PRS_SOMEIP_00537]
- *            fire&forget (method->expectedType != REQUEST)
- *          REQUEST, method unknown (method == NULL)       yes            Figure 4.21
- *          REQUEST, method configured as REQUEST          yes            Figure 4.21
- *          @endverbatim
- *
- * @param[in]  rx      Received header.
- * @param[in]  method  Configured method from SomeIp_Check_Header() (NULL if not found).
- *
- * @retval 1  Send an ERROR message.
- * @retval 0  Drop silently, or @p rx is NULL.
- *
- * @see     [PRS_SOMEIP_00188] [PRS_SOMEIP_00189] [PRS_SOMEIP_00537] [PRS_SOMEIP_00539] Figure 4.21
- */
-uint8_t SomeIp_Check_ShouldReplyError(const SomeIp_Header_t *rx, const SomeIp_MethodConfig_t *method)
+uint8_t SOMEIP_CheckShouldReplyError(IN someip_header_t * p_rx, IN someip_method_cfg_t * p_method)
 {
-    SomeIp_MessageType_t base;
+    someip_message_type_t base = 0U;
+
     /* Validate parameter */
-    if (rx == NULL)
-    {
-        return 0u; 
+    if (NULL == p_rx) {
+        /* Invalid parameter: do not reply */
+        return 0U;
     }
 
     /* Clear TP-Flag */
-    base = (SomeIp_MessageType_t)(rx->messageType & (SomeIp_MessageType_t)(~SOMEIP_MT_FLAG_TP));
+    base = (someip_message_type_t)(p_rx->message_type & (someip_message_type_t)(~SOMEIP_MT_FLAG_TP));
 
     /* Only REQUEST may receive an ERROR response */
-    if (base != SOMEIP_MT_REQUEST)
-    {
-        return 0u;
+    if ((someip_message_type_t)SOMEIP_MT_REQUEST != base) {
+        /* Drop silently */
+        return 0U;
     }
 
     /* Check configured method type */
-    if ((method != NULL) && (method->expectedType != SOMEIP_MT_REQUEST))
-    {
-        return 0u;
+    if ((NULL != p_method) && ((someip_message_type_t)SOMEIP_MT_REQUEST != p_method->expected_type)) {
+        /* Drop silently */
+        return 0U;
     }
 
     /* Send ERROR */
-    return 1u;
+    return 1U;
 }
 
-/**
- * @brief   Build the header of the ERROR message that answers a received request.
- *
- * @details Copied from @p rx [PRS_SOMEIP_00190]:
- *          - Message ID (serviceId, methodId)
- *          - Request ID (clientId, sessionId)                          [PRS_SOMEIP_00704]
- *          - Interface Version
- *          Set:
- *          - Protocol Version = rx->protocolVersion, except for SOMEIP_E_WRONG_PROTOCOL_VERSION where it is
- *            SOMEIP_PROTOCOL_VERSION (0x01) (Figure 4.21)
- *          - Message Type     = SOMEIP_MT_ERROR (0x81), TP-Flag never set
- *          - Return Code      = @p rc
- *          - Length           = SOMEIP_HEADER_PART2_SIZE (8): the payload is NOT copied [PRS_SOMEIP_00190]
- *
- * @param[in]  rx   Header of the received request.
- * @param[in]  rc   Return Code to send (must not be SOMEIP_E_OK).
- * @param[out] err  ERROR header, ready for SomeIp_Header_Encode().
- *
- * @retval SOMEIP_RES_OK       @p err is valid.
- * @retval SOMEIP_RES_E_PARAM  @p rx or @p err is NULL, or @p rc is SOMEIP_E_OK.
- *
- * @see     [PRS_SOMEIP_00190] [PRS_SOMEIP_00704] [PRS_SOMEIP_00904] Figure 4.21
- */
-SomeIp_Result_t SomeIp_Error_BuildHeader(const SomeIp_Header_t *rx, SomeIp_ReturnCode_t rc, SomeIp_Header_t *err)
+someip_result_t SOMEIP_BuildErrorHeader(
+    IN someip_header_t * p_rx, IN someip_return_code_t rc, OUT someip_header_t * p_err)
 {
-    SomeIp_ServiceId_t serviceId;
-    SomeIp_MethodId_t methodId;
-    SomeIp_ClientId_t clientId;
-    SomeIp_SessionId_t sessionId;
-    SomeIp_InterfaceVersion_t interfaceVersion;
-    SomeIp_ProtocolVersion_t protocolVersion;
+    someip_service_id_t        service_id        = 0U;
+    someip_method_id_t         method_id         = 0U;
+    someip_client_id_t         client_id         = 0U;
+    someip_session_id_t        session_id        = 0U;
+    someip_interface_version_t interface_version = 0U;
+    someip_protocol_version_t  protocol_version  = 0U;
 
-    if (rx == NULL || err == NULL || rc == SOMEIP_E_OK)
-    {
+    /* Validate parameters */
+    if ((NULL == p_rx) || (NULL == p_err) || ((someip_return_code_t)SOMEIP_E_OK == rc)) {
+        /* Invalid parameter */
         return SOMEIP_RES_E_PARAM;
     }
 
-    /* Save fields before writing. This also supports rx == err. */
-    serviceId        = rx->serviceId;
-    methodId         = rx->methodId;
-    clientId         = rx->clientId;
-    sessionId        = rx->sessionId;
-    interfaceVersion = rx->interfaceVersion;
-    protocolVersion  = rx->protocolVersion;
+    /* Save fields before writing. This also supports p_rx == p_err. */
+    service_id        = p_rx->service_id;
+    method_id         = p_rx->method_id;
+    client_id         = p_rx->client_id;
+    session_id        = p_rx->session_id;
+    interface_version = p_rx->interface_version;
+    protocol_version  = p_rx->protocol_version;
 
     /* Copy Message ID and Request ID */
-    err->serviceId        = serviceId;
-    err->methodId         = methodId;
-    err->clientId         = clientId;
-    err->sessionId        = sessionId;
-    err->interfaceVersion = interfaceVersion;
+    p_err->service_id        = service_id;
+    p_err->method_id         = method_id;
+    p_err->client_id         = client_id;
+    p_err->session_id        = session_id;
+    p_err->interface_version = interface_version;
 
     /* Set Protocol Version */
-    if (rc == SOMEIP_E_WRONG_PROTOCOL_VERSION)
-    {
-        err->protocolVersion = SOMEIP_PROTOCOL_VERSION;
+    if ((someip_return_code_t)SOMEIP_E_WRONG_PROTOCOL_VERSION == rc) {
+        p_err->protocol_version = SOMEIP_PROTOCOL_VERSION;
     }
-    else 
-    {
-        err->protocolVersion = protocolVersion;
+
+    /* Keep the Protocol Version of the request */
+    else {
+        p_err->protocol_version = protocol_version;
     }
 
     /* Set Message Type */
-    err->messageType = SOMEIP_MT_ERROR;
+    p_err->message_type = SOMEIP_MT_ERROR;
 
     /* Set Return Code */
-    err->returnCode = rc;
+    p_err->return_code = rc;
 
     /* Set Length: no payload */
-    err->length = SOMEIP_HEADER_PART2_SIZE;
+    p_err->length = SOMEIP_HEADER_PART2_SIZE;
 
+    /* ERROR header ready */
     return SOMEIP_RES_OK;
 }
-
-/* FOOTERS **************************************************************************************************
- ************************************************************************************************************/
-
-/* GUARD/END ************************************************************************************************
- ************************************************************************************************************/
 
 /* EOF ******************************************************************************************************
  ************************************************************************************************************/
