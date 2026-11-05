@@ -14,5 +14,19 @@ foreach(comp_cmake ${component_cmakes})
     list(APPEND EXTRA_COMPONENT_DIRS ${comp_dir})
 endforeach()
 
+# ==============================================================================
+# Auto-install Git pre-commit hook on fresh clones (for any developer laptop)
+# ==============================================================================
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/.git/hooks" AND
+   EXISTS "${CMAKE_CURRENT_LIST_DIR}/tools/pre-commit-hook.sh" AND
+   NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/.git/hooks/pre-commit")
+    file(COPY "${CMAKE_CURRENT_LIST_DIR}/tools/pre-commit-hook.sh"
+         DESTINATION "${CMAKE_CURRENT_LIST_DIR}/.git/hooks"
+         FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+    file(RENAME "${CMAKE_CURRENT_LIST_DIR}/.git/hooks/pre-commit-hook.sh"
+                "${CMAKE_CURRENT_LIST_DIR}/.git/hooks/pre-commit")
+    message(STATUS "[ZonalECU-FWv2] Installed Git pre-commit hook (.git/hooks/pre-commit)")
+endif()
+
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(ZonalECU-FWv2)
