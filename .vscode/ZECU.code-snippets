@@ -93,15 +93,16 @@
             ""
         ]
     },
+    /* ========================================================================= */
+    /* Group 1: With @return (lazy-dox-*-param)                                  */
+    /* ========================================================================= */
     "Doxygen Header (0 param, with return)": {
         "scope": "c,cpp",
         "prefix": "lazy-dox-0-param",
         "description": "Doxygen block: 0 param with return",
         "body": [
-            "/*********************************************************************************************************************************",
-            " * @brief   ${1:introduce about your function}",
-            " * @return  ${2:return description}",
-            " ********************************************************************************************************************************/",
+            "/** @brief ${1:introduce about your function}",
+            " *  @return ${2:return description} */",
             "$0"
         ]
     },
@@ -110,11 +111,9 @@
         "prefix": "lazy-dox-1-param",
         "description": "Doxygen block: 1 param with return",
         "body": [
-            "/*********************************************************************************************************************************",
-            " * @brief   ${1:introduce about your function}",
-            " * @param   ${2:param1}[${3|in,out,in/out|}] ${4:param description}",
-            " * @return  ${5:return description}",
-            " ********************************************************************************************************************************/",
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @return ${4:return description} */",
             "$0"
         ]
     },
@@ -123,12 +122,10 @@
         "prefix": "lazy-dox-2-param",
         "description": "Doxygen block: 2 params with return",
         "body": [
-            "/*********************************************************************************************************************************",
-            " * @brief   ${1:introduce about your function}",
-            " * @param   ${2:param1}[${3|in,out,in/out|}] ${4:param description}",
-            " * @param   ${5:param2}[${6|in,out,in/out|}] ${7:param description}",
-            " * @return  ${8:return description}",
-            " ********************************************************************************************************************************/",
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @return ${6:return description} */",
             "$0"
         ]
     },
@@ -137,13 +134,11 @@
         "prefix": "lazy-dox-3-param",
         "description": "Doxygen block: 3 params with return",
         "body": [
-            "/*********************************************************************************************************************************",
-            " * @brief   ${1:introduce about your function}",
-            " * @param   ${2:param1}[${3|in,out,in/out|}] ${4:param description}",
-            " * @param   ${5:param2}[${6|in,out,in/out|}] ${7:param description}",
-            " * @param   ${8:param3}[${9|in,out,in/out|}] ${10:param description}",
-            " * @return  ${11:return description}",
-            " ********************************************************************************************************************************/",
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @param ${6:param3} ${7:param description}",
+            " *  @return ${8:return description} */",
             "$0"
         ]
     },
@@ -152,14 +147,12 @@
         "prefix": "lazy-dox-4-param",
         "description": "Doxygen block: 4 params with return",
         "body": [
-            "/*********************************************************************************************************************************",
-            " * @brief   ${1:introduce about your function}",
-            " * @param   ${2:param1}[${3|in,out,in/out|}] ${4:param description}",
-            " * @param   ${5:param2}[${6|in,out,in/out|}] ${7:param description}",
-            " * @param   ${8:param3}[${9|in,out,in/out|}] ${10:param description}",
-            " * @param   ${11:param4}[${12|in,out,in/out|}] ${13:param description}",
-            " * @return  ${14:return description}",
-            " ********************************************************************************************************************************/",
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @param ${6:param3} ${7:param description}",
+            " *  @param ${8:param4} ${9:param description}",
+            " *  @return ${10:return description} */",
             "$0"
         ]
     },
@@ -168,15 +161,13 @@
         "prefix": "lazy-dox-5-param",
         "description": "Doxygen block: 5 params with return",
         "body": [
-            "/*********************************************************************************************************************************",
-            " * @brief   ${1:introduce about your function}",
-            " * @param   ${2:param1}[${3|in,out,in/out|}] ${4:param description}",
-            " * @param   ${5:param2}[${6|in,out,in/out|}] ${7:param description}",
-            " * @param   ${8:param3}[${9|in,out,in/out|}] ${10:param description}",
-            " * @param   ${11:param4}[${12|in,out,in/out|}] ${13:param description}",
-            " * @param   ${14:param5}[${15|in,out,in/out|}] ${16:param description}",
-            " * @return  ${17:return description}",
-            " ********************************************************************************************************************************/",
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @param ${6:param3} ${7:param description}",
+            " *  @param ${8:param4} ${9:param description}",
+            " *  @param ${10:param5} ${11:param description}",
+            " *  @return ${12:return description} */",
             "$0"
         ]
     },
@@ -185,16 +176,14 @@
         "prefix": "lazy-dox-6-param",
         "description": "Doxygen block: 6 params with return",
         "body": [
-            "/*********************************************************************************************************************************",
-            " * @brief   ${1:introduce about your function}",
-            " * @param   ${2:param1}[${3|in,out,in/out|}] ${4:param description}",
-            " * @param   ${5:param2}[${6|in,out,in/out|}] ${7:param description}",
-            " * @param   ${8:param3}[${9|in,out,in/out|}] ${10:param description}",
-            " * @param   ${11:param4}[${12|in,out,in/out|}] ${13:param description}",
-            " * @param   ${14:param5}[${15|in,out,in/out|}] ${16:param description}",
-            " * @param   ${17:param6}[${18|in,out,in/out|}] ${19:param description}",
-            " * @return  ${20:return description}",
-            " ********************************************************************************************************************************/",
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @param ${6:param3} ${7:param description}",
+            " *  @param ${8:param4} ${9:param description}",
+            " *  @param ${10:param5} ${11:param description}",
+            " *  @param ${12:param6} ${13:param description}",
+            " *  @return ${14:return description} */",
             "$0"
         ]
     },
@@ -207,9 +196,7 @@
         "prefix": "lazy-dox-no-ret-0-param",
         "description": "Doxygen block: 0 param without return",
         "body": [
-            "/*********************************************************************************************************************************",
-            " * @brief   ${1:introduce about your function}",
-            " ********************************************************************************************************************************/",
+            "/** @brief ${1:introduce about your function} */",
             "$0"
         ]
     },
@@ -218,10 +205,8 @@
         "prefix": "lazy-dox-no-ret-1-param",
         "description": "Doxygen block: 1 param without return",
         "body": [
-            "/*********************************************************************************************************************************",
-            " * @brief   ${1:introduce about your function}",
-            " * @param   ${2:param1}[${3|in,out,in/out|}] ${4:param description}",
-            " ********************************************************************************************************************************/",
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description} */",
             "$0"
         ]
     },
@@ -230,11 +215,9 @@
         "prefix": "lazy-dox-no-ret-2-param",
         "description": "Doxygen block: 2 params without return",
         "body": [
-            "/*********************************************************************************************************************************",
-            " * @brief   ${1:introduce about your function}",
-            " * @param   ${2:param1}[${3|in,out,in/out|}] ${4:param description}",
-            " * @param   ${5:param2}[${6|in,out,in/out|}] ${7:param description}",
-            " ********************************************************************************************************************************/",
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description} */",
             "$0"
         ]
     },
@@ -243,12 +226,10 @@
         "prefix": "lazy-dox-no-ret-3-param",
         "description": "Doxygen block: 3 params without return",
         "body": [
-            "/*********************************************************************************************************************************",
-            " * @brief   ${1:introduce about your function}",
-            " * @param   ${2:param1}[${3|in,out,in/out|}] ${4:param description}",
-            " * @param   ${5:param2}[${6|in,out,in/out|}] ${7:param description}",
-            " * @param   ${8:param3}[${9|in,out,in/out|}] ${10:param description}",
-            " ********************************************************************************************************************************/",
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @param ${6:param3} ${7:param description} */",
             "$0"
         ]
     },
@@ -257,13 +238,11 @@
         "prefix": "lazy-dox-no-ret-4-param",
         "description": "Doxygen block: 4 params without return",
         "body": [
-            "/*********************************************************************************************************************************",
-            " * @brief   ${1:introduce about your function}",
-            " * @param   ${2:param1}[${3|in,out,in/out|}] ${4:param description}",
-            " * @param   ${5:param2}[${6|in,out,in/out|}] ${7:param description}",
-            " * @param   ${8:param3}[${9|in,out,in/out|}] ${10:param description}",
-            " * @param   ${11:param4}[${12|in,out,in/out|}] ${13:param description}",
-            " ********************************************************************************************************************************/",
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @param ${6:param3} ${7:param description}",
+            " *  @param ${8:param4} ${9:param description} */",
             "$0"
         ]
     },
@@ -272,14 +251,12 @@
         "prefix": "lazy-dox-no-ret-5-param",
         "description": "Doxygen block: 5 params without return",
         "body": [
-            "/*********************************************************************************************************************************",
-            " * @brief   ${1:introduce about your function}",
-            " * @param   ${2:param1}[${3|in,out,in/out|}] ${4:param description}",
-            " * @param   ${5:param2}[${6|in,out,in/out|}] ${7:param description}",
-            " * @param   ${8:param3}[${9|in,out,in/out|}] ${10:param description}",
-            " * @param   ${11:param4}[${12|in,out,in/out|}] ${13:param description}",
-            " * @param   ${14:param5}[${15|in,out,in/out|}] ${16:param description}",
-            " ********************************************************************************************************************************/",
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @param ${6:param3} ${7:param description}",
+            " *  @param ${8:param4} ${9:param description}",
+            " *  @param ${10:param5} ${11:param description} */",
             "$0"
         ]
     },
@@ -288,15 +265,13 @@
         "prefix": "lazy-dox-no-ret-6-param",
         "description": "Doxygen block: 6 params without return",
         "body": [
-            "/*********************************************************************************************************************************",
-            " * @brief   ${1:introduce about your function}",
-            " * @param   ${2:param1}[${3|in,out,in/out|}] ${4:param description}",
-            " * @param   ${5:param2}[${6|in,out,in/out|}] ${7:param description}",
-            " * @param   ${8:param3}[${9|in,out,in/out|}] ${10:param description}",
-            " * @param   ${11:param4}[${12|in,out,in/out|}] ${13:param description}",
-            " * @param   ${14:param5}[${15|in,out,in/out|}] ${16:param description}",
-            " * @param   ${17:param6}[${18|in,out,in/out|}] ${19:param description}",
-            " ********************************************************************************************************************************/",
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @param ${6:param3} ${7:param description}",
+            " *  @param ${8:param4} ${9:param description}",
+            " *  @param ${10:param5} ${11:param description}",
+            " *  @param ${12:param6} ${13:param description} */",
             "$0"
         ]
     }
