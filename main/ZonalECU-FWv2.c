@@ -1,27 +1,63 @@
-#include "freertos/FreeRTOS.h" // IWYU pragma: keep (phải include trước task.h)
+/* INCLUDES *************************************************************************************************
+ ************************************************************************************************************/
+#include <stdbool.h>
+#include <stdint.h>
+#include "freertos/FreeRTOS.h" /* IWYU pragma: keep (must be included before task.h) */
 #include "freertos/task.h"
 #include "driver/gpio.h"
-#include "esp_log.h"
-#include "template.h"
-#include "subdir/template.h"
+#include "Common/SharedAPIs.h"
 
-#define LED_GPIO    GPIO_NUM_2
+/* MACROS ***************************************************************************************************
+ ************************************************************************************************************/
+#define MAIN_LED_GPIO           (GPIO_NUM_2)
+#define MAIN_LED_TOGGLE_MS      (500U)
 
-static const char *TAG = "ZonalECU";
+/* PRIVATE VARIABLES ****************************************************************************************
+ ************************************************************************************************************/
+static const char * sp_tag = "MAIN";
 
+/* FUNCTION IMPLEMENTATIONS *********************************************************************************
+ ************************************************************************************************************/
+
+/** @brief Application entry point: report startup status, then blink the on-board LED (GPIO2) */
 void app_main(void)
 {
-    template_func();
-    subdir_template_func();
+    zecu_err_t err       = ZECU_OK;
+    uint32_t   blink_cnt = 0U;
+    uint32_t   led_level = 0U;
 
-    gpio_reset_pin(LED_GPIO);
-    gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
+    ESP_LOGI(sp_tag, "Zonal ECU Firmware v2 starting...");
+    ESP_LOGI(sp_tag, "Sample error check: code %d -> %s", err, ZECU_ErrToStr(err));
 
-    uint32_t count = 0;
-    while (1) {
-        gpio_set_level(LED_GPIO, count % 2);
-        ESP_LOGW(TAG, "LED %s (count=%lu)", (count % 2) ? "ON" : "OFF", count);
-        count++;
-        vTaskDelay(pdMS_TO_TICKS(500));
+    err = gpio_reset_pin(MAIN_LED_GPIO);
+
+    /* Stop here if the LED pin cannot be reset */
+    if (ZECU_OK != err) {
+        ESP_LOGE(sp_tag, "gpio_reset_pin failed: %s", ZECU_ErrToStr(err));
+
+        /* Nothing else to run without the LED */
+        return;
+    }
+
+    err = gpio_set_direction(MAIN_LED_GPIO, GPIO_MODE_OUTPUT);
+
+    /* Stop here if the LED pin cannot be configured as output */
+    if (ZECU_OK != err) {
+        ESP_LOGE(sp_tag, "gpio_set_direction failed: %s", ZECU_ErrToStr(err));
+
+        /* Nothing else to run without the LED */
+        return;
+    }
+
+    /* Toggle the LED forever as a heartbeat */
+    while (true) {
+        led_level = blink_cnt % 2U;
+        (void)gpio_set_level(MAIN_LED_GPIO, led_level);
+        ESP_LOGW(sp_tag, "LED %s (count=%lu)", (0U != led_level) ? "ON" : "OFF", (unsigned long)blink_cnt);
+        blink_cnt++;
+        vTaskDelay(pdMS_TO_TICKS(MAIN_LED_TOGGLE_MS));
     }
 }
+
+/* EOF ******************************************************************************************************
+ ************************************************************************************************************/
