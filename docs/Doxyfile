@@ -35,11 +35,11 @@ WARN_FORMAT            = "$file:$line: $text"
 
 # Input Files & Directories
 # Note: Paths are relative to this docs/ directory
-INPUT                  = components.dox \
-                         ../readme.md \
+INPUT                  = ../readme.md \
                          ../CodingRules.md \
                          ../main \
-                         ../components
+                         ../components \
+                         ../components/.template
 
 USE_MDFILE_AS_MAINPAGE = ../readme.md
 
@@ -49,8 +49,7 @@ FILE_PATTERNS          = *.c \
 
 RECURSIVE              = YES
 
-EXCLUDE_PATTERNS       = */.template/* \
-                         */build/* \
+EXCLUDE_PATTERNS       = */build/* \
                          */.git/* \
                          */.vscode/*
 
