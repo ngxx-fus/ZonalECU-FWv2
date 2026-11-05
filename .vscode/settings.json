@@ -1,6 +1,9 @@
 {
     "clangd.arguments": [
+        // Linux: Absolute query-driver path to Xtensa GCC toolchain
         "--query-driver=/home/fus/.espressif/tools/xtensa-esp-elf/**/bin/xtensa-esp32-elf-*",
+        // Windows: Replace with your Windows user path (use forward slashes '/'):
+        // "--query-driver=C:/Users/<YourUsername>/.espressif/tools/xtensa-esp-elf/**/bin/xtensa-esp32-elf-*",
         "--background-index",
         "--clang-tidy"
     ],

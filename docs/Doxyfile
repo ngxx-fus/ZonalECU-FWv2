@@ -1,6 +1,32 @@
 # ==============================================================================
 # Doxygen Configuration for Zonal ECU Firmware v2
 # ==============================================================================
+#
+# CROSS-PLATFORM EXECUTION GUIDE (Linux & Windows):
+# ------------------------------------------------------------------------------
+# 1. Prerequisites:
+#    - Linux:
+#        sudo apt install doxygen graphviz
+#    - Windows:
+#        Install Doxygen:  https://www.doxygen.nl/download.html
+#        Install Graphviz: https://graphviz.org/download/
+#        (Check "Add Graphviz to system PATH for all users" during setup)
+#
+# 2. How to Run:
+#    - Linux:
+#        cd docs && doxygen Doxyfile
+#    - Windows (Command Prompt / PowerShell):
+#        cd docs
+#        doxygen Doxyfile
+#      (If doxygen executable is not added to system PATH):
+#        PowerShell: & "C:/Program Files/doxygen/bin/doxygen.exe" Doxyfile
+#        CMD:        "C:\Program Files\doxygen\bin\doxygen.exe" Doxyfile
+#
+# 3. Path Convention:
+#    - Doxygen supports forward slashes '/' on both Linux and Windows.
+#    - Keep all relative paths formatted with '/' (e.g. ../components, ./doxygen_html).
+#    - DO NOT replace '/' with '\' on Windows, as Doxygen treats '\' as an escape character.
+# ==============================================================================
 
 # Project Information
 PROJECT_NAME           = "Zonal ECU | FW | v2"
@@ -109,6 +135,25 @@ HTML_EXTRA_FILES       = ./doxygen_assets/svg.min.js
 # Graphviz & Diagram Configuration (DOT)
 # ==============================================================================
 HAVE_DOT               = YES
+
+# ------------------------------------------------------------------------------
+# DOT_PATH: Directory path where the Graphviz 'dot' executable is located.
+# ------------------------------------------------------------------------------
+# Leave EMPTY if 'dot' is already in system PATH (recommended for both OS).
+#
+# Linux:
+#   # If in PATH (default):
+#   DOT_PATH           =
+#   # If custom install:
+#   # DOT_PATH         = /usr/bin
+#
+# Windows:
+#   # If added to PATH during Graphviz install (recommended):
+#   DOT_PATH           =
+#   # If not in PATH, provide the absolute path (use forward slashes '/'):
+#   # DOT_PATH         = "C:/Program Files/Graphviz/bin"
+#   # or for 32-bit:
+#   # DOT_PATH         = "C:/Program Files (x86)/Graphviz/bin"
 DOT_PATH               =
 DOT_IMAGE_FORMAT       = svg
 INTERACTIVE_SVG        = YES
