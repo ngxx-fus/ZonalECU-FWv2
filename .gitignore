@@ -42,4 +42,4 @@ ehthumbs.db
 *.swp
 *.swo
 *.bak
-
+.cache/
