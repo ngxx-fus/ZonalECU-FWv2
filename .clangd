@@ -12,6 +12,14 @@ CompileFlags:
     - -Wno-unused-command-line-argument
 
 Diagnostics:
+  ClangTidy:
+    Add:
+      - bugprone-*
+      - clang-analyzer-*
+      - performance-*
+      - readability-*
+    Remove:
+      - readability-identifier-length
   Suppress:
     - drv_unknown_argument
     - drv_unknown_argument_with_suggestion

@@ -4,7 +4,7 @@
   <!-- Navigation index tabs for HTML output -->
   <navindex>
     <tab type="mainpage" visible="yes" title="Project Information"/>
-    <tab type="pages" visible="yes" title="Coding Rules" intro=""/>
+    <tab type="pages" visible="yes" title="Coding Rules &amp; Guidelines" intro=""/>
     <tab type="topics" visible="no" title="Components" intro=""/>
     <tab type="modules" visible="no" title="" intro="">
       <tab type="modulelist" visible="no" title="" intro=""/>

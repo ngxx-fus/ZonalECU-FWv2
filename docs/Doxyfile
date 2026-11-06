@@ -63,7 +63,6 @@ WARN_FORMAT            = "$file:$line: $text"
 # Note: Paths are relative to this docs/ directory
 INPUT                  = ../readme.md \
                          ../CodingRules.md \
-                         ../GEMINI.md \
                          ../main \
                          ../components \
                          ../components/.template
@@ -127,10 +126,12 @@ PREDEFINED             = __cplusplus \
 
 TYPEDEF_HIDES_STRUCT = YES
 
-LAYOUT_FILE = DoxygenLayout.xml
+LAYOUT_FILE            = DoxygenLayout.xml
 
-HTML_EXTRA_STYLESHEET = custom.css
-HTML_EXTRA_FILES       = ./doxygen_assets/svg.min.js
+HTML_HEADER            = header.html
+HTML_EXTRA_STYLESHEET  = custom.css
+HTML_EXTRA_FILES       = ./doxygen_assets/svg.min.js \
+                         ./doxygen_assets/custom_navtree.js
 
 # ==============================================================================
 # Graphviz & Diagram Configuration (DOT)

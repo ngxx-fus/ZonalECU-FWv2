@@ -23,9 +23,38 @@ permissions:
   id-token: write
 
 jobs:
-  job0_compile_esp_idf:
-    name: "Job 0: Compile ESP-IDF 6.1"
+  job0_clangd_analysis:
+    name: "Job 0: Clangd Static Analysis"
     runs-on: ubuntu-latest
+    container:
+      image: espressif/idf:release-v6.1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install clangd
+        run: |
+          apt-get update
+          apt-get install -y clangd
+
+      - name: Generate compilation database
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          . $IDF_PATH/export.sh
+          idf.py reconfigure
+
+      - name: Run Clangd Static Analysis
+        run: |
+          chmod +x .github/scripts/static_analysis.sh
+          ./.github/scripts/static_analysis.sh
+
+  job1_compile_esp_idf:
+    name: "Job 1: Compile ESP-IDF 6.1"
+    runs-on: ubuntu-latest
+    needs: [job0_clangd_analysis]
     container:
       image: espressif/idf:release-v6.1
 
@@ -53,10 +82,10 @@ jobs:
             build/partition_table/partition-table.bin
             build/flasher_args.json
 
-  job1_generate_doxygen:
-    name: "Job 1: Generate Doxygen Docs"
+  job2_generate_doxygen:
+    name: "Job 2: Generate Doxygen Docs"
     runs-on: ubuntu-latest
-    needs: [job0_compile_esp_idf]
+    needs: [job1_compile_esp_idf]
 
     steps:
       - name: Checkout repository
@@ -89,10 +118,10 @@ jobs:
         with:
           path: docs/doxygen_html/
 
-  job2_deploy_pages:
-    name: "Job 2: Deploy to GitHub Pages"
+  job3_deploy_pages:
+    name: "Job 3: Deploy to GitHub Pages"
     runs-on: ubuntu-latest
-    needs: [job1_generate_doxygen]
+    needs: [job2_generate_doxygen]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/FWv2-Master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     environment:
       name: github-pages

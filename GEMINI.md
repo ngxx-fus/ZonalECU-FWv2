@@ -9,6 +9,7 @@ This document persists core project architectural rules, hardware targets, build
 
 ## 1. Interaction & Workflow Rules
 - **Rule Confirmation (Meta-Rule)**: After each user request, if any new rule, project convention, or architectural pattern is established or modified, the assistant must ask the user for confirmation before appending/updating it in `GEMINI.md` or `CodingRules.md`.
+- **Structural Change Confirmation (Mandatory)**: Whenever any structural change is proposed — including file/directory reorganization, moving/renaming/merging files, code architecture modifications, or restructuring documentation (e.g. merging, splitting, or modifying section hierarchies) — the assistant **MUST** explicitly explain the intended structural changes and ask for user confirmation BEFORE making any edits.
 - **Language Convention**: All source code comments, header file documentation, and CMake scripts must be written strictly in **English**.
 - **Rule Reference**: Specific code-level styling and comment conventions must align with [CodingRules.md](CodingRules.md).
 
