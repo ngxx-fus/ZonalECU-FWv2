@@ -126,8 +126,7 @@ idf.py build
 ## 4. Coding & Comment Standards
 
 All developers and contributors must adhere to the standards outlined in:
-- [CodingRules.md](CodingRules.md): Detailed conventions for header structure, Doxygen comments (`/** @brief ... */`), section banners ($W = 108$), in-code groupings, macros, and error codes.
-- [GEMINI.md](GEMINI.md): Persistent architectural rules, CPU target specifications, compiler flags, and workflow instructions.
+- [CodingRules.md](CodingRules.md): Detailed conventions for project architecture, hardware specifications, header structure, Doxygen comments (`/** @brief ... */`), section banners ($W = 108$), in-code groupings, macros, and error codes.
 
 ---
 

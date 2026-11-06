@@ -1,10 +1,26 @@
-# Coding Rules
+# Coding Rules & Project Guidelines
 
-This document details the code formatting conventions, header structure requirements, naming standards (aligned with the **Renesas RA FSP** coding style), comment rules, and defensive embedded C guidelines for the Zonal ECU Firmware v2 project.
+This document details core project architectural rules, hardware targets, build configuration, code formatting conventions, header structure requirements, naming standards (aligned with the **Renesas RA FSP** coding style), comment rules, and defensive embedded C guidelines for the Zonal ECU Firmware v2 project.
 
 ---
 
-## 1. General Principles
+## 1. Project Architecture & Hardware Target
+- **Target Chip**: ESP32 (Xtensa architecture, dual-core running at 240 MHz with `-O2` performance optimization).
+- **Wireless Interfaces**: Completely disabled (No Wi-Fi, No Bluetooth) to minimize power consumption and dedicate bus/CPU bandwidth to ECU tasks.
+- **Binary Footprint**: Assertions silent (`CONFIG_COMPILER_OPTIMIZATION_ASSERTIONS_SILENT=y`), check macros silent, default log level `WARN` to save flash and IRAM.
+- **Modular Component Structure (Leaf Components)**:
+  - Every individual module under `components/` (e.g. `components/Common`, `components/comm/w5500`) maintains its own independent `CMakeLists.txt`.
+  - The root `CMakeLists.txt` uses recursive scanning (`file(GLOB_RECURSE ...)`) to automatically discover all leaf component directories into `EXTRA_COMPONENT_DIRS`, automatically ignoring the `.template/` directory.
+- **Common Module (`components/Common`)**:
+  - `Macros.h`: C/C++ cross-compatibility macros (`HEADER_CPP`, `FOOTER_CPP`) and argument attribute macros (`IN`, `OUT`, `INOUT`, `RO`, `WO`, `RW`).
+  - `Error.h`: Standard error codes (`zecu_err_t`) mapped 1:1 to `ESP_ERR_*` and extended with subsystem base ranges (`ZECU_ERR_BASE_*`).
+  - `Atomic.h`: Typedefs for atomic operations.
+  - `SharedAPIs.h`: Single umbrella header aggregating all common definitions.
+- **Language Convention**: All source code comments, header file documentation, function descriptions, and CMake scripts must be written strictly in **English**.
+
+---
+
+## 2. General Principles
 - **Language & Spell Check**: All source code comments, identifiers, header file documentation, function descriptions, and CMake files must be strictly in **English** and pass automated spell checking (`codespell` / `cSpell`). Domain-specific acronyms (`ZECU`, `SOMEIP`, `NVS`, etc.) are maintained in `.vscode/settings.json` (`cSpell.words`).
 - **Cross-Compatibility**: All public headers must support both C and C++ callers seamlessly using `HEADER_CPP` and `FOOTER_CPP`.
 - **Indentation (`tabsize = 4`)**: Always indent using **4 spaces** per level (including nested preprocessor macros). Never use raw `\t` tab characters.
