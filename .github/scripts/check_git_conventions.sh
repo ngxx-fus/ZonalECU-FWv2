@@ -19,7 +19,7 @@ BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME:-$(git rev-parse --abbrev-ref HEAD)
 echo "Current branch: ${BRANCH}"
 
 BRANCH_REGEX="^ZE-(Feature|Improve|Update|Fix)-[A-Za-z0-9._-]+$"
-MAIN_BRANCH_REGEX="^(FWv2-Master|main|master)$"
+MAIN_BRANCH_REGEX="^(ZE-Master|FWv2-Master|main|master)$"
 
 if [[ "${BRANCH}" =~ $MAIN_BRANCH_REGEX ]]; then
     echo "✅ Branch is a protected/mainline branch (${BRANCH}), skipping branch name check."
