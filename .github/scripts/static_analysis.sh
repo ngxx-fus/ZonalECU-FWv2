@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Script: static_analysis.sh
-# Purpose: Run Clangd static analysis & semantic checks on all project files
+# Purpose: Run Clangd LSP static analysis & semantic checks on all project files
 # ==============================================================================
 set -euo pipefail
 
@@ -15,9 +15,14 @@ echo " Starting Clangd Static Analysis"
 echo " Project root: ${PROJECT_ROOT}"
 echo "=================================================="
 
-# Check for clangd executable
+# Check for required executables
 if ! command -v clangd &> /dev/null; then
     echo "ERROR: 'clangd' executable not found. Please install clangd (e.g. sudo apt install clangd)."
+    exit 1
+fi
+
+if ! command -v python3 &> /dev/null; then
+    echo "ERROR: 'python3' executable not found. Please install python3."
     exit 1
 fi
 
@@ -42,38 +47,15 @@ if [ ! -f "build/compile_commands.json" ]; then
 fi
 
 # Discover all project C source files (main/ and components/, excluding .template)
-FILES=$(find main components -name "*.c" ! -path "*/.template/*" | sort)
+# shellcheck disable=SC2207
+FILES=($(find main components -name "*.c" ! -path "*/.template/*" | sort))
+TOTAL_FILES=${#FILES[@]}
 
-TOTAL_FILES=0
-FAILED_FILES=0
-
-echo "Scanning files for static analysis:"
-for file in $FILES; do
+echo "Scanning files for static analysis (${TOTAL_FILES} files):"
+for file in "${FILES[@]}"; do
     echo "  - ${file}"
-    TOTAL_FILES=$((TOTAL_FILES + 1))
 done
-echo "Total files to analyze: ${TOTAL_FILES}"
 echo "--------------------------------------------------"
 
-for file in $FILES; do
-    echo "Checking: ${file} ..."
-    OUTPUT=$(clangd --query-driver="**/xtensa-esp32-elf-*" --check="${file}" 2>&1 || true)
-    
-    # Check if clangd output reports errors
-    if echo "${OUTPUT}" | grep -qE "All checks completed, [1-9][0-9]* errors"; then
-        echo "❌ FAILED: ${file}"
-        echo "${OUTPUT}" | grep -E "error:|All checks completed"
-        FAILED_FILES=$((FAILED_FILES + 1))
-    else
-        echo "✅ PASSED: ${file} (0 errors)"
-    fi
-done
-
-echo "=================================================="
-if [ ${FAILED_FILES} -gt 0 ]; then
-    echo "❌ Clangd Static Analysis FAILED: ${FAILED_FILES}/${TOTAL_FILES} files have errors."
-    exit 1
-else
-    echo "✅ Clangd Static Analysis PASSED: ${TOTAL_FILES}/${TOTAL_FILES} files clean (0 errors)."
-fi
-echo "=================================================="
+# Run Python Clangd LSP Checker
+python3 "${SCRIPT_DIR}/clangd_check.py" "${PROJECT_ROOT}" "${FILES[@]}"

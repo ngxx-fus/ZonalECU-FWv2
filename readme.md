@@ -194,3 +194,37 @@ idf.py -p /dev/ttyUSB0 flash monitor
   2. Click the CMake Kit selector on the VS Code status bar (bottom bar) and select `[Unspecified]`.
   3. Perform all builds via the dedicated terminal using `idf.py build`.
 
+---
+
+## 6. Git Workflow & Commit Guidelines (Recommended)
+
+### 6.1 Branch Naming Convention
+```text
+ZE-<Feature/Improve/Update/Fix>-<ShortDescription>
+```
+*Examples*:
+- `ZE-Feature-UpdateGitHubAction`
+- `ZE-Fix-SPI-Timeout`
+- `ZE-Improve-ErrorHandling`
+
+### 6.2 Commit Message Format
+```text
+<ZE/ZonalECU/ZonalECU-FWv2> | <Timestamp> | <message>
+```
+*Example*:
+```text
+ZonalECU-FWv2 | 11/06/26 20:04:03 | Updated static-analysis job check
+```
+
+### 6.3 Auto Timestamp Shortcuts
+
+- **Linux / macOS / Git Bash**:
+  ```bash
+  git commit -m "ZonalECU-FWv2 | $(date +"%D %T") | <message>"
+  ```
+- **Windows (PowerShell)**:
+  ```powershell
+  git commit -m "ZonalECU-FWv2 | $(Get-Date -Format 'MM/dd/yy HH:mm:ss') | <message>"
+  ```
+
+
