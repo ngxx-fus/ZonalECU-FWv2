@@ -63,6 +63,7 @@ WARN_FORMAT            = "$file:$line: $text"
 # Note: Paths are relative to this docs/ directory
 INPUT                  = ../readme.md \
                          ../CodingRules.md \
+                         ../GEMINI.md \
                          ../main \
                          ../components \
                          ../components/.template

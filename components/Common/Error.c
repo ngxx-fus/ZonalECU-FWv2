@@ -33,31 +33,44 @@
 /* FUNCTION IMPLEMENTATIONS *****************************************************************************************************
  ********************************************************************************************************************************/
 
-/** @brief   Get the corresponding error string to the enum
- *  @param   err [in] The enum error 
- *  @param   str [out] The string output 
- *  @return  Return the status of function */
-zecu_err_t ZECU_Err2Str(IN zecu_err_t err, OUT char * str)
+/* Returns constant string representation of a zecu_err_t error code */
+const char * ZECU_ErrToStr(IN zecu_err_t err)
 {
     switch (err) {
-        case ZECU_OK:                   str =  "ZECU_OK"; break;
-        case ZECU_FAIL:                 str =  "ZECU_FAIL"; break;
-        case ZECU_ERR_NO_MEM:           str =  "ZECU_ERR_NO_MEM"; break;
-        case ZECU_ERR_INVALID_ARG:      str =  "ZECU_ERR_INVALID_ARG"; break;
-        case ZECU_ERR_INVALID_STATE:    str =  "ZECU_ERR_INVALID_STATE"; break;
-        case ZECU_ERR_INVALID_SIZE:     str =  "ZECU_ERR_INVALID_SIZE"; break;
-        case ZECU_ERR_NOT_FOUND:        str =  "ZECU_ERR_NOT_FOUND"; break;
-        case ZECU_ERR_NOT_SUPPORTED:    str =  "ZECU_ERR_NOT_SUPPORTED"; break;
-        case ZECU_ERR_TIMEOUT:          str =  "ZECU_ERR_TIMEOUT"; break;
-        case ZECU_ERR_INVALID_RESPONSE: str =  "ZECU_ERR_INVALID_RESPONSE"; break;
-        case ZECU_ERR_INVALID_CRC:      str =  "ZECU_ERR_INVALID_CRC"; break;
-        case ZECU_ERR_INVALID_VERSION:  str =  "ZECU_ERR_INVALID_VERSION"; break;
-        case ZECU_ERR_INVALID_MAC:      str =  "ZECU_ERR_INVALID_MAC"; break;
-        case ZECU_ERR_NOT_FINISHED:     str =  "ZECU_ERR_NOT_FINISHED"; break;
-        case ZECU_ERR_NOT_ALLOWED:      str =  "ZECU_ERR_NOT_ALLOWED"; break;
-        default:                        str =  "ZECU_ERR_UNKNOWN"; return ZECU_ERR_INVALID_ARG;
+        case ZECU_OK:                   return "ZECU_OK";
+        case ZECU_FAIL:                 return "ZECU_FAIL";
+        case ZECU_ERR_NO_MEM:           return "ZECU_ERR_NO_MEM";
+        case ZECU_ERR_INVALID_ARG:      return "ZECU_ERR_INVALID_ARG";
+        case ZECU_ERR_INVALID_STATE:    return "ZECU_ERR_INVALID_STATE";
+        case ZECU_ERR_INVALID_SIZE:     return "ZECU_ERR_INVALID_SIZE";
+        case ZECU_ERR_NOT_FOUND:        return "ZECU_ERR_NOT_FOUND";
+        case ZECU_ERR_NOT_SUPPORTED:    return "ZECU_ERR_NOT_SUPPORTED";
+        case ZECU_ERR_TIMEOUT:          return "ZECU_ERR_TIMEOUT";
+        case ZECU_ERR_INVALID_RESPONSE: return "ZECU_ERR_INVALID_RESPONSE";
+        case ZECU_ERR_INVALID_CRC:      return "ZECU_ERR_INVALID_CRC";
+        case ZECU_ERR_INVALID_VERSION:  return "ZECU_ERR_INVALID_VERSION";
+        case ZECU_ERR_INVALID_MAC:      return "ZECU_ERR_INVALID_MAC";
+        case ZECU_ERR_NOT_FINISHED:     return "ZECU_ERR_NOT_FINISHED";
+        case ZECU_ERR_NOT_ALLOWED:      return "ZECU_ERR_NOT_ALLOWED";
+        default:                        return "ZECU_ERR_UNKNOWN";
     }
-    return ZECU_SUCCESS;
+}
+
+/* Copies error string name into user-provided buffer */
+zecu_err_t ZECU_Err2Str(IN zecu_err_t err, OUT char * str)
+{
+    if (str == NULL) {
+        return ZECU_ERR_INVALID_ARG;
+    }
+
+    const char * err_str = ZECU_ErrToStr(err);
+    strcpy(str, err_str);
+
+    if (strcmp(err_str, "ZECU_ERR_UNKNOWN") == 0 && err != ZECU_OK) {
+        return ZECU_ERR_INVALID_ARG;
+    }
+
+    return ZECU_OK;
 }
 
 /* EOF **************************************************************************************************************************

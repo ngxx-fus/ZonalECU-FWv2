@@ -1,0 +1,104 @@
+name: ZonalECU-FWv2 CI/CD
+
+on:
+  push:
+    branches:
+      - FWv2-Master
+      - main
+      - master
+  pull_request:
+    branches:
+      - FWv2-Master
+      - main
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  job0_compile_esp_idf:
+    name: "Job 0: Compile ESP-IDF 6.1"
+    runs-on: ubuntu-latest
+    container:
+      image: espressif/idf:release-v6.1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build firmware with idf.py
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          . $IDF_PATH/export.sh
+          chmod +x .github/scripts/build_firmware.sh
+          ./.github/scripts/build_firmware.sh
+
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: esp32-firmware-binaries
+          retention-days: 3
+          path: |
+            build/ZonalECU-FWv2.bin
+            build/bootloader/bootloader.bin
+            build/partition_table/partition-table.bin
+            build/flasher_args.json
+
+  job1_generate_doxygen:
+    name: "Job 1: Generate Doxygen Docs"
+    runs-on: ubuntu-latest
+    needs: [job0_compile_esp_idf]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Doxygen & Graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz
+
+      - name: Run Doxygen
+        run: |
+          chmod +x .github/scripts/build_docs.sh
+          ./.github/scripts/build_docs.sh
+
+      - name: Upload Doxygen HTML Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: doxygen-documentation
+          retention-days: 3
+          path: docs/doxygen_html/
+
+      - name: Setup GitHub Pages
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/FWv2-Master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/FWv2-Master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/doxygen_html/
+
+  job2_deploy_pages:
+    name: "Job 2: Deploy to GitHub Pages"
+    runs-on: ubuntu-latest
+    needs: [job1_generate_doxygen]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/FWv2-Master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
