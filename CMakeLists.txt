@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.22)
 
 # ==============================================================================
-# Auto-discover all leaf component directories under components/
-# Supports both top-level (components/Common) and nested (components/comm/w5500)
+# Auto-discover all leaf component directories under comp/
+# Supports both top-level (comp/Common) and nested (comp/Comm/W5500)
 # Excludes .template directory from build discovery
 # ==============================================================================
-file(GLOB_RECURSE component_cmakes LIST_DIRECTORIES false "${CMAKE_CURRENT_LIST_DIR}/components/**/CMakeLists.txt")
+file(GLOB_RECURSE component_cmakes LIST_DIRECTORIES false "${CMAKE_CURRENT_LIST_DIR}/comp/**/CMakeLists.txt")
 list(FILTER component_cmakes EXCLUDE REGEX "/\\.template/")
 
 set(EXTRA_COMPONENT_DIRS "")

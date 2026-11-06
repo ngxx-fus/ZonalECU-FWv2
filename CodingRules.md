@@ -9,12 +9,15 @@ This document details core project architectural rules, hardware targets, build 
 - **Wireless Interfaces**: Completely disabled (No Wi-Fi, No Bluetooth) to minimize power consumption and dedicate bus/CPU bandwidth to ECU tasks.
 - **Binary Footprint**: Assertions silent (`CONFIG_COMPILER_OPTIMIZATION_ASSERTIONS_SILENT=y`), check macros silent, default log level `WARN` to save flash and IRAM.
 - **Modular Component Structure (Leaf Components)**:
-  - Every individual module under `components/` (e.g. `components/Common`, `components/comm/w5500`) maintains its own independent `CMakeLists.txt`.
-  - The root `CMakeLists.txt` uses recursive scanning (`file(GLOB_RECURSE ...)`) to automatically discover all leaf component directories into `EXTRA_COMPONENT_DIRS`, automatically ignoring the `.template/` directory.
-- **Common Module (`components/Common`)**:
-  - `Macros.h`: C/C++ cross-compatibility macros (`HEADER_CPP`, `FOOTER_CPP`) and argument attribute macros (`IN`, `OUT`, `INOUT`, `RO`, `WO`, `RW`).
-  - `Error.h`: Standard error codes (`zecu_err_t`) mapped 1:1 to `ESP_ERR_*` and extended with subsystem base ranges (`ZECU_ERR_BASE_*`).
-  - `Atomic.h`: Typedefs for atomic operations.
+  - Component root directory is `comp/` (documentation directory is `doc/`).
+  - Every individual module under `comp/` (e.g. `comp/Common`, `comp/Comm/W5500`) maintains its own independent `CMakeLists.txt`.
+  - The root `CMakeLists.txt` uses recursive scanning (`file(GLOB_RECURSE ...)`) to automatically discover all leaf component directories under `comp/` into `EXTRA_COMPONENT_DIRS`, automatically ignoring the `.template/` directory.
+- **ESP-IDF Wrapper Directory Naming**:
+  - Any directory wrapping or adapting ESP-IDF drivers/subsystems **MUST** start with the prefix `ESP-` (e.g. `ESP-SPI`, `ESP-FreeRTOS`, `ESP-UART`).
+- **Common Module (`comp/Common`)**:
+  - `Config/Macros.h`: C/C++ cross-compatibility macros (`HEADER_CPP`, `FOOTER_CPP`) and argument attribute macros (`IN`, `OUT`, `INOUT`, `RO`, `WO`, `RW`).
+  - `Error/Error.h`: Standard error codes (`zecu_err_t`) mapped 1:1 to `ESP_ERR_*` and extended with subsystem base ranges (`ZECU_ERR_BASE_*`).
+  - `Atomic/Atomic.h`: Typedefs for atomic operations.
   - `SharedAPIs.h`: Single umbrella header aggregating all common definitions.
 - **Language Convention**: All source code comments, header file documentation, function descriptions, and CMake scripts must be written strictly in **English**.
 
@@ -556,7 +559,7 @@ zecu_err_t ZECU_Err2Str(IN zecu_err_t err, OUT char * p_str);
 
 ## 7. Parameter & Permission Macros
 
-Defined in `components/Common/Macros.h`:
+Defined in `comp/Common/Config/Macros.h`:
 - `RO`: `const` (Read-Only permission).
 - `WO`: Write-Only permission.
 - `RW`: Read/Write permission.
@@ -568,7 +571,7 @@ Defined in `components/Common/Macros.h`:
 
 ## 8. Error Code Conventions (`zecu_err_t`)
 
-- Error codes are typed as `zecu_err_t` (defined in `components/Common/Error.h`).
+- Error codes are typed as `zecu_err_t` (defined in `comp/Common/Error/Error.h`).
 - Standard ESP-IDF errors are mapped 1:1 (`ESP_OK`, `ESP_FAIL`, `ESP_ERR_NO_MEM`, ...).
 - Subsystem base error codes are allocated in `0x100` increments:
   - `0x1000`: Communication base (`ZECU_ERR_BASE_COMM`).

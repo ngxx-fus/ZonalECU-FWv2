@@ -26,12 +26,15 @@ This document persists core project architectural rules, hardware targets, build
 
 ## 3. Project & Component Architecture
 - **Modular Component Structure (Leaf-Level Components)**:
-  - No monolithic `components/CMakeLists.txt` at the root of `components/`.
-  - Every individual module under `components/` (e.g. `components/Common`, `components/comm/w5500`) has its own leaf-level `CMakeLists.txt`.
-  - The root `CMakeLists.txt` uses `file(GLOB_RECURSE ...)` to auto-discover all leaf component directories and append them to `EXTRA_COMPONENT_DIRS` (ignoring `.template/`).
+  - Component root directory is `comp/` (documentation directory is `doc/`).
+  - No monolithic `comp/CMakeLists.txt` at the root of `comp/`.
+  - Every individual module under `comp/` (e.g. `comp/Common`, `comp/Comm/W5500`) has its own leaf-level `CMakeLists.txt`.
+  - The root `CMakeLists.txt` uses `file(GLOB_RECURSE ...)` to auto-discover all leaf component directories under `comp/` and append them to `EXTRA_COMPONENT_DIRS` (ignoring `.template/`).
 - **Template System**:
-  - `components/.template/` serves as the blueprint for creating any new module/driver.
-- **Common Module (`components/Common`)**:
+  - `comp/.template/` serves as the blueprint for creating any new module/driver.
+- **ESP-IDF Wrapper Naming Convention**:
+  - Any directory wrapping or adapting ESP-IDF drivers/subsystems **MUST** start with the prefix `ESP-` (e.g. `ESP-SPI`, `ESP-FreeRTOS`, `ESP-UART`).
+- **Common Module (`comp/Common`)**:
   - `Macros.h`: Contains C/C++ cross-compatibility macros (`HEADER_CPP`, `FOOTER_CPP`) and argument attribute macros (`IN`, `OUT`, `INOUT`, `RO`, `WO`, `RW`).
   - `Error.h`: Defines `zecu_err_t`, mapped 1:1 to `ESP_ERR_*` and extended with subsystem base ranges (`ZECU_ERR_BASE_*`).
   - `Atomic.h`: Typedefs for atomic operations.

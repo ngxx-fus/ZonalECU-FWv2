@@ -46,9 +46,9 @@ if [ ! -f "build/compile_commands.json" ]; then
     fi
 fi
 
-# Discover all project C source files (main/ and components/, excluding .template)
+# Discover all project C source files (main/ and comp/, excluding .template)
 # shellcheck disable=SC2207
-FILES=($(find main components -name "*.c" ! -path "*/.template/*" | sort))
+FILES=($(find main comp -name "*.c" ! -path "*/.template/*" | sort))
 TOTAL_FILES=${#FILES[@]}
 
 echo "Scanning files for static analysis (${TOTAL_FILES} files):"
