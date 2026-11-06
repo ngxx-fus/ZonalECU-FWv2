@@ -8,11 +8,6 @@ on:
       - main
       - master
   pull_request:
-    branches:
-      - ZE-Master
-      - FWv2-Master
-      - main
-      - master
   workflow_dispatch:
 
 concurrency:
