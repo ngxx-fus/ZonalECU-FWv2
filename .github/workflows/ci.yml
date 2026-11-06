@@ -46,6 +46,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: esp32-firmware-binaries
+          retention-days: 3
           path: |
             build/ZonalECU-FWv2.bin
             build/bootloader/bootloader.bin
@@ -75,6 +76,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: doxygen-documentation
+          retention-days: 3
           path: docs/doxygen_html/
 
       - name: Setup GitHub Pages
