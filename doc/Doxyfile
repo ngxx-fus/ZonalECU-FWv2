@@ -14,9 +14,9 @@
 #
 # 2. How to Run:
 #    - Linux:
-#        cd docs && doxygen Doxyfile
+#        cd doc && doxygen Doxyfile
 #    - Windows (Command Prompt / PowerShell):
-#        cd docs
+#        cd doc
 #        doxygen Doxyfile
 #      (If doxygen executable is not added to system PATH):
 #        PowerShell: & "C:/Program Files/doxygen/bin/doxygen.exe" Doxyfile
@@ -60,12 +60,12 @@ WARN_NO_PARAMDOC       = YES
 WARN_FORMAT            = "$file:$line: $text"
 
 # Input Files & Directories
-# Note: Paths are relative to this docs/ directory
+# Note: Paths are relative to this doc/ directory
 INPUT                  = ../readme.md \
                          ../CodingRules.md \
                          ../main \
-                         ../components \
-                         ../components/.template
+                         ../comp \
+                         ../comp/.template
 
 USE_MDFILE_AS_MAINPAGE = ../readme.md
 
@@ -81,8 +81,8 @@ EXCLUDE_PATTERNS       = */build/* \
 
 EXAMPLE_PATH           = ./doxygen_assets
 
-STRIP_FROM_PATH        = ../components ..
-STRIP_FROM_INC_PATH    = ../components
+STRIP_FROM_PATH        = ../comp ..
+STRIP_FROM_INC_PATH    = ../comp
 
 # HTML Output Settings
 GENERATE_HTML          = YES
@@ -106,8 +106,8 @@ ENABLE_PREPROCESSING   = YES
 MACRO_EXPANSION        = YES
 EXPAND_ONLY_PREDEF     = YES
 SEARCH_INCLUDES        = YES
-INCLUDE_PATH           = ../components/Common \
-                         ../components
+INCLUDE_PATH           = ../comp/Common \
+                         ../comp
 
 PREDEFINED             = __cplusplus \
                          HEADER_CPP= \

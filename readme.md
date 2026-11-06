@@ -17,11 +17,15 @@ ZonalECU-FWv2/
 ├── GEMINI.md                        # Assistant rules, hardware configuration, and architecture
 ├── sdkconfig.defaults               # Project default configurations (240 MHz, Dual-Core, -O2, No Wi-Fi/BT)
 │
+├── doc/                             # Doxygen documentation source & assets
+│   ├── Doxyfile                     # Doxygen build configuration
+│   └── doxygen_html/                # Generated HTML site (gitignored)
+│
 ├── main/                            # Main application entry point
 │   ├── CMakeLists.txt               # Main component CMake registration (requires Common)
 │   └── ZonalECU-FWv2.c              # Application startup (app_main)
 │
-└── components/                      # Modular subsystem components
+└── comp/                            # Modular subsystem components
     ├── .template/                   # Blueprint template for creating new components
     │   ├── CMakeLists.txt           # Production-ready component CMakeLists template
     │   ├── CMakeLists.tutorial.txt  # In-depth CMake guide & syntax breakdown
@@ -30,10 +34,13 @@ ZonalECU-FWv2/
     │
     └── Common/                      # Core cross-cutting definitions
         ├── CMakeLists.txt           # Common component CMake registration
-        ├── Macros.h                 # C/C++ compatibility & argument permission macros
-        ├── Error.h                  # Standard error codes (zecu_err_t)
-        ├── Error.c                  # Error code string conversion implementations
-        ├── Atomic.h                 # Atomic operations typedefs
+        ├── Atomic/                  # Atomic operations typedefs
+        │   └── Atomic.h
+        ├── Config/                  # C/C++ cross-compatibility & attribute macros
+        │   └── Macros.h
+        ├── Error/                   # Standard error codes (zecu_err_t) & string conversion
+        │   ├── Error.c
+        │   └── Error.h
         ├── __prv_shared__.h         # Private shared type definitions
         └── SharedAPIs.h             # Umbrella header aggregating all Common headers
 ```
@@ -44,10 +51,14 @@ ZonalECU-FWv2/
 
 In standard ESP-IDF projects, having a `CMakeLists.txt` directly inside `components/` causes ESP-IDF to treat all subdirectories as a single monolithic component.
 
-In this project, we use a **Leaf Component Architecture**:
-- There is **no** `components/CMakeLists.txt` at the root of `components/`.
-- Every individual module under `components/` (at any nesting level, e.g. `components/Common` or `components/comm/w5500`) has its own independent `CMakeLists.txt`.
-- The root [CMakeLists.txt](CMakeLists.txt) uses recursive scanning (`file(GLOB_RECURSE ...)`) to automatically register every folder containing a `CMakeLists.txt` into `EXTRA_COMPONENT_DIRS`, automatically ignoring the `.template/` directory.
+In this project, we use a **Leaf Component Architecture** under `comp/`:
+- There is **no** `comp/CMakeLists.txt` at the root of `comp/`.
+- Every individual module under `comp/` (at any nesting level, e.g. `comp/Common` or `comp/Comm/W5500`) has its own independent `CMakeLists.txt`.
+- The root [CMakeLists.txt](CMakeLists.txt) uses recursive scanning (`file(GLOB_RECURSE ...)`) to automatically register every folder containing a `CMakeLists.txt` under `comp/` into `EXTRA_COMPONENT_DIRS`, automatically ignoring the `.template/` directory.
+
+> [!IMPORTANT]
+> **ESP-IDF Wrapper Directory Naming Convention**:
+> Any directory or submodule that wraps, adapts, or interfaces directly with an ESP-IDF system driver/API **MUST** begin with the prefix `ESP-` (e.g. `comp/Comm/W5500/ESP-SPI`, `comp/App/ESP-FreeRTOS`, `ESP-UART`).
 
 ---
 
@@ -56,20 +67,20 @@ In this project, we use a **Leaf Component Architecture**:
 Follow these simple steps whenever you want to add a new driver, protocol, or application service:
 
 ### Step 1: Copy the Template Directory
-Duplicate the `components/.template/` folder to your desired path under `components/`.
+Duplicate the `comp/.template/` folder to your desired path under `comp/`.
 You can create flat or nested components:
 ```bash
 # Example 1: Creating a nested communication driver for W5500
-cp -r components/.template components/comm/w5500
+cp -r comp/.template comp/Comm/W5500
 
 # Example 2: Creating a CAN driver
-cp -r components/.template components/drivers/can
+cp -r comp/.template comp/Drivers/CAN
 ```
 
 ### Step 2: Rename and Implement Files
 Rename the `.c` and `.h` files to match your component name:
 ```bash
-cd components/comm/w5500
+cd comp/Comm/W5500
 mv template.c w5500.c
 mv template.h w5500.h
 ```
@@ -80,7 +91,7 @@ Inside your header and source files:
 - Follow comment and header conventions detailed in [CodingRules.md](CodingRules.md).
 
 ### Step 3: Configure Component `CMakeLists.txt`
-Open `components/comm/w5500/CMakeLists.txt`. The template is pre-configured to automatically scan all `.c` and `.h` files in the component directory and export include paths.
+Open `comp/Comm/W5500/CMakeLists.txt`. The template is pre-configured to automatically scan all `.c` and `.h` files in the component directory and export include paths.
 
 You only need to specify any external dependencies in `REQUIRES`:
 ```cmake
@@ -95,18 +106,18 @@ idf_component_register(
 Thanks to the template's dual-path include discovery, other modules can include your headers using either style:
 ```c
 /* Module-qualified path (Recommended for clarity) */
-#include "comm/w5500/w5500.h"
+#include "Comm/W5500/w5500.h"
 
 /* Direct header inclusion */
 #include "w5500.h"
 ```
 
-Add your component name (the folder name, e.g., `w5500`) to the caller's `REQUIRES` list in its `CMakeLists.txt`. For instance, in `main/CMakeLists.txt`:
+Add your component name (the folder name, e.g., `W5500`) to the caller's `REQUIRES` list in its `CMakeLists.txt`. For instance, in `main/CMakeLists.txt`:
 ```cmake
 idf_component_register(
     SRCS "ZonalECU-FWv2.c"
     INCLUDE_DIRS "."
-    REQUIRES Common w5500
+    REQUIRES Common W5500
 )
 ```
 
