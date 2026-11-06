@@ -128,3 +128,70 @@ idf.py build
 All developers and contributors must adhere to the standards outlined in:
 - [CodingRules.md](CodingRules.md): Detailed conventions for header structure, Doxygen comments (`/** @brief ... */`), section banners ($W = 108$), in-code groupings, macros, and error codes.
 - [GEMINI.md](GEMINI.md): Persistent architectural rules, CPU target specifications, compiler flags, and workflow instructions.
+
+---
+
+## 5. Build Environment & Troubleshooting
+
+### 5.1 Standard Build Workflow (Dedicated Terminal)
+
+ESP-IDF projects rely on cross-compilers (`xtensa-esp32-elf-*`), Ninja, CMake, and a dedicated Python virtual environment. Always activate the ESP-IDF environment in your terminal before building:
+
+```bash
+# 1. Export ESP-IDF environment variables and toolchains
+. /home/fus/.fus/esp/export.sh
+
+# 2. Build the firmware
+idf.py build
+
+# 3. Flash and monitor (when hardware is connected)
+idf.py -p /dev/ttyUSB0 flash monitor
+```
+
+> [!TIP]
+> Add an alias to your `~/.bashrc` to quickly initialize the ESP-IDF environment:
+> ```bash
+> echo 'alias get_idf=". /home/fus/.fus/esp/export.sh"' >> ~/.bashrc
+> source ~/.bashrc
+> ```
+> Then run `get_idf` in any new terminal session before building.
+
+> [!NOTE]
+> Running `idf.py build` automatically updates `build/compile_commands.json`. The root [.clangd](.clangd) configuration consumes this compilation database to provide accurate autocompletion, type deduction, and jump-to-definition.
+
+---
+
+### 5.2 Common Issues & Troubleshooting
+
+#### Issue 1: `include could not find requested file: /tools/cmake/project.cmake`
+- **Symptom**:
+  ```text
+  CMake Error at CMakeLists.txt:31 (include):
+    include could not find requested file:
+      /tools/cmake/project.cmake
+  ```
+- **Cause**: Line 31 of [CMakeLists.txt](CMakeLists.txt) references `$ENV{IDF_PATH}/tools/cmake/project.cmake`. If CMake is invoked directly or by an IDE extension without an exported `IDF_PATH`, the variable evaluates to empty, resolving incorrectly to root `/tools/cmake/project.cmake`.
+- **Solution**:
+  - **Terminal**: Run `. /home/fus/.fus/esp/export.sh` before invoking build commands.
+  - **VS Code CMake Tools (if used)**: Specify `IDF_PATH` in `.vscode/settings.json` (ensure dictionary `{}` syntax, not array `[]`):
+    ```json
+    "cmake.environment": {
+        "IDF_PATH": "/home/fus/.fus/esp"
+    }
+    ```
+
+#### Issue 2: `xtensa-esp32-elf-gcc was not found in the PATH`
+- **Symptom**:
+  ```text
+  CMake Error at .../project.cmake (__project):
+    The CMAKE_C_COMPILER:
+      xtensa-esp32-elf-gcc
+    is not a full path and was not found in the PATH.
+  ```
+- **Cause**: The VS Code **CMake Tools** extension detects `CMakeLists.txt` and automatically attempts to configure the project using a host compiler (e.g. `/usr/bin/gcc`). However, ESP-IDF requires cross-compilation targeting the ESP32 architecture (`xtensa-esp32-elf-gcc`), which is only exposed on `PATH` after sourcing `export.sh`.
+- **Solution**:
+  If you build in a separate terminal via `idf.py build`, prevent CMake Tools from auto-triggering background configure runs:
+  1. Add `"cmake.configureOnOpen": false` to [.vscode/settings.json](.vscode/settings.json).
+  2. Click the CMake Kit selector on the VS Code status bar (bottom bar) and select `[Unspecified]`.
+  3. Perform all builds via the dedicated terminal using `idf.py build`.
+
