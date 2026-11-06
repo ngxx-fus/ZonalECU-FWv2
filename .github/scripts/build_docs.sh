@@ -20,6 +20,7 @@ fi
 
 cd "${PROJECT_ROOT}/docs"
 doxygen Doxyfile
+touch "${PROJECT_ROOT}/docs/doxygen_html/.nojekyll"
 
 echo "=================================================="
 echo " Documentation Generated Successfully!"
