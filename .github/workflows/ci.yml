@@ -48,7 +48,7 @@ jobs:
 
       - name: Run Clangd Static Analysis
         run: |
-          chmod +x .github/scripts/static_analysis.sh
+          chmod +x .github/scripts/*.sh .github/scripts/*.py
           ./.github/scripts/static_analysis.sh
 
   job1_compile_esp_idf:

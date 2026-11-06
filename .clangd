@@ -7,20 +7,45 @@ CompileFlags:
     - -fzero-init-padding-bits=all
     - -fno-malloc-dce
     - -fno-jump-tables
+    - -mtext-section-literals
+    - -fno-rtti
+    - -mfix-esp32-psram-cache-issue
+    - -mfix-esp32-psram-cache-strategy=*
+    - -mabi=*
+    - -march=*
+
   Add:
     - -Wno-unknown-warning-option
     - -Wno-unused-command-line-argument
 
 Diagnostics:
+  UnusedIncludes: None
   ClangTidy:
     Add:
       - bugprone-*
       - clang-analyzer-*
       - performance-*
       - readability-*
+      - cert-*
     Remove:
       - readability-identifier-length
+      - readability-uppercase-literal-suffix
+      - performance-no-int-to-ptr
+      - readability-isolate-declaration
+      - cppcoreguidelines-pro-type-cstyle-cast
+      - cert-dcl37-c
+      - cert-dcl51-cpp
+      - readability-function-cognitive-complexity
+
   Suppress:
     - drv_unknown_argument
     - drv_unknown_argument_with_suggestion
+    - pp_file_not_found_angled
 
+InlayHints:
+  Designators: Yes
+  ParameterNames: Yes
+  DeducedTypes: Yes
+
+Hover:
+  ShowAKA: Yes
