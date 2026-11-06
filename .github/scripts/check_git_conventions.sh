@@ -39,21 +39,30 @@ echo "--------------------------------------------------"
 # Pattern: <ZE/ZonalECU/ZonalECU-FWv2> | MM/DD/YY HH:MM:SS | <message>
 # ------------------------------------------------------------------------------
 COMMIT_REGEX="^(ZE|ZonalECU|ZonalECU-FWv2) \| [0-9]{2}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} \| .+$"
-MERGE_REGEX="^Merge (branch|pull request|remote-tracking) .+$"
+MERGE_REGEX="^Merge .+$"
 
-# Determine commit range
+# Determine commit range (ignoring merge commits like GitHub's PR merge commits)
 if [ -n "${GITHUB_BASE_REF:-}" ]; then
-    echo "Checking commits in PR (against origin/${GITHUB_BASE_REF})..."
+    echo "Checking commits in PR (against ${GITHUB_BASE_REF})..."
     git fetch origin "${GITHUB_BASE_REF}" --depth=50 2>/dev/null || true
-    COMMITS=$(git log "origin/${GITHUB_BASE_REF}..HEAD" --format="%H" || git log -1 --format="%H")
+    BASE_REF=""
+    if git rev-parse --verify "origin/${GITHUB_BASE_REF}" &>/dev/null; then
+        BASE_REF="origin/${GITHUB_BASE_REF}"
+    elif git rev-parse --verify "${GITHUB_BASE_REF}" &>/dev/null; then
+        BASE_REF="${GITHUB_BASE_REF}"
+    fi
+
+    if [ -n "${BASE_REF}" ]; then
+        COMMITS=$(git log "${BASE_REF}..HEAD" --format="%H" --no-merges || git log -1 --format="%H" --no-merges)
+    else
+        COMMITS=$(git log -1 --format="%H" --no-merges || git log -1 --format="%H")
+    fi
 else
     echo "Checking latest commit(s)..."
-    COMMITS=$(git log -1 --format="%H")
+    COMMITS=$(git log -1 --format="%H" --no-merges || git log -1 --format="%H")
 fi
 
-COMMIT_COUNT=0
 for HASH in $COMMITS; do
-    COMMIT_COUNT=$((COMMIT_COUNT + 1))
     MSG=$(git log -1 --format="%s" "${HASH}")
     
     if [[ "${MSG}" =~ $COMMIT_REGEX ]] || [[ "${MSG}" =~ $MERGE_REGEX ]]; then
