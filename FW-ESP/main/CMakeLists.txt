@@ -1,0 +1,5 @@
+idf_component_register(
+    SRCS "ZonalECU-FWv2.c"
+    INCLUDE_DIRS "."
+    REQUIRES Common esp_driver_gpio freertos
+)

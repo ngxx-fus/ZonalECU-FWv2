@@ -1,0 +1,23 @@
+/* Hide text title area column next to the logo */
+#projectalign {
+    display: none !important;
+}
+
+/* Ensure logo displays cleanly in single column */
+#projectrow {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 6px 10px;
+}
+
+#projectlogo {
+    padding: 0;
+    margin: 0;
+}
+
+#projectlogo img {
+    height: 42px;
+    max-width: 100%;
+    object-fit: contain;
+}

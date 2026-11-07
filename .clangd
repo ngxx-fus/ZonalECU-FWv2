@@ -1,5 +1,5 @@
 CompileFlags:
-  CompilationDatabase: build
+  CompilationDatabase: FW-ESP/build
   Remove:
     - -mlongcalls
     - -fstrict-volatile-bitfields

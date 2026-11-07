@@ -1,0 +1,45 @@
+# ESP-IDF Build & Output
+build/
+sdkconfig.old
+sdkconfig.ci
+doc/doxygen_html/
+
+# ESP-IDF Component Manager
+managed_components/
+dependencies.lock
+
+# Binary & Object files
+*.o
+*.a
+*.elf
+*.bin
+*.map
+
+# Editor & IDE configurations
+# .vscode/ # we keep all vscode settings!
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.cproject
+.settings/
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Operating System files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Temporary & Backup files
+*~
+*.swp
+*.swo
+*.bak
+.cache/

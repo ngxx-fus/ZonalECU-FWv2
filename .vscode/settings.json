@@ -1,18 +1,24 @@
 {
     "clangd.arguments": [
-        // Linux: Absolute query-driver path to Xtensa GCC toolchain
-        "--query-driver=/home/fus/.espressif/tools/xtensa-esp-elf/**/bin/xtensa-esp32-elf-*",
-        // Windows: Replace with your Windows user path (use forward slashes '/'):
-        // "--query-driver=C:/Users/<YourUsername>/.espressif/tools/xtensa-esp-elf/**/bin/xtensa-esp32-elf-*",
+        "--query-driver=C:/Espressif/tools/xtensa-esp-elf/**/bin/xtensa-esp32-elf-*,/home/fus/.espressif/tools/xtensa-esp-elf/**/bin/xtensa-esp32-elf-*",
         "--background-index",
         "--clang-tidy"
     ],
     "cSpell.words": [
+        "AUTOSAR",
+        "bxCAN",
+        "CANCC",
+        "CMSIS",
+        "MISRA",
+        "SOMEIP",
+        "W5500",
         "ZECU"
     ],
     "cmake.environment": {
         "IDF_PATH": "/home/fus/.fus/esp"
     },
-    "cmake.configureOnOpen": false
+    "cmake.configureOnOpen": false,
+    "idf.currentSetup": "C:\\Espressif\\.espressif\\v6.1\\esp-idf",
+    "idf.port": "COM3",
+    "idf.flashType": "UART"
 }
-

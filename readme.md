@@ -1,255 +1,249 @@
-# Project Information
+# Zonal ECU Firmware v2 (ZonalECU-FWv2)
 
-T.B.U
+Enterprise-grade firmware architecture for Automotive Zonal Electronic Control Units (Z-ECU). This repository hosts a multi-target firmware ecosystem designed for distributed real-time vehicle networking, service-oriented communication (SOME/IP), and deterministic IO actuator control.
 
 ---
 
-# Working dir
+## 1. Multi-Target System Architecture
 
-## 1. Project Directory Structure
+```text
+       +-------------------------------------------------------+
+       |                  Ethernet / SOME/IP                   |
+       +---------------------------+---------------------------+
+                                   |
+                                   v
+             +-------------------------------------------+
+             |                  FW-ESP                   |
+             |       (ESP32 Gateway & Core Services)     |
+             |   - SOME/IP & Service Discovery (SD)      |
+             |   - FreeRTOS Tasks & Lifecycle Management |
+             |   - Ethernet (W5500 SPI) & Network Stacks |
+             +---------------------+---------------------+
+                                   |
+                                   | Classic CAN / SPI / UART
+                                   v
+             +-------------------------------------------+
+             |                  FW-STM                   |
+             |       (STM32F103C8T6 Real-Time Sub-ECU)  |
+             |   - Deterministic Low-Latency Actuation   |
+             |   - Sensor Acquisition & Power Control    |
+             |   - Classic CAN Bus Node                  |
+             +-------------------------------------------+
+```
+
+---
+
+## 2. Repository Directory Structure
 
 ```text
 ZonalECU-FWv2/
-├── .clangd                          # Clangd LSP configuration with Xtensa GCC query-driver
-├── .gitignore                       # Git ignore list for ESP-IDF builds
-├── CMakeLists.txt                   # Root CMake project script (auto-discovers leaf components)
-├── CodingRules.md                   # Source code standards, header layout, and comment rules
-├── GEMINI.md                        # Assistant rules, hardware configuration, and architecture
-├── sdkconfig.defaults               # Project default configurations (240 MHz, Dual-Core, -O2, No Wi-Fi/BT)
+├── .clangd                          # Project-wide Clangd LSP configuration
+├── .gitignore                       # Repository-wide ignore rules
+├── readme.md                        # Master project documentation
 │
-├── doc/                             # Doxygen documentation source & assets
-│   ├── Doxyfile                     # Doxygen build configuration
-│   └── doxygen_html/                # Generated HTML site (gitignored)
+├── .github/                         # Continuous Integration & Delivery
+│   ├── workflows/
+│   │   └── ci.yml                   # 6-stage CI/CD pipeline
+│   └── scripts/
+│       ├── build_docs.sh            # Doxygen multi-target documentation builder
+│       ├── build_firmware_esp.sh    # ESP-IDF firmware compilation script
+│       ├── check_formatting.sh      # Automated code formatting verifier (CI gate)
+│       ├── check_git_conventions.sh # Commit message & convention validator
+│       ├── clangd_check.py          # Python LSP JSON-RPC static analyzer
+│       ├── format_rules.py          # Auto-code reformatter (Renesas FSP, 110-col banners)
+│       └── static_analysis.sh       # Clangd static analysis orchestrator
 │
-├── main/                            # Main application entry point
-│   ├── CMakeLists.txt               # Main component CMake registration (requires Common)
-│   └── ZonalECU-FWv2.c              # Application startup (app_main)
+├── FW-Common/                       # Shared Cross-Target Resources
+│   ├── doc/                         # Master Doxygen documentation configuration
+│   │   ├── Doxyfile                 # Doxygen config (aggregates FW-ESP & FW-STM)
+│   │   ├── DoxygenLayout.xml        # Custom navigation layout
+│   │   └── doxygen_assets/          # Logo, custom styles, and navtree scripts
+│   ├── drawio/                      # System architecture diagrams
+│   │   └── SystemView.drawio        # Z-ECU electrical & network block diagrams
+│   └── readme.md                    # Common resources overview
 │
-└── comp/                            # Modular subsystem components
-    ├── .template/                   # Blueprint template for creating new components
-    │   ├── CMakeLists.txt           # Production-ready component CMakeLists template
-    │   ├── CMakeLists.tutorial.txt  # In-depth CMake guide & syntax breakdown
-    │   ├── template.c               # Template source file
-    │   └── template.h               # Template public header
-    │
-    ├── App/                         # Application layer services & middleware
-    │   ├── ESP-FreeRTOS/            # FreeRTOS tasks & application lifecycle
-    │   ├── ESP-IPC/                 # Inter-process / inter-task communication
-    │   ├── SOME-IP/                 # SOME/IP packet serializer & parser
-    │   ├── SOME-IP_SD/              # SOME/IP Service Discovery & pairing
-    │   └── ZE-Services/             # Zonal ECU core application services
-    │
-    ├── Comm/                        # Hardware peripheral drivers & communication wrappers
-    │   ├── ESP-ClassicCAN/          # Classic CAN driver wrapper
-    │   ├── ESP-Flash/               # Flash memory storage wrapper
-    │   ├── ESP-GPIO/                # Peripheral GPIO control methods
-    │   ├── ESP-I2C/                 # I2C driver wrapper
-    │   ├── ESP-Logger/              # UART logging macros & backend
-    │   ├── ESP-PSRAM/               # PSRAM allocation & memory management
-    │   ├── ESP-SPI/                 # SPI bus driver wrapper
-    │   ├── ESP-UART/                # UART communication driver wrapper
-    │   └── ETH-W5500/               # W5500 SPI Ethernet middleware
-    │
-    └── Common/                      # Core cross-cutting definitions
-        ├── CMakeLists.txt           # Common component CMake registration
-        ├── Atomic/                  # Atomic operations typedefs (Atomic.h)
-        ├── Config/                  # Compatibility & attribute macros (Macros.h)
-        ├── Error/                   # Standard error codes (Error.h, Error.c)
-        ├── __prv_shared__.h         # Private shared type definitions
-        └── SharedAPIs.h             # Umbrella header aggregating all Common headers
+├── FW-ESP/                          # ESP32 Firmware Subsystem
+│   ├── CMakeLists.txt               # ESP-IDF project build script
+│   ├── CodingRules.md               # C coding standards & header layout rules
+│   ├── GEMINI.md                    # AI agent & developer guidelines for ESP32
+│   ├── readme.md                    # ESP32 subsystem documentation & build guide
+│   ├── sdkconfig.defaults           # Default configuration (240MHz, Dual-Core, No Wi-Fi/BT)
+│   ├── main/                        # Application entry point (app_main)
+│   ├── comp/                        # 3-Tier component architecture
+│   │   ├── App/                     # High-level services (SOME-IP, FreeRTOS, IPC, ZE-Services)
+│   │   ├── Comm/                    # Hardware drivers & wrappers (ETH-W5500, UART, SPI, CAN...)
+│   │   └── Common/                  # Shared macros, atomic types, and error codes
+│   └── data/                        # Static assets & binary partition files
+│
+└── FW-STM/                          # STM32F103C8T6 Firmware Subsystem
+    ├── GEMINI.md                    # AI agent & developer guidelines for STM32
+    ├── RULES.md                     # Coding rules for STM32 firmware
+    ├── readme.md                    # STM32 subsystem documentation & roadmap
+    └── (Core/, Drivers/ ...)        # CubeMX / CMSIS / HAL drivers (To be populated)
 ```
 
 ---
 
-## 2. Component Architecture (Leaf Component Discovery)
+## 3. Subsystem Overview
 
-In standard ESP-IDF projects, having a `CMakeLists.txt` directly inside `components/` causes ESP-IDF to treat all subdirectories as a single monolithic component.
-
-In this project, we use a **Leaf Component Architecture** under `comp/`:
-- There is **no** `comp/CMakeLists.txt` at the root of `comp/`.
-- Every individual module under `comp/` (at any nesting level, e.g. `comp/Common` or `comp/Comm/W5500`) has its own independent `CMakeLists.txt`.
-- The root [CMakeLists.txt](CMakeLists.txt) uses recursive scanning (`file(GLOB_RECURSE ...)`) to automatically register every folder containing a `CMakeLists.txt` under `comp/` into `EXTRA_COMPONENT_DIRS`, automatically ignoring the `.template/` directory.
-
-> [!IMPORTANT]
-> **ESP-IDF Wrapper Directory Naming Convention**:
-> Any directory or submodule that wraps, adapts, or interfaces directly with an ESP-IDF system driver/API **MUST** begin with the prefix `ESP-` (e.g. `comp/Comm/W5500/ESP-SPI`, `comp/App/ESP-FreeRTOS`, `ESP-UART`).
+| Subsystem | Target Processor | Primary Role | Toolchain |
+| :--- | :--- | :--- | :--- |
+| [**FW-ESP**](file:///home/fus/Documents/ZonalECU-FWv2/FW-ESP/readme.md) | ESP32-WROOM-32 (Xtensa Dual-Core 240MHz) | Gateway, SOME/IP Protocol, Ethernet W5500, Core Services | ESP-IDF v6.1 (`xtensa-esp32-elf-gcc`) |
+| [**FW-STM**](file:///home/fus/Documents/ZonalECU-FWv2/FW-STM/readme.md) | STM32F103C8T6 (ARM Cortex-M3 72MHz) | Real-time IO, Actuator control, Classic CAN bus node | ARM GNU Toolchain (`arm-none-eabi-gcc`) |
+| [**FW-Common**](file:///home/fus/Documents/ZonalECU-FWv2/FW-Common/readme.md) | Multi-target | Shared diagrams, shared headers, master Doxygen documentation | Doxygen, Graphviz, Draw.io |
 
 ---
 
-## 3. How to Add a New Component
+## 4. Continuous Integration Pipeline (CI/CD)
 
-Follow these simple steps whenever you want to add a new driver, protocol, or application service:
+The GitHub Actions workflow runs on every push and pull request across all master branches:
 
-### Step 1: Copy the Template Directory
-Duplicate the `comp/.template/` folder to your desired path under `comp/`.
-You can create flat or nested components:
+| Stage | Job Name | Responsibility |
+| :--- | :--- | :--- |
+| **Job 0** | **Conventions & Formatting** | Validates commit messages and verifies code formatting rules (fails on unformatted code). |
+| **Job 1** | **Clangd Static Analysis** | Performs deep AST & Clang-Tidy analysis across `FW-Common`, `FW-ESP`, `FW-STM`. |
+| **Job 2** | **FW-STM Build** | Placeholder for STM32 CMake / Makefile build using `arm-none-eabi-gcc`. |
+| **Job 3** | **FW-ESP Build** | Compiles ESP-IDF firmware and publishes binary flash artifacts. |
+| **Job 4** | **Project Doxygen** | Aggregates code from `FW-ESP` and `FW-STM` into interactive HTML documentation. |
+| **Job 5** | **Deploy to Pages** | Publishes documentation to GitHub Pages on merges to master branches. |
+
+### 4.1 Prerequisites Installation
+
+Install the required host toolchain and verification utilities for your operating system:
+
+#### A. Void Linux (`xbps-install`)
 ```bash
-# Example 1: Creating a nested communication driver for W5500
-cp -r comp/.template comp/Comm/W5500
+# Synchronize package repositories
+sudo xbps-install -S
 
-# Example 2: Creating a CAN driver
-cp -r comp/.template comp/Drivers/CAN
+# Core build system & Python
+sudo xbps-install -y base-devel cmake ninja git python3 python3-pip
+
+# Job 0 & Job 1: Clang-Format & Clangd Language Server (provided by clang-tools-extra / llvm)
+sudo xbps-install -y clang-tools-extra llvm
+
+# Job 4: Doxygen & Graphviz (Documentation generation)
+sudo xbps-install -y doxygen graphviz
+
+# Job 2: ARM GNU Toolchain (for STM32 sub-firmware)
+sudo xbps-install -y cross-arm-none-eabi-gcc cross-arm-none-eabi-newlib
 ```
 
-### Step 2: Rename and Implement Files
-Rename the `.c` and `.h` files to match your component name:
+#### B. Ubuntu / Debian (`apt-get`)
 ```bash
-cd comp/Comm/W5500
-mv template.c w5500.c
-mv template.h w5500.h
+sudo apt-get update
+sudo apt-get install -y build-essential cmake ninja-build git python3 python3-pip
+sudo apt-get install -y clangd clang-format
+sudo apt-get install -y doxygen graphviz
+sudo apt-get install -y gcc-arm-none-eabi
 ```
 
-Inside your header and source files:
-- Update header guards: `#ifndef __COMM_W5500_H__`
-- Include necessary common definitions: `#include "Common/SharedAPIs.h"`
-- Follow comment and header conventions detailed in [CodingRules.md](CodingRules.md).
+#### C. Windows (WSL2 & Native PowerShell)
 
-### Step 3: Configure Component `CMakeLists.txt`
-Open `comp/Comm/W5500/CMakeLists.txt`. The template is pre-configured to automatically scan all `.c` and `.h` files in the component directory and export include paths.
+* **Option 1: Windows Subsystem for Linux (WSL2 — Recommended)**
+  ```powershell
+  # In PowerShell (Admin):
+  wsl --install
+  ```
+  Once inside the WSL2 Ubuntu terminal, run the **Ubuntu / Debian** commands above.
 
-You only need to specify any external dependencies in `REQUIRES`:
-```cmake
-idf_component_register(
-    SRCS ${component_srcs}
-    INCLUDE_DIRS ${component_include_dirs}
-    REQUIRES Common driver esp_timer   # <-- Add components your module depends on
-)
-```
-
-### Step 4: Include in Other Components or `main`
-Thanks to the template's dual-path include discovery, other modules can include your headers using either style:
-```c
-/* Module-qualified path (Recommended for clarity) */
-#include "Comm/W5500/w5500.h"
-
-/* Direct header inclusion */
-#include "w5500.h"
-```
-
-Add your component name (the folder name, e.g., `W5500`) to the caller's `REQUIRES` list in its `CMakeLists.txt`. For instance, in `main/CMakeLists.txt`:
-```cmake
-idf_component_register(
-    SRCS "ZonalECU-FWv2.c"
-    INCLUDE_DIRS "."
-    REQUIRES Common W5500
-)
-```
-
-### Step 5: Build the Project
-You **do not** need to edit the root `CMakeLists.txt`. The build system automatically discovers the new component:
-```bash
-# Sourcing ESP-IDF environment (if not already sourced)
-source /home/fus/.fus/esp/export.sh
-
-# Reconfigure and build
-idf.py reconfigure
-idf.py build
-```
-
----
-
-## 4. Coding & Comment Standards
-
-All developers and contributors must adhere to the standards outlined in:
-- [CodingRules.md](CodingRules.md): Detailed conventions for project architecture, hardware specifications, header structure, Doxygen comments (`/** @brief ... */`), section banners ($W = 108$), in-code groupings, macros, and error codes.
-
----
-
-## 5. Build Environment & Troubleshooting
-
-### 5.1 Standard Build Workflow (Dedicated Terminal)
-
-ESP-IDF projects rely on cross-compilers (`xtensa-esp32-elf-*`), Ninja, CMake, and a dedicated Python virtual environment. Always activate the ESP-IDF environment in your terminal before building:
-
-```bash
-# 1. Export ESP-IDF environment variables and toolchains
-. /home/fus/.fus/esp/export.sh
-
-# 2. Build the firmware
-idf.py build
-
-# 3. Flash and monitor (when hardware is connected)
-idf.py -p /dev/ttyUSB0 flash monitor
-```
-
-> [!TIP]
-> Add an alias to your `~/.bashrc` to quickly initialize the ESP-IDF environment:
-> ```bash
-> echo 'alias get_idf=". /home/fus/.fus/esp/export.sh"' >> ~/.bashrc
-> source ~/.bashrc
-> ```
-> Then run `get_idf` in any new terminal session before building.
+* **Option 2: Native Windows (via `winget`)**
+  Run in PowerShell:
+  ```powershell
+  # Core tools & Compilers
+  winget install --id Git.Git -e
+  winget install --id Kitware.CMake -e
+  winget install --id Ninja-build.Ninja -e
+  winget install --id Python.Python.3.11 -e
+  winget install --id LLVM.LLVM -e                      # Provides clangd & clang-format
+  winget install --id DimitriVanHeesch.Doxygen -e       # Doxygen
+  winget install --id Graphviz.Graphviz -e               # Graphviz
+  winget install --id Arm.GnuArmEmbeddedToolchain -e    # ARM GCC
+  ```
 
 > [!NOTE]
-> Running `idf.py build` automatically updates `build/compile_commands.json`. The root [.clangd](.clangd) configuration consumes this compilation database to provide accurate autocompletion, type deduction, and jump-to-definition.
+> **Job 3 (ESP-IDF v6.1)**: Requires the official Espressif IoT Development Framework.
+> - **Linux / WSL2**: Clone and run the installer:
+>   ```bash
+>   git clone -b release/v6.1 --recursive https://github.com/espressif/esp-idf.git ~/esp/esp-idf
+>   cd ~/esp/esp-idf && ./install.sh esp32
+>   . ~/esp/esp-idf/export.sh
+>   ```
+> - **Windows Native**: Use the official [ESP-IDF Windows Offline Installer](https://dl.espressif.com/dl/esp-idf/).
 
 ---
 
-### 5.2 Common Issues & Troubleshooting
+### 4.2 Running CI Jobs Locally
 
-#### Issue 1: `include could not find requested file: /tools/cmake/project.cmake`
-- **Symptom**:
-  ```text
-  CMake Error at CMakeLists.txt:31 (include):
-    include could not find requested file:
-      /tools/cmake/project.cmake
-  ```
-- **Cause**: Line 31 of [CMakeLists.txt](CMakeLists.txt) references `$ENV{IDF_PATH}/tools/cmake/project.cmake`. If CMake is invoked directly or by an IDE extension without an exported `IDF_PATH`, the variable evaluates to empty, resolving incorrectly to root `/tools/cmake/project.cmake`.
-- **Solution**:
-  - **Terminal**: Run `. /home/fus/.fus/esp/export.sh` before invoking build commands.
-  - **VS Code CMake Tools (if used)**: Specify `IDF_PATH` in `.vscode/settings.json` (ensure dictionary `{}` syntax, not array `[]`):
-    ```json
-    "cmake.environment": {
-        "IDF_PATH": "/home/fus/.fus/esp"
-    }
-    ```
+Developers should run the verification scripts before pushing code to avoid failing PR checks:
 
-#### Issue 2: `xtensa-esp32-elf-gcc was not found in the PATH`
-- **Symptom**:
-  ```text
-  CMake Error at .../project.cmake (__project):
-    The CMAKE_C_COMPILER:
-      xtensa-esp32-elf-gcc
-    is not a full path and was not found in the PATH.
-  ```
-- **Cause**: The VS Code **CMake Tools** extension detects `CMakeLists.txt` and automatically attempts to configure the project using a host compiler (e.g. `/usr/bin/gcc`). However, ESP-IDF requires cross-compilation targeting the ESP32 architecture (`xtensa-esp32-elf-gcc`), which is only exposed on `PATH` after sourcing `export.sh`.
-- **Solution**:
-  If you build in a separate terminal via `idf.py build`, prevent CMake Tools from auto-triggering background configure runs:
-  1. Add `"cmake.configureOnOpen": false` to [.vscode/settings.json](.vscode/settings.json).
-  2. Click the CMake Kit selector on the VS Code status bar (bottom bar) and select `[Unspecified]`.
-  3. Perform all builds via the dedicated terminal using `idf.py build`.
+#### Job 0: Code Formatting & Git Conventions Check
+```bash
+# Auto-format all target C and H files:
+python3 .github/scripts/format_rules.py FW-Common FW-ESP FW-STM
+
+# Verify formatting compliance (fails with diff if unformatted):
+./.github/scripts/check_formatting.sh
+
+# Verify Git branch & commit message convention:
+./.github/scripts/check_git_conventions.sh
+```
+
+#### Job 1: Clangd Static Analysis (Deep AST & Semantic Checks)
+```bash
+# Runs clangd LSP against FW-Common, FW-ESP, and FW-STM
+./.github/scripts/static_analysis.sh
+```
+
+#### Job 3: Build ESP32 Firmware (ESP-IDF)
+```bash
+# Compiles binaries to FW-ESP/build/
+./.github/scripts/build_firmware_esp.sh
+```
+
+#### Job 4: Generate Multi-Target Doxygen Documentation
+```bash
+# Generates interactive HTML documentation in FW-Common/doc/doxygen_html/
+./.github/scripts/build_docs.sh
+```
 
 ---
 
-## 6. Git Workflow & Commit Guidelines (Recommended)
+### 4.3 Pre-Push All-in-One Check
 
-### 6.1 Branch Naming Convention
-```text
-ZE-<Feature/Improve/Update/Fix>-<ShortDescription>
-```
-*Examples*:
-- `ZE-Feature-UpdateGitHubAction`
-- `ZE-Fix-SPI-Timeout`
-- `ZE-Improve-ErrorHandling`
+Run all local CI validations in a single command before submitting a Pull Request:
 
-### 6.2 Commit Message Format
-```text
-<ZE/ZonalECU/ZonalECU-FWv2> | <Timestamp> | <message>
-```
-*Example*:
-```text
-ZonalECU-FWv2 | 11/06/26 20:04:03 | Updated static-analysis job check
+```bash
+./.github/scripts/check_formatting.sh && \
+./.github/scripts/check_git_conventions.sh && \
+./.github/scripts/static_analysis.sh && \
+./.github/scripts/build_firmware_esp.sh && \
+./.github/scripts/build_docs.sh
 ```
 
-### 6.3 Auto Timestamp Shortcuts
+---
 
-- **Linux / macOS / Git Bash**:
-  ```bash
-  git commit -m "ZonalECU-FWv2 | $(date +"%D %T") | <message>"
-  ```
-- **Windows (PowerShell)**:
-  ```powershell
-  git commit -m "ZonalECU-FWv2 | $(Get-Date -Format 'MM/dd/yy HH:mm:ss') | <message>"
-  ```
+## 5. Git Commit Conventions
 
+All commits (excluding automatic pull request merge commits) MUST strictly follow the format:
 
+```text
+<REPO> | <DATETIME> | <TAG> | <COMMENT>
+```
+
+### Components
+* `<REPO>`: Project identifier (`ZonalECU-FWv2` or `ZE`).
+* `<DATETIME>`: Timestamp formatted as `MM/DD/YY HH:MM:SS`.
+* `<TAG>`: Classification tag:
+  * `FEAT`: New feature or hardware peripheral implementation.
+  * `FIX`: Bug fix, error code resolution, or assertion fix.
+  * `ARCH`: Structural reorganization, CMake modifications, or directory updates.
+  * `DOCS`: Documentation additions or updates.
+  * `REVERT`: Revert of a previous commit.
+  * `MISC`: Maintenance, code style, or CI workflow tweaks.
+* `<COMMENT>`: Clear, concise explanation in English of the modification.
+
+### Example
+```bash
+git commit -m "ZonalECU-FWv2 | $(date +"%D %T") | ARCH | Restructured into multi-target architecture FW-ESP and FW-STM"
+```

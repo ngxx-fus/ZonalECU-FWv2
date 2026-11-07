@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Script: static_analysis.sh
-# Purpose: Run Clangd LSP static analysis & semantic checks on all project files
+# Purpose: Run Clangd LSP static analysis & semantic checks on FW-Common, FW-ESP, and FW-STM
 # ==============================================================================
 set -euo pipefail
 
@@ -26,29 +26,29 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
-# Ensure compile_commands.json exists in build/
-if [ ! -f "build/compile_commands.json" ]; then
-    echo "Notice: build/compile_commands.json not found."
+# Ensure compile_commands.json exists in FW-ESP/build/
+if [ ! -f "FW-ESP/build/compile_commands.json" ]; then
+    echo "Notice: FW-ESP/build/compile_commands.json not found."
     if command -v idf.py &> /dev/null; then
-        echo "Running 'idf.py reconfigure' to generate compilation database..."
-        idf.py reconfigure
+        echo "Running 'idf.py -C FW-ESP reconfigure' to generate compilation database..."
+        idf.py -C FW-ESP reconfigure
     elif [ -f "/home/fus/.fus/esp/export.sh" ]; then
         # shellcheck disable=SC1091
         . "/home/fus/.fus/esp/export.sh"
-        idf.py reconfigure
+        idf.py -C FW-ESP reconfigure
     elif [ -n "${IDF_PATH:-}" ] && [ -f "${IDF_PATH}/export.sh" ]; then
         # shellcheck disable=SC1090
         . "${IDF_PATH}/export.sh"
-        idf.py reconfigure
+        idf.py -C FW-ESP reconfigure
     else
-        echo "ERROR: Cannot find build/compile_commands.json and idf.py is not available."
+        echo "ERROR: Cannot find FW-ESP/build/compile_commands.json and idf.py is not available."
         exit 1
     fi
 fi
 
-# Discover all project C source files (main/ and comp/, excluding .template)
+# Discover all project C source files across FW-Common, FW-ESP, and FW-STM (excluding .template and build)
 # shellcheck disable=SC2207
-FILES=($(find main comp -name "*.c" ! -path "*/.template/*" | sort))
+FILES=($(find FW-Common FW-ESP FW-STM -name "*.c" ! -path "*/.template/*" ! -path "*/build/*" | sort))
 TOTAL_FILES=${#FILES[@]}
 
 echo "Scanning files for static analysis (${TOTAL_FILES} files):"
@@ -57,5 +57,10 @@ for file in "${FILES[@]}"; do
 done
 echo "--------------------------------------------------"
 
-# Run Python Clangd LSP Checker
+if [ "${TOTAL_FILES}" -eq 0 ]; then
+    echo "No C files found to analyze."
+    exit 0
+fi
+
+# Run Python Clangd LSP Checker from PROJECT_ROOT
 python3 "${SCRIPT_DIR}/clangd_check.py" "${PROJECT_ROOT}" "${FILES[@]}"
