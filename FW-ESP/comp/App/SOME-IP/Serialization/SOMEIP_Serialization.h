@@ -1,12 +1,15 @@
-/* GUARD/BEGIN **********************************************************************************************
+
+
+/* GUARD/BEGIN ***********************************************************************************************
  ************************************************************************************************************/
+
 #ifndef __SOMEIP_SERIALIZATION_H__
 #define __SOMEIP_SERIALIZATION_H__
 
 /** @brief SOME/IP payload serialization / deserialization: public API (chapter 4.1.3 / 4.1.4)
  *  @details - Byte order per parameter [PRS_SOMEIP_00369]
  *           - Basic datatypes (Table 4.6), boolean [PRS_SOMEIP_00065] [PRS_SOMEIP_00615]
- *           - Alignment / padding behind variable length data [00611] [00569] [00612] [00613]
+ *           - Alignment / padding behind variable length p_data [00611] [00569] [00612] [00613]
  *           - Length field of struct / array [00079] [00370] [00371] [00900] [00376] [00377]
  *           - Strings (fixed / dynamic length, BOM, "\0") [PRS_SOMEIP_00087] [PRS_SOMEIP_00089]
  *           - Enumeration / bitfield: use the unsigned integer functions [00705] [00300]
@@ -15,20 +18,22 @@
  *           is never moved.
  *  @see     AUTOSAR_PRS_SOMEIPProtocol (R22-11), chapter 4.1.4.1 .. 4.1.4.7 */
 
-/* INCLUDES *************************************************************************************************
+/* INCLUDES **************************************************************************************************
  ************************************************************************************************************/
+
 #include <stdint.h>
 #include "Macros.h"
 #include "SOMEIP_Types.h"
 
-/* HEADERS **************************************************************************************************
+/* HEADERS ***************************************************************************************************
  ************************************************************************************************************/
+
 HEADER_CPP
 
-/* DEFINITIONS **********************************************************************************************
+/* DEFINITIONS ***********************************************************************************************
  ************************************************************************************************************/
 
-/** @brief Allowed alignment of data behind variable length data, in bits [PRS_SOMEIP_00613] */
+/** @brief Allowed alignment of p_data behind variable length p_data, in bits [PRS_SOMEIP_00613] */
 enum e_someip_align {
     SOMEIP_ALIGN_8BIT = 8,
     SOMEIP_ALIGN_16BIT = 16,
@@ -58,7 +63,7 @@ typedef struct st_someip_deser_cursor {
     someip_result_t status;
 } someip_deser_cursor_t;
 
-/* SHARED FUNCTIONS *****************************************************************************************
+/* SHARED FUNCTIONS ******************************************************************************************
  ************************************************************************************************************/
 
 /* Serializer: cursor */
@@ -175,7 +180,7 @@ someip_result_t SOMEIP_SerWriteBytes(INOUT someip_ser_cursor_t *p_cur, IN uint8_
                                      IN uint32_t data_len);
 
 /** @brief Insert 0x00 padding so that the next element starts aligned to align_bits
- *  @note  Call it ONLY behind variable length data that is not the last element [PRS_SOMEIP_00611]
+ *  @note  Call it ONLY behind variable length p_data that is not the last element [PRS_SOMEIP_00611]
  *         [PRS_SOMEIP_00612]; the serializer never pads by itself [PRS_SOMEIP_00077]. The alignment is
  *         computed from the start of the SOME/IP message [PRS_SOMEIP_00569]. The padding value is not
  *         defined by the spec, 0x00 is used.
@@ -192,9 +197,9 @@ someip_result_t SOMEIP_SerAlign(INOUT someip_ser_cursor_t *p_cur, IN uint16_t al
  *  @details Usage:
  *           @verbatim
  *           uint32_t mark = 0U;
- *           SOMEIP_SerLengthBegin(&cur, SOMEIP_LENGTH_FIELD_32BIT, &mark);
+ *           SOMEIP_SerLengthBegin(&p_cur, SOMEIP_LENGTH_FIELD_32BIT, &mark);
  *           ... write members / elements ...
- *           SOMEIP_SerLengthEnd(&cur, SOMEIP_LENGTH_FIELD_32BIT, mark);
+ *           SOMEIP_SerLengthEnd(&p_cur, SOMEIP_LENGTH_FIELD_32BIT, mark);
  *           @endverbatim
  *  @param p_cur   Write cursor
  *  @param lf_size 8, 16 or 32 bit
@@ -227,7 +232,7 @@ someip_result_t SOMEIP_SerWriteString(INOUT someip_ser_cursor_t *p_cur, IN somei
                                       IN uint32_t str_len);
 
 /** @brief Write a fixed length string: [BOM][characters]["\0"][0x00 fill] = exactly fixed_size bytes
- *  @note  fixed_size comes from the data type definition and includes BOM and "\0"
+ *  @note  fixed_size comes from the p_data type definition and includes BOM and "\0"
  *         [PRS_SOMEIP_00374] [PRS_SOMEIP_00087].
  *  @param p_cur      Write cursor
  *  @param enc        String encoding
@@ -243,7 +248,7 @@ someip_result_t SOMEIP_SerWriteStringFixed(INOUT someip_ser_cursor_t *p_cur,
 
 /** @brief Initialize a read cursor
  *  @details Typical call:
- *           SOMEIP_DeserInit(&cur, msg.p_payload, msg.payload_len, SOMEIP_OFS_PAYLOAD, order)
+ *           SOMEIP_DeserInit(&p_cur, msg.p_payload, msg.payload_len, SOMEIP_OFS_PAYLOAD, order)
  *  @param p_cur      Cursor to initialize
  *  @param p_buf      Received payload, may be NULL only if buf_size is 0
  *  @param buf_size   Number of valid bytes in p_buf
@@ -350,13 +355,13 @@ someip_result_t SOMEIP_DeserReadF64(INOUT someip_deser_cursor_t *p_cur, OUT doub
 someip_result_t SOMEIP_DeserReadBytes(INOUT someip_deser_cursor_t *p_cur, OUT uint8_t *p_out,
                                       IN uint32_t data_len);
 
-/** @brief Skip bytes (unknown trailing data, padding)
+/** @brief Skip bytes (unknown trailing p_data, padding)
  *  @param p_cur    Read cursor
  *  @param skip_len Number of bytes to skip
  *  @return SOMEIP_RES_OK, SOMEIP_RES_E_PARAM or SOMEIP_RES_E_MALFORMED (not enough bytes) */
 someip_result_t SOMEIP_DeserSkip(INOUT someip_deser_cursor_t *p_cur, IN uint32_t skip_len);
 
-/** @brief Skip the padding inserted by the sender behind variable length data
+/** @brief Skip the padding inserted by the sender behind variable length p_data
  *  @note  Same computation as SOMEIP_SerAlign(). The padding value is not checked, it is not defined by the
  *         spec (note of [PRS_SOMEIP_00611]). Padding at the end of the payload may be missing ("not the last
  *         element"), so at most the remaining bytes are skipped and no error is reported.
@@ -390,7 +395,7 @@ someip_result_t SOMEIP_DeserLengthEnd(INOUT someip_deser_cursor_t *p_cur, IN uin
  *  @param enc       Expected encoding
  *  @param lf_size   8, 16 or 32 bit
  *  @param p_out     Buffer for the characters
- *  @param out_size  Capacity of p_out = maximum string size of the data type definition
+ *  @param out_size  Capacity of p_out = maximum string size of the p_data type definition
  *  @param p_out_len Number of bytes written to p_out
  *  @return SOMEIP_RES_OK, SOMEIP_RES_E_PARAM or SOMEIP_RES_E_MALFORMED */
 someip_result_t SOMEIP_DeserReadString(INOUT someip_deser_cursor_t *p_cur, IN someip_string_encoding_t enc,
@@ -410,13 +415,15 @@ someip_result_t SOMEIP_DeserReadStringFixed(INOUT someip_deser_cursor_t *p_cur,
                                             OUT uint8_t *p_out, IN uint32_t out_size,
                                             OUT uint32_t *p_out_len);
 
-/* FOOTERS **************************************************************************************************
+/* FOOTERS ***************************************************************************************************
  ************************************************************************************************************/
+
 FOOTER_CPP
 
-/* GUARD/END ************************************************************************************************
+/* GUARD/END *************************************************************************************************
  ************************************************************************************************************/
+
 #endif /* __SOMEIP_SERIALIZATION_H__ */
 
-/* EOF ******************************************************************************************************
+/* EOF *******************************************************************************************************
  ************************************************************************************************************/

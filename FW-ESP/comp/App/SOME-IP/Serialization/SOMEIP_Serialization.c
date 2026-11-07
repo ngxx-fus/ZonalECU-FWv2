@@ -1,5 +1,8 @@
-/* INCLUDES *************************************************************************************************
+
+
+/* INCLUDES **************************************************************************************************
  ************************************************************************************************************/
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -8,12 +11,13 @@
 #include "SOMEIP_Endian.h"
 #include "SOMEIP_Types.h"
 
-/* MACROS ***************************************************************************************************
+/* MACROS ****************************************************************************************************
  ************************************************************************************************************/
+
 #define SOMEIP_U8_SIZE       (1U)
 #define SOMEIP_BITS_PER_BYTE (8U)
 
-/* DEFINITIONS **********************************************************************************************
+/* DEFINITIONS ***********************************************************************************************
  ************************************************************************************************************/
 
 /** @brief Size of the "\0" terminator per string encoding [PRS_SOMEIP_00084] */
@@ -23,7 +27,7 @@ enum e_someip_str_term_size {
     SOMEIP_STR_TERM_UTF16_SIZE = 2,
 };
 
-/* PRIVATE VARIABLES ****************************************************************************************
+/* PRIVATE VARIABLES *****************************************************************************************
  ************************************************************************************************************/
 
 /* String Byte Order Marks [PRS_SOMEIP_00087] */
@@ -32,8 +36,9 @@ static const uint8_t s_bom_utf8[SOMEIP_BOM_UTF8_SIZE] = {SOMEIP_BOM_UTF8_0, SOME
 static const uint8_t s_bom_utf16_be[SOMEIP_BOM_UTF16_SIZE] = {SOMEIP_BOM_UTF16BE_0, SOMEIP_BOM_UTF16BE_1};
 static const uint8_t s_bom_utf16_le[SOMEIP_BOM_UTF16_SIZE] = {SOMEIP_BOM_UTF16LE_0, SOMEIP_BOM_UTF16LE_1};
 
-/* PRIVATE FUNCTIONS ****************************************************************************************
+/* PRIVATE FUNCTIONS *****************************************************************************************
  ************************************************************************************************************/
+
 static someip_result_t prv_ser_reserve(INOUT someip_ser_cursor_t *p_cur, IN uint32_t len);
 static someip_result_t prv_deser_require(INOUT someip_deser_cursor_t *p_cur, IN uint32_t len);
 static uint32_t prv_padding_size(IN uint32_t abs_pos, IN uint16_t align_bits);
@@ -42,7 +47,7 @@ static bool prv_is_length_field_valid(IN someip_length_field_size_t lf_size);
 static uint8_t const *prv_get_bom(IN someip_string_encoding_t enc, OUT uint32_t *p_bom_size);
 static uint32_t prv_get_terminator_size(IN someip_string_encoding_t enc);
 
-/* FUNCTION IMPLEMENTATIONS *********************************************************************************
+/* FUNCTION IMPLEMENTATIONS **********************************************************************************
  ************************************************************************************************************/
 
 /* Private helpers */
@@ -503,7 +508,7 @@ someip_result_t SOMEIP_SerWriteBytes(INOUT someip_ser_cursor_t *p_cur, IN uint8_
     if ((NULL == p_data) && (0U != data_len)) {
         p_cur->status = SOMEIP_RES_E_PARAM;
 
-        /* Invalid data pointer */
+        /* Invalid p_data pointer */
         return p_cur->status;
     }
 
@@ -565,5 +570,5 @@ someip_result_t SOMEIP_SerAlign(INOUT someip_ser_cursor_t *p_cur, IN uint16_t al
     return SOMEIP_RES_OK;
 }
 
-/* EOF ******************************************************************************************************
+/* EOF *******************************************************************************************************
  ************************************************************************************************************/
