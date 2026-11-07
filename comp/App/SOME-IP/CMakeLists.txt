@@ -1,5 +1,5 @@
 # ==============================================================================
-# Component: SomeIp
+# Component: SOME-IP
 # AUTOSAR SOME/IP protocol (PRS R22-11): Core (types, header, endian, session,
 # check) and Serialization. Sub-folders are plain source folders of this single
 # component, so they must NOT have their own CMakeLists.txt.
@@ -22,8 +22,10 @@ foreach(header ${component_headers})
     list(APPEND component_include_dirs ${header_dir})
 endforeach()
 
-# Parent directory (components/) so consumers can use: #include "SomeIp/SomeIp.h"
-list(APPEND component_include_dirs "${CMAKE_CURRENT_LIST_DIR}/..")
+# Append parent directories so consumers can use:
+#   #include "App/SOME-IP/SomeIp.h"
+#   #include "SOME-IP/SomeIp.h"
+list(APPEND component_include_dirs "${CMAKE_CURRENT_LIST_DIR}/.." "${CMAKE_CURRENT_LIST_DIR}/../..")
 
 if(component_include_dirs)
     list(REMOVE_DUPLICATES component_include_dirs)
@@ -32,7 +34,7 @@ else()
     set(component_include_dirs ".")
 endif()
 
-# 3. Register the 'SomeIp' component (pure protocol logic, no hardware access)
+# 3. Register the 'SOME-IP' component (pure protocol logic, no hardware access)
 idf_component_register(
     SRCS ${component_srcs}
     INCLUDE_DIRS ${component_include_dirs}
