@@ -9,8 +9,8 @@ Used for **Public Functions** (`<PREFIX>_<PascalCase>()`), **Macros**, and **Enu
 
 | Prefix | Subsystem / Domain | Scope | Example Public Function | Example Macro / Enum |
 | :--- | :--- | :--- | :--- | :--- |
-| **`ZECU_`** | Zonal ECU Core & Error System | Cross-target | `ZECU_Init()`, `ZECU_ErrToStr()` | `ZECU_OK`, `ZECU_ERR_INVALID_ARG` |
-| **`ZE_`** | Zonal ECU Core Short Prefix | Cross-target | `ZE_Init()`, `ZE_HEADER`, `ZE_FOOTER` | `ZE_VERSION_MAJOR` |
+| **`ZE_`** | Zonal ECU Primary Short Prefix | Cross-target | `ZE_Init()`, `ZE_ErrToStr()`, `ZE_AtomicLoad32()` | `ZE_OK`, `ZE_ERR_INVALID_ARG`, `ZE_HEADER` |
+| **`ZECU_`** | Legacy Zonal ECU Prefix (aliased to `ZE_`) | Cross-target | `ZECU_Init()`, `ZECU_ErrToStr()` | `ZECU_OK`, `ZECU_ERR_INVALID_ARG` |
 | **`SOMEIP_`** | AUTOSAR SOME/IP Protocol | `FW-ESP` | `SOMEIP_HeaderEncode()`, `SOMEIP_Ser_WriteBytes()` | `SOMEIP_PROTOCOL_VERSION`, `SOMEIP_RES_OK` |
 | **`SOMEIP_SD_`** | SOME/IP Service Discovery | `FW-ESP` | `SOMEIP_SD_FindService()`, `SOMEIP_SD_OfferService()` | `SOMEIP_SD_FLAG_REBOOT` |
 | **`ETH_`** | Ethernet Subsystem (W5500) | `FW-ESP` | `ETH_Open()`, `ETH_SendPacket()` | `ETH_MAX_PKT_BYTES`, `ETH_STATE_OPEN` |
@@ -34,7 +34,8 @@ Used for **Public Functions** (`<PREFIX>_<PascalCase>()`), **Macros**, and **Enu
 ## 2. Official Lowercase Type Prefixes (snake_case_t)
 Used for all **Typedefs**, **Structs**, **Unions**, and **Enums** (`<prefix>_<name>_t`):
 
-* `zecu_<name>_t`: e.g. `zecu_err_t`, `zecu_state_t`
+* `ze_<name>_t`: e.g. `ze_err_t`, `ze_state_t`, `ze_atom_uint32_t`
+* `zecu_<name>_t`: Legacy alias (e.g. `zecu_err_t`)
 * `someip_<name>_t`: e.g. `someip_header_t`, `someip_result_t`, `someip_ser_cursor_t`
 * `eth_<name>_t`: e.g. `eth_cfg_t`, `eth_ctrl_t`, `eth_speed_t`
 * `can_<name>_t`: e.g. `can_msg_t`, `can_filter_t`

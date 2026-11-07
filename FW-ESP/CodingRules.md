@@ -16,7 +16,7 @@ This document details core project architectural rules, hardware targets, build 
   - Any directory wrapping or adapting ESP-IDF drivers/subsystems **MUST** start with the prefix `ESP-` (e.g. `ESP-SPI`, `ESP-FreeRTOS`, `ESP-UART`).
 - **Common Module (`comp/Common`)**:
   - `Config/Macros.h`: C/C++ cross-compatibility macros (`HEADER_CPP`, `FOOTER_CPP`) and argument attribute macros (`IN`, `OUT`, `INOUT`, `RO`, `WO`, `RW`).
-  - `Error/Error.h`: Standard error codes (`zecu_err_t`) mapped 1:1 to `ESP_ERR_*` and extended with subsystem base ranges (`ZECU_ERR_BASE_*`).
+  - `Error/Error.h`: Standard error codes (`ze_err_t`) mapped 1:1 to `ESP_ERR_*` and extended with subsystem base ranges (`ZE_ERR_BASE_*`).
   - `Atomic/Atomic.h`: Typedefs for atomic operations.
   - `SharedAPIs.h`: Single umbrella header aggregating all common definitions.
 - **Language Convention**: All source code comments, header file documentation, function descriptions, and CMake scripts must be written strictly in **English**.
@@ -116,32 +116,32 @@ Names must clearly express intent, scope, and type role. Structs and types are *
 
 | Category | Convention | Prefix / Suffix | Examples |
 | :--- | :--- | :--- | :--- |
-| **Functions (General / Public)** | `<PREFIX>_<PascalCase>()` | `UPPER_` or `Pascal_` prefix + `PascalCase` | `ETH_Open()`, `ZECU_ErrToStr()`, `Comm_Init()` |
+| **Functions (General / Public)** | `<PREFIX>_<PascalCase>()` | `UPPER_` or `Pascal_` prefix + `PascalCase` | `ETH_Open()`, `ZE_ErrToStr()`, `Comm_Init()` |
 | **Private Functions** | `prv_<snake_case>()` / `prv_<PascalCase>()` | `prv_` or `__` lowercase prefix | `prv_update_time()`, `prv_reset_phy()` |
 | **Local Variables** | `snake_case` | None (or unit suffix) | `retry_cnt`, `timeout_ms`, `frame_idx` |
 | **Pointer Variables** | `p_<snake_case>` | `p_` (or `pp_` for double ptr) | `p_ctrl`, `p_cfg`, `p_buf`, `pp_head` |
 | **Global Variables** | `g_<snake_case>` | `g_` (or `gp_` for global ptr) | `g_eth0_ctrl`, `gp_active_log` |
 | **Static File Variables** | `s_<snake_case>` or `g_` | `s_` / `sp_` (or `g_` / `gp_`) | `s_is_initialized`, `sp_rx_ring` |
-| **Common & Module Types (`typedef`)** | `<module>_<name>_t` | Lowercase `<module>_` + `_t` suffix | `zecu_err_t`, `eth_ctrl_t`, `eth_cfg_t`, `w5500_speed_t` |
-| **Macros & `#define`** | `UPPER_SNAKE_CASE` | `<MODULE>_` prefix | `ZECU_MASK32()`, `ETH_MAX_PKT_BYTES` |
-| **Enum Labels** | `UPPER_SNAKE_CASE` | `<MODULE>_` prefix | `ZECU_OK`, `ETH_STATE_OPEN` |
+| **Common & Module Types (`typedef`)** | `<module>_<name>_t` | Lowercase `<module>_` + `_t` suffix | `ze_err_t`, `eth_ctrl_t`, `eth_cfg_t`, `w5500_speed_t` |
+| **Macros & `#define`** | `UPPER_SNAKE_CASE` | `<MODULE>_` prefix | `ZE_MASK32()`, `ETH_MAX_PKT_BYTES` |
+| **Enum Labels** | `UPPER_SNAKE_CASE` | `<MODULE>_` prefix | `ZE_OK`, `ETH_STATE_OPEN` |
 | **Global Constants** | `UPPER_SNAKE_CASE` | `<MODULE>_` prefix | `ETH_DEFAULT_TIMEOUT_MS` |
 
 ### 3.2 Function Names (`PascalCase`)
 - **PascalCase Function Naming (Mandatory)**: Functions **SHALL** use `PascalCase` for the function body name, preceded by the module/visibility prefix:
-  - **Public API Functions**: Use an **UPPERCASE** subsystem/driver prefix (`ZE_`, `ZECU_`, `SOMEIP_`, `ETH_`, `SPI_`, `CAN_`, `W5500_`) or a **PascalCase** module prefix (`Comm_`, `I2c_`, `App_`, `UserApp_`), followed by `_` and a `PascalCase` verb phrase:
+  - **Public API Functions**: Use an **UPPERCASE** subsystem/driver prefix (`ZE_`, `SOMEIP_`, `ETH_`, `SPI_`, `CAN_`, `W5500_`) or a **PascalCase** module prefix (`Comm_`, `I2c_`, `App_`, `UserApp_`), followed by `_` and a `PascalCase` verb phrase:
 
 ```c
-zecu_err_t ETH_Open(INOUT eth_ctrl_t * p_ctrl, IN eth_cfg_t * p_cfg);
-const char * ZECU_ErrToStr(IN zecu_err_t err);
-zecu_err_t Comm_SendPacket(IN comm_ctrl_t * p_ctrl, IN uint8_t * p_data, IN size_t data_len);
+ze_err_t ETH_Open(INOUT eth_ctrl_t * p_ctrl, IN eth_cfg_t * p_cfg);
+const char * ZE_ErrToStr(IN ze_err_t err);
+ze_err_t Comm_SendPacket(IN comm_ctrl_t * p_ctrl, IN uint8_t * p_data, IN size_t data_len);
 ```
 
   - **Private (File-Scope `static`) Functions**: Use a **lowercase** prefix (`prv_` or `__`) separated by `_` (either `prv_<snake_case>()` or `prv_<PascalCase>()`):
 
 ```c
 static void prv_update_time(void);
-static zecu_err_t prv_validate_config(IN eth_cfg_t * p_cfg);
+static ze_err_t prv_validate_config(IN eth_cfg_t * p_cfg);
 ```
 
 - **Action-Oriented**: Every function performs an action, so its name must state *what* it does using a verb phrase (e.g., `ETH_CheckForErrors()` instead of `ETH_ErrorCheck()`, `App_DumpDataToFile()` instead of `App_DataFile()`).
@@ -154,7 +154,7 @@ static zecu_err_t prv_validate_config(IN eth_cfg_t * p_cfg);
 - **Stack / Local Variables**: Use `snake_case` (all lowercase with `_` word separators) so variable scope is immediately distinguishable from functions and macros:
 
 ```c
-zecu_err_t err       = ZECU_OK;
+ze_err_t err       = ZE_OK;
 uint32_t   retry_cnt = 0U;
 ```
 
@@ -203,8 +203,8 @@ size_t   payload_bytes;
 typedef uint32_t         AtomicUint32_t;
 typedef struct EthCfg    EthCfg_t;
 /* DO: <module>_<name>_t in lowercase snake_case */
-typedef _Atomic uint32_t zecu_atomic_u32_t;
-typedef enum e_zecu_err  zecu_err_t;
+typedef _Atomic uint32_t ze_atomic_u32_t;
+typedef enum ze_err_e    ze_err_t;
 typedef struct st_eth_cfg eth_cfg_t;
 ```
 
@@ -502,13 +502,13 @@ uint32_t timeout_ms = 100U;  /* Must be >= 50 ms per W5500 PLL lock specificatio
 
 ```c
 /* Success & Generic Status (ESP_OK, ESP_FAIL) */
-ZECU_OK                             = ESP_OK,                  /*!< 0x000: Success / No error */
-ZECU_SUCCESS                        = ESP_OK,                  /*!< 0x000: Success alias */
-ZECU_FAIL                           = ESP_FAIL,                /*!< 0x1  : Generic failure */
+ZE_OK                               = ESP_OK,                  /*!< 0x000: Success / No error */
+ZE_SUCCESS                          = ESP_OK,                  /*!< 0x000: Success alias */
+ZE_FAIL                             = ESP_FAIL,                /*!< 0x1  : Generic failure */
 
 /* Standard ESP-IDF System Error Codes (Mapped from ESP_ERR_*) */
-ZECU_ERR_NO_MEM                     = ESP_ERR_NO_MEM,          /*!< 0x101: Out of memory */
-ZECU_ERR_INVALID_ARG                = ESP_ERR_INVALID_ARG,     /*!< 0x102: Invalid argument */
+ZE_ERR_NO_MEM                       = ESP_ERR_NO_MEM,          /*!< 0x101: Out of memory */
+ZE_ERR_INVALID_ARG                  = ESP_ERR_INVALID_ARG,     /*!< 0x102: Invalid argument */
 ```
 
 ### 6.5 Comment Block Height & Doxygen Tagging (Compact Documentation)
@@ -526,7 +526,7 @@ ZECU_ERR_INVALID_ARG                = ESP_ERR_INVALID_ARG,     /*!< 0x102: Inval
 
 ```c
 /**
- * @brief Standard Zonal ECU Error Code definitions (zecu_err_t)
+ * @brief Standard Zonal ECU Error Code definitions (ze_err_t)
  * Mapped 1:1 with ESP-IDF standard error codes (esp_err_t) and extended for ECU peripherals.
  */
 ```
@@ -534,14 +534,14 @@ ZECU_ERR_INVALID_ARG                = ESP_ERR_INVALID_ARG,     /*!< 0x102: Inval
 *or single-asterisk / untagged continuation line (ignored by Doxygen/Clangd LSP):*
 
 ```c
-/* @brief Standard Zonal ECU Error Code definitions (zecu_err_t)
+/* @brief Standard Zonal ECU Error Code definitions (ze_err_t)
  * Mapped 1:1 with ESP-IDF standard error codes (esp_err_t) and extended for ECU peripherals. */
 ```
 
 **DO**:
 
 ```c
-/** @brief Standard Zonal ECU Error Code definitions (zecu_err_t)
+/** @brief Standard Zonal ECU Error Code definitions (ze_err_t)
  *  @note  Mapped 1:1 with ESP-IDF standard error codes (esp_err_t) and extended for ECU peripherals. */
 ```
 
@@ -549,16 +549,10 @@ ZECU_ERR_INVALID_ARG                = ESP_ERR_INVALID_ARG,     /*!< 0x102: Inval
 - Use compact Doxygen tags with parameter direction qualifiers and `p_` pointer prefixes:
 
 ```c
-/** @brief Returns constant string representation of a zecu_err_t error code
+/** @brief Returns constant string representation of a ze_err_t error code
  *  @param err Error code
  *  @return const char* Static string representation of the error name */
-const char * ZECU_ErrToStr(IN zecu_err_t err);
-
-/** @brief Copies error string name into user-provided buffer
- *  @param err   Error code
- *  @param p_str Destination character buffer (minimum 32 bytes)
- *  @return ZECU_OK on success, ZECU_ERR_INVALID_ARG if p_str is NULL */
-zecu_err_t ZECU_Err2Str(IN zecu_err_t err, OUT char * p_str);
+const char * ZE_ErrToStr(IN ze_err_t err);
 ```
 
 ---
@@ -575,13 +569,13 @@ Defined in `comp/Common/Config/Macros.h`:
 
 ---
 
-## 8. Error Code Conventions (`zecu_err_t`)
+## 8. Error Code Conventions (`ze_err_t`)
 
-- Error codes are typed as `zecu_err_t` (defined in `comp/Common/Error/Error.h`).
+- Error codes are typed as `ze_err_t` (defined in `comp/Common/Error/Error.h`).
 - Standard ESP-IDF errors are mapped 1:1 (`ESP_OK`, `ESP_FAIL`, `ESP_ERR_NO_MEM`, ...).
 - Subsystem base error codes are allocated in `0x100` increments:
-  - `0x1000`: Communication base (`ZECU_ERR_BASE_COMM`).
-  - `0x1100`: W5500 SPI Ethernet base (`ZECU_ERR_BASE_W5500`).
-  - `0x1200`: CAN / CAN-FD base (`ZECU_ERR_BASE_CAN`).
-  - `0x1300`: Storage / NVS base (`ZECU_ERR_BASE_STORAGE`).
-  - `0x1400`: GPIO / ADC / IO base (`ZECU_ERR_BASE_IO`).
+  - `0x1000`: Communication base (`ZE_ERR_BASE_COMM`).
+  - `0x1100`: W5500 SPI Ethernet base (`ZE_ERR_BASE_W5500`).
+  - `0x1200`: CAN / CAN-FD base (`ZE_ERR_BASE_CAN`).
+  - `0x1300`: Storage / NVS base (`ZE_ERR_BASE_STORAGE`).
+  - `0x1400`: GPIO / ADC / IO base (`ZE_ERR_BASE_IO`).

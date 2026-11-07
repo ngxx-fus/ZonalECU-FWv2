@@ -30,7 +30,7 @@
  ************************************************************************************************************/
 
 /** @brief Open ESP/SPI driver
- *  @return ZECU_SUCCESS if success */
+ *  @return ZE_SUCCESS if success */
 int32_t ESPSPI_Open() {
     static int32_t A = MAX_A;
     return A;

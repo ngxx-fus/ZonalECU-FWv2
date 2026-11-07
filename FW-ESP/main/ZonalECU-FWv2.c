@@ -26,18 +26,18 @@ static const char *sp_tag = "MAIN";
 
 /** @brief Application entry point: report startup status, then blink the on-board LED (GPIO2) */
 void app_main(void) {
-    zecu_err_t err = ZECU_OK;
+    ze_err_t err = ZE_OK;
     uint32_t blink_cnt = 0U;
     uint32_t led_level = 0U;
 
     ESP_LOGI(sp_tag, "Zonal ECU Firmware v2 starting...");
-    ESP_LOGI(sp_tag, "Sample error check: code %d -> %s", err, ZECU_ErrToStr(err));
+    ESP_LOGI(sp_tag, "Sample error check: code %d -> %s", err, ZE_ErrToStr(err));
 
     err = gpio_reset_pin(MAIN_LED_GPIO);
 
     /* Stop here if the LED pin cannot be reset */
-    if (ZECU_OK != err) {
-        ESP_LOGE(sp_tag, "gpio_reset_pin failed: %s", ZECU_ErrToStr(err));
+    if (ZE_OK != err) {
+        ESP_LOGE(sp_tag, "gpio_reset_pin failed: %s", ZE_ErrToStr(err));
 
         /* Nothing else to run without the LED */
         return;
@@ -46,8 +46,8 @@ void app_main(void) {
     err = gpio_set_direction(MAIN_LED_GPIO, GPIO_MODE_OUTPUT);
 
     /* Stop here if the LED pin cannot be configured as output */
-    if (ZECU_OK != err) {
-        ESP_LOGE(sp_tag, "gpio_set_direction failed: %s", ZECU_ErrToStr(err));
+    if (ZE_OK != err) {
+        ESP_LOGE(sp_tag, "gpio_set_direction failed: %s", ZE_ErrToStr(err));
 
         /* Nothing else to run without the LED */
         return;
