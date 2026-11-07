@@ -10,6 +10,8 @@ This document persists core project architectural rules, hardware targets, build
 ## 1. Interaction & Workflow Rules
 - **Rule Confirmation (Meta-Rule)**: After each user request, if any new rule, project convention, or architectural pattern is established or modified, the assistant must ask the user for confirmation before appending/updating it in `GEMINI.md` or `CodingRules.md`.
 - **Structural Change Confirmation (Mandatory)**: Whenever any structural change is proposed — including file/directory reorganization, moving/renaming/merging files, code architecture modifications, or restructuring documentation (e.g. merging, splitting, or modifying section hierarchies) — the assistant **MUST** explicitly explain the intended structural changes and ask for user confirmation BEFORE making any edits.
+- **Directory README & Context Alignment (Pre-Modification Check)**: Whenever modifying code or configuration in any directory, the assistant **MUST** first read the local `Readme.md`, project-level `readme.md`, `GEMINI.md`, and `CodingRules.md`. Verify whether the local directory's Readme aligns with the intended modification. If there is any discrepancy or ambiguity, the assistant **MUST** stop and ask the user whether to update the Readme or abort the operation.
+- **Brief Pre-Execution Explanation**: The assistant **MUST** provide a brief explanation of what it is about to do and why BEFORE performing any edits or tool executions.
 - **Language Convention**: All source code comments, header file documentation, and CMake scripts must be written strictly in **English**.
 - **Rule Reference**: Specific code-level styling and comment conventions must align with [CodingRules.md](CodingRules.md).
 

@@ -30,6 +30,12 @@ This document details core project architectural rules, hardware targets, build 
 - **Vertical Compactness**: Minimize wasted vertical space. Keep comment block heights low and functions concise (ideally within a single screen/page) to avoid unnecessary scrolling.
 - **Line Width**: No line of code or documentation may exceed **$W = 108$ characters** (up to 110 columns for standard section banners).
 - **Layering**: Respect strict architectural layering (Application $→$ Middleware/Services $→$ Drivers $→$ ESP-IDF/HAL). Layers must communicate only with adjacent layers via well-defined interfaces. Any performance-critical layer bypass must be explicitly documented.
+- **Header Namespace & Anti-Collision Rule**:
+  - For common or shared headers across modules (e.g. `Shared_APIs.h`, `Config.h`, `Types.h`), consumers **MUST** include them using their module namespace prefix:
+    - Layer-qualified (most specific): `#include "App/ESP-FreeRTOS/Shared_APIs.h"` or `#include "Comm/ESP-ClassicCAN/Shared_APIs.h"`.
+    - Component-qualified: `#include "ESP-FreeRTOS/Shared_APIs.h"` or `#include "ESP-ClassicCAN/Shared_APIs.h"`.
+  - Bare inclusion of generic headers without a namespace prefix (e.g. `#include "Shared_APIs.h"`) is **STRICTLY FORBIDDEN** to prevent header shadowing and collision across components.
+  - Globally unique headers (such as `Error.h`, `Macros.h`, `Atomic.h` in `comp/Common`) may be included directly.
 
 ---
 

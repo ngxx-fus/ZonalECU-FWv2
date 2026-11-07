@@ -21,7 +21,7 @@ def main():
 
     # Spawn clangd in LSP mode
     proc = subprocess.Popen(
-        ["clangd", "--query-driver=**/xtensa-esp32-elf-*,**/riscv32-esp-elf-*"],
+        ["clangd", "--query-driver=**/xtensa-esp32-elf-*,**/riscv32-esp-elf-*,/home/fus/.espressif/**/xtensa-esp32-elf-*,*"],
         cwd=project_root,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,

@@ -64,7 +64,7 @@ endforeach()
 # - "${CMAKE_CURRENT_LIST_DIR}/..": Points to the parent directory.
 # - Benefit: Enables consumers to include headers with a module namespace prefix:
 #   Example: #include "Common/Error.h" or #include "w5500/w5500_driver.h"
-list(APPEND component_include_dirs "${CMAKE_CURRENT_LIST_DIR}/..")
+list(APPEND component_include_dirs "${CMAKE_CURRENT_LIST_DIR}/.." "${CMAKE_CURRENT_LIST_DIR}/../..")
 
 # Step 2.4: Clean up include list (remove duplicates and sort)
 # - list(REMOVE_DUPLICATES <list_name>): Removes duplicate directories from the list.
