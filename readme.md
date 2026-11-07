@@ -32,15 +32,29 @@ ZonalECU-FWv2/
     │   ├── template.c               # Template source file
     │   └── template.h               # Template public header
     │
+    ├── App/                         # Application layer services & middleware
+    │   ├── ESP-FreeRTOS/            # FreeRTOS tasks & application lifecycle
+    │   ├── ESP-IPC/                 # Inter-process / inter-task communication
+    │   ├── SOME-IP/                 # SOME/IP packet serializer & parser
+    │   ├── SOME-IP_SD/              # SOME/IP Service Discovery & pairing
+    │   └── ZE-Services/             # Zonal ECU core application services
+    │
+    ├── Comm/                        # Hardware peripheral drivers & communication wrappers
+    │   ├── ESP-ClassicCAN/          # Classic CAN driver wrapper
+    │   ├── ESP-Flash/               # Flash memory storage wrapper
+    │   ├── ESP-GPIO/                # Peripheral GPIO control methods
+    │   ├── ESP-I2C/                 # I2C driver wrapper
+    │   ├── ESP-Logger/              # UART logging macros & backend
+    │   ├── ESP-PSRAM/               # PSRAM allocation & memory management
+    │   ├── ESP-SPI/                 # SPI bus driver wrapper
+    │   ├── ESP-UART/                # UART communication driver wrapper
+    │   └── ETH-W5500/               # W5500 SPI Ethernet middleware
+    │
     └── Common/                      # Core cross-cutting definitions
         ├── CMakeLists.txt           # Common component CMake registration
-        ├── Atomic/                  # Atomic operations typedefs
-        │   └── Atomic.h
-        ├── Config/                  # C/C++ cross-compatibility & attribute macros
-        │   └── Macros.h
-        ├── Error/                   # Standard error codes (zecu_err_t) & string conversion
-        │   ├── Error.c
-        │   └── Error.h
+        ├── Atomic/                  # Atomic operations typedefs (Atomic.h)
+        ├── Config/                  # Compatibility & attribute macros (Macros.h)
+        ├── Error/                   # Standard error codes (Error.h, Error.c)
         ├── __prv_shared__.h         # Private shared type definitions
         └── SharedAPIs.h             # Umbrella header aggregating all Common headers
 ```

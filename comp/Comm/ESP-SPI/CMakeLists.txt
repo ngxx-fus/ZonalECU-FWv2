@@ -20,7 +20,7 @@ foreach(header ${component_headers})
 endforeach()
 
 # Append parent directory (comp/) so consumers can use: #include "Common/xxx.h"
-list(APPEND component_include_dirs "${CMAKE_CURRENT_LIST_DIR}/..")
+list(APPEND component_include_dirs "${CMAKE_CURRENT_LIST_DIR}/.." "${CMAKE_CURRENT_LIST_DIR}/../..")
 
 if(component_include_dirs)
     list(REMOVE_DUPLICATES component_include_dirs)
