@@ -1,0 +1,92 @@
+/********************************************************************************************************************************
+ * @file Error.c
+ * @ingroup Common
+ * @brief Error code string representation and conversion implementations.
+ ********************************************************************************************************************************/
+
+/* INCLUDES **************************************************************************************************
+ ************************************************************************************************************/
+
+#include "Error.h"
+#include <string.h>
+
+/* MACROS ****************************************************************************************************
+ ************************************************************************************************************/
+
+/* DEFINITIONS ***********************************************************************************************
+ ************************************************************************************************************/
+
+/* EXPORTED VARIABLES ****************************************************************************************
+ ************************************************************************************************************/
+
+/* PRIVATE VARIABLES *****************************************************************************************
+ ************************************************************************************************************/
+
+/* PRIVATE FUNCTIONS *****************************************************************************************
+ ************************************************************************************************************/
+
+/* PUBLIC VARIABLES ******************************************************************************************
+ ************************************************************************************************************/
+
+/* PUBLIC FUNCTIONS ******************************************************************************************
+ ************************************************************************************************************/
+
+/* FUNCTION IMPLEMENTATIONS **********************************************************************************
+ ************************************************************************************************************/
+
+/* Returns constant string representation of a zecu_err_t error code */
+const char *ZECU_ErrToStr(IN zecu_err_t err) {
+    switch (err) {
+        case ZECU_OK:
+            return "ZECU_OK";
+        case ZECU_FAIL:
+            return "ZECU_FAIL";
+        case ZECU_ERR_NO_MEM:
+            return "ZECU_ERR_NO_MEM";
+        case ZECU_ERR_INVALID_ARG:
+            return "ZECU_ERR_INVALID_ARG";
+        case ZECU_ERR_INVALID_STATE:
+            return "ZECU_ERR_INVALID_STATE";
+        case ZECU_ERR_INVALID_SIZE:
+            return "ZECU_ERR_INVALID_SIZE";
+        case ZECU_ERR_NOT_FOUND:
+            return "ZECU_ERR_NOT_FOUND";
+        case ZECU_ERR_NOT_SUPPORTED:
+            return "ZECU_ERR_NOT_SUPPORTED";
+        case ZECU_ERR_TIMEOUT:
+            return "ZECU_ERR_TIMEOUT";
+        case ZECU_ERR_INVALID_RESPONSE:
+            return "ZECU_ERR_INVALID_RESPONSE";
+        case ZECU_ERR_INVALID_CRC:
+            return "ZECU_ERR_INVALID_CRC";
+        case ZECU_ERR_INVALID_VERSION:
+            return "ZECU_ERR_INVALID_VERSION";
+        case ZECU_ERR_INVALID_MAC:
+            return "ZECU_ERR_INVALID_MAC";
+        case ZECU_ERR_NOT_FINISHED:
+            return "ZECU_ERR_NOT_FINISHED";
+        case ZECU_ERR_NOT_ALLOWED:
+            return "ZECU_ERR_NOT_ALLOWED";
+        default:
+            return "ZECU_ERR_UNKNOWN";
+    }
+}
+
+/* Copies error string name into user-provided buffer */
+zecu_err_t ZECU_Err2Str(IN zecu_err_t err, OUT char *p_str) {
+    if (str == NULL) {
+        return ZECU_ERR_INVALID_ARG;
+    }
+
+    const char *err_str = ZECU_ErrToStr(err);
+    strcpy(str, err_str);
+
+    if (strcmp(err_str, "ZECU_ERR_UNKNOWN") == 0 && err != ZECU_OK) {
+        return ZECU_ERR_INVALID_ARG;
+    }
+
+    return ZECU_OK;
+}
+
+/* EOF *******************************************************************************************************
+ ************************************************************************************************************/

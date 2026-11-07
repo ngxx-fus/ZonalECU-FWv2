@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Script: build_docs.sh
-# Purpose: Generate Doxygen HTML documentation for ZonalECU-FWv2
+# Purpose: Generate Doxygen HTML documentation for ZonalECU-FWv2 (FW-ESP & FW-STM)
 # ==============================================================================
 set -euo pipefail
 
@@ -10,7 +10,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 echo "=================================================="
 echo " Generating Doxygen Documentation"
-echo " Docs directory: ${PROJECT_ROOT}/doc"
+echo " Docs directory: ${PROJECT_ROOT}/FW-Common/doc"
 echo "=================================================="
 
 if ! command -v doxygen &> /dev/null; then
@@ -18,11 +18,11 @@ if ! command -v doxygen &> /dev/null; then
     exit 1
 fi
 
-cd "${PROJECT_ROOT}/doc"
+cd "${PROJECT_ROOT}/FW-Common/doc"
 doxygen Doxyfile
-touch "${PROJECT_ROOT}/doc/doxygen_html/.nojekyll"
+touch "${PROJECT_ROOT}/FW-Common/doc/doxygen_html/.nojekyll"
 
 echo "=================================================="
 echo " Documentation Generated Successfully!"
-echo " Output directory: ${PROJECT_ROOT}/doc/doxygen_html"
+echo " Output directory: ${PROJECT_ROOT}/FW-Common/doc/doxygen_html"
 echo "=================================================="

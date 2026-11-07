@@ -1,12 +1,25 @@
-# ESP-IDF Build & Output
+# ESP-IDF & CMake Build Outputs
 build/
+**/build/
 sdkconfig.old
 sdkconfig.ci
-doc/doxygen_html/
+**/sdkconfig.old
+**/sdkconfig.ci
+
+# Doxygen Output
+**/doxygen_html/
+
+# Clangd & Editor Cache
+.cache/
+**/.cache/
+compile_commands.json
+**/compile_commands.json
 
 # ESP-IDF Component Manager
 managed_components/
+**/managed_components/
 dependencies.lock
+**/dependencies.lock
 
 # Binary & Object files
 *.o
@@ -16,7 +29,6 @@ dependencies.lock
 *.map
 
 # Editor & IDE configurations
-# .vscode/ # we keep all vscode settings!
 .idea/
 *.sublime-project
 *.sublime-workspace
@@ -42,4 +54,3 @@ ehthumbs.db
 *.swp
 *.swo
 *.bak
-.cache/

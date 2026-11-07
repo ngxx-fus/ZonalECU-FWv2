@@ -1,0 +1,185 @@
+# ==============================================================================
+# Doxygen Configuration for Zonal ECU Firmware v2
+# ==============================================================================
+#
+# CROSS-PLATFORM EXECUTION GUIDE (Linux & Windows):
+# ------------------------------------------------------------------------------
+# 1. Prerequisites:
+#    - Linux:
+#        sudo apt install doxygen graphviz
+#    - Windows:
+#        Install Doxygen:  https://www.doxygen.nl/download.html
+#        Install Graphviz: https://graphviz.org/download/
+#        (Check "Add Graphviz to system PATH for all users" during setup)
+#
+# 2. How to Run:
+#    - Linux:
+#        cd doc && doxygen Doxyfile
+#    - Windows (Command Prompt / PowerShell):
+#        cd doc
+#        doxygen Doxyfile
+#      (If doxygen executable is not added to system PATH):
+#        PowerShell: & "C:/Program Files/doxygen/bin/doxygen.exe" Doxyfile
+#        CMD:        "C:\Program Files\doxygen\bin\doxygen.exe" Doxyfile
+#
+# 3. Path Convention:
+#    - Doxygen supports forward slashes '/' on both Linux and Windows.
+#    - Keep all relative paths formatted with '/' (e.g. ../components, ./doxygen_html).
+#    - DO NOT replace '/' with '\' on Windows, as Doxygen treats '\' as an escape character.
+# ==============================================================================
+
+# Project Information
+PROJECT_NAME           = "Zonal ECU | FW | v2"
+PROJECT_NUMBER         =
+PROJECT_BRIEF          =
+PROJECT_LOGO           = ./doxygen_assets/doxygen_logo.svg
+# PROJECT_ICON         = ./doxygen_assets/doxygen.ico
+OUTPUT_DIRECTORY       = ./doxygen_html
+OUTPUT_LANGUAGE        = English
+
+# Build & Parsing Configuration
+OPTIMIZE_OUTPUT_FOR_C  = YES
+MARKDOWN_SUPPORT       = YES
+JAVADOC_BANNER         = YES
+AUTOLINK_SUPPORT       = YES
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+CASE_SENSE_NAMES       = NO
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+SORT_MEMBER_DOCS       = YES
+SORT_BRIEF_DOCS        = YES
+
+# Warning & Diagnostics Configuration
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+WARN_FORMAT            = "$file:$line: $text"
+
+# Input Files & Directories
+# Note: Paths are relative to this doc/ directory
+INPUT                  = ../../readme.md \
+                         ../../FW-ESP/CodingRules.md \
+                         ../../FW-ESP/readme.md \
+                         ../../FW-ESP/main \
+                         ../../FW-ESP/comp \
+                         ../../FW-STM/readme.md \
+                         ../../FW-STM \
+                         ../readme.md
+
+USE_MDFILE_AS_MAINPAGE = ../../readme.md
+
+FILE_PATTERNS          = *.c \
+                         *.h \
+                         *.md
+
+RECURSIVE              = YES
+
+EXCLUDE_PATTERNS       = */build/* \
+                         */.git/* \
+                         */.vscode/* \
+                         */doxygen_html/* \
+                         */doxygen_assets/* \
+                         */doc/*
+
+EXAMPLE_PATH           = ./doxygen_assets
+
+STRIP_FROM_PATH        = ../..
+STRIP_FROM_INC_PATH    = ../../FW-ESP/comp ../../FW-STM
+
+# HTML Output Settings
+GENERATE_HTML          = YES
+HTML_OUTPUT            = .
+HTML_FILE_EXTENSION    = .html
+HTML_COLORSTYLE        = TOGGLE
+HTML_COLORSTYLE_SAT    = 40
+GENERATE_TREEVIEW      = YES
+FULL_SIDEBAR           = YES
+SEARCHENGINE           = YES
+DISABLE_INDEX          = NO
+
+# Disable Unused Output Formats
+GENERATE_LATEX         = NO
+GENERATE_RTF           = NO
+GENERATE_MAN           = NO
+GENERATE_XML           = NO
+
+# Preprocessor Configuration (ESP32 / Macros expansion)
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+SEARCH_INCLUDES        = YES
+INCLUDE_PATH           = ../../FW-ESP/comp/Common \
+                         ../../FW-ESP/comp \
+                         ../../FW-STM
+
+PREDEFINED             = __cplusplus \
+                         HEADER_CPP= \
+                         FOOTER_CPP= \
+                         EXTERN_C_BEGIN= \
+                         EXTERN_C_END= \
+                         ZE_HEADER= \
+                         ZE_FOOTER= \
+                         RO=const \
+                         WO= \
+                         RW= \
+                         IN=const \
+                         OUT= \
+                         INOUT= \
+                         "AtomicUint32_t=uint32_t"
+
+TYPEDEF_HIDES_STRUCT = YES
+
+LAYOUT_FILE            = DoxygenLayout.xml
+
+HTML_HEADER            = header.html
+HTML_EXTRA_STYLESHEET  = custom.css
+HTML_EXTRA_FILES       = ./doxygen_assets/svg.min.js \
+                         ./doxygen_assets/custom_navtree.js
+
+# ==============================================================================
+# Graphviz & Diagram Configuration (DOT)
+# ==============================================================================
+HAVE_DOT               = YES
+
+# ------------------------------------------------------------------------------
+# DOT_PATH: Directory path where the Graphviz 'dot' executable is located.
+# ------------------------------------------------------------------------------
+# Leave EMPTY if 'dot' is already in system PATH (recommended for both OS).
+#
+# Linux:
+#   # If in PATH (default):
+#   DOT_PATH           =
+#   # If custom install:
+#   # DOT_PATH         = /usr/bin
+#
+# Windows:
+#   # If added to PATH during Graphviz install (recommended):
+#   DOT_PATH           =
+#   # If not in PATH, provide the absolute path (use forward slashes '/'):
+#   # DOT_PATH         = "C:/Program Files/Graphviz/bin"
+#   # or for 32-bit:
+#   # DOT_PATH         = "C:/Program Files (x86)/Graphviz/bin"
+DOT_PATH               =
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+DOT_MULTI_TARGETS      = YES
+GENERATE_LEGEND        = YES
+DOT_CLEANUP            = YES
+
+# Graph Types
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+DIRECTORY_GRAPH        = YES
+GROUP_GRAPHS           = YES
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = YES
+
+# Search Engine Configuration
+SEARCHENGINE           = YES
+SERVER_BASED_SEARCH    = NO

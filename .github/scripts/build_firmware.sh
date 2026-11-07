@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Script: build_firmware.sh
-# Purpose: Build ZonalECU-FWv2 firmware using ESP-IDF
+# Purpose: Build ZonalECU-FWv2 ESP32 firmware using ESP-IDF
 # ==============================================================================
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+FW_ESP_DIR="${PROJECT_ROOT}/FW-ESP"
 
-cd "${PROJECT_ROOT}"
+cd "${FW_ESP_DIR}"
 
 echo "=================================================="
 echo " Starting Firmware Build (ESP-IDF)"
-echo " Project root: ${PROJECT_ROOT}"
+echo " Firmware root: ${FW_ESP_DIR}"
 echo "=================================================="
 
 # Auto-detect and source export.sh if idf.py is not in PATH
@@ -42,5 +43,5 @@ idf.py build
 
 echo "=================================================="
 echo " Build Completed Successfully!"
-echo " Binaries located in: ${PROJECT_ROOT}/build"
+echo " Binaries located in: ${FW_ESP_DIR}/build"
 echo "=================================================="
