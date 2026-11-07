@@ -46,7 +46,7 @@ ZonalECU-FWv2/
 │   │   └── ci.yml                   # 6-stage CI/CD pipeline
 │   └── scripts/
 │       ├── build_docs.sh            # Doxygen multi-target documentation builder
-│       ├── build_firmware.sh        # ESP-IDF firmware compilation script
+│       ├── build_firmware_esp.sh    # ESP-IDF firmware compilation script
 │       ├── check_formatting.sh      # Automated code formatting verifier (CI gate)
 │       ├── check_git_conventions.sh # Commit message & convention validator
 │       ├── clangd_check.py          # Python LSP JSON-RPC static analyzer
@@ -198,7 +198,7 @@ python3 .github/scripts/format_rules.py FW-Common FW-ESP FW-STM
 #### Job 3: Build ESP32 Firmware (ESP-IDF)
 ```bash
 # Compiles binaries to FW-ESP/build/
-./.github/scripts/build_firmware.sh
+./.github/scripts/build_firmware_esp.sh
 ```
 
 #### Job 4: Generate Multi-Target Doxygen Documentation
@@ -217,7 +217,7 @@ Run all local CI validations in a single command before submitting a Pull Reques
 ./.github/scripts/check_formatting.sh && \
 ./.github/scripts/check_git_conventions.sh && \
 ./.github/scripts/static_analysis.sh && \
-./.github/scripts/build_firmware.sh && \
+./.github/scripts/build_firmware_esp.sh && \
 ./.github/scripts/build_docs.sh
 ```
 

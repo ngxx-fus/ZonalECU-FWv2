@@ -38,6 +38,9 @@ fi
 
 echo "ESP-IDF Version: $(idf.py --version)"
 
+# Execute fullclean
+idf.py fullclean
+
 # Execute build
 idf.py build
 

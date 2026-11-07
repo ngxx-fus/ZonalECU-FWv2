@@ -74,12 +74,12 @@ const char *ZECU_ErrToStr(IN zecu_err_t err) {
 
 /* Copies error string name into user-provided buffer */
 zecu_err_t ZECU_Err2Str(IN zecu_err_t err, OUT char *p_str) {
-    if (str == NULL) {
+    if (p_str == NULL) {
         return ZECU_ERR_INVALID_ARG;
     }
 
     const char *err_str = ZECU_ErrToStr(err);
-    strcpy(str, err_str);
+    strcpy(p_str, err_str);
 
     if (strcmp(err_str, "ZECU_ERR_UNKNOWN") == 0 && err != ZECU_OK) {
         return ZECU_ERR_INVALID_ARG;

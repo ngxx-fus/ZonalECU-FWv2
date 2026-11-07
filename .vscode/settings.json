@@ -5,6 +5,13 @@
         "--clang-tidy"
     ],
     "cSpell.words": [
+        "AUTOSAR",
+        "bxCAN",
+        "CANCC",
+        "CMSIS",
+        "MISRA",
+        "SOMEIP",
+        "W5500",
         "ZECU"
     ],
     "cmake.environment": {

@@ -110,8 +110,8 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           . $IDF_PATH/export.sh
-          chmod +x .github/scripts/build_firmware.sh
-          ./.github/scripts/build_firmware.sh
+          chmod +x .github/scripts/build_firmware_esp.sh
+          ./.github/scripts/build_firmware_esp.sh
 
       - name: Upload firmware artifacts
         uses: actions/upload-artifact@v4

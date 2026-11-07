@@ -5,9 +5,9 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include "SomeIp_Header.h"
-#include "SomeIp_Endian.h"
-#include "SomeIp_Types.h"
+#include "SOMEIP_Header.h"
+#include "SOMEIP_Endian.h"
+#include "SOMEIP_Types.h"
 
 /* FUNCTION IMPLEMENTATIONS **********************************************************************************
  ************************************************************************************************************/

@@ -6,8 +6,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "SomeIp_Session.h"
-#include "SomeIp_Types.h"
+#include "SOMEIP_Session.h"
+#include "SOMEIP_Types.h"
 
 /* FUNCTION IMPLEMENTATIONS **********************************************************************************
  ************************************************************************************************************/

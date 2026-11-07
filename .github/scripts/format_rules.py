@@ -7,14 +7,72 @@
 #          - Replaces outdated types with canonical snake_case_t types
 #          - Enforces Renesas RA FSP pointer parameter naming (p_*)
 #          - Formats indentation and wrapping using clang-format
+#          - Reports exact diff: File, Original lines, Formatted lines
 # ==============================================================================
 
 import os
 import re
 import sys
+import difflib
 import subprocess
 
 BANNER_WIDTH = 110
+
+# Load keyword registry from keywords.yml (supports both PyYAML and fallback parser)
+def load_keywords_registry(yml_path: str = None) -> dict:
+    """
+    Load keywords registry from keywords.yml.
+    Returns a dictionary:
+      'prefixes': list of strings with type 0 (e.g. ['ZE', 'ZECU', 'SOMEIP', ...])
+      'reserved': list of strings with type 1
+    """
+    if yml_path is None:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        yml_path = os.path.join(script_dir, "keywords.yml")
+
+    prefixes = []
+    reserved = []
+
+    if not os.path.isfile(yml_path):
+        return {"prefixes": prefixes, "reserved": reserved}
+
+    try:
+        import yaml
+        with open(yml_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+            if data and "keywords" in data:
+                for entry in data["keywords"]:
+                    kw = entry.get("keyword")
+                    t = entry.get("type")
+                    if kw and t == 0:
+                        prefixes.append(kw)
+                    elif kw and t == 1:
+                        reserved.append(kw)
+    except Exception:
+        # Robust fallback parser without external PyYAML dependency
+        with open(yml_path, "r", encoding="utf-8") as f:
+            current_kw = None
+            current_type = None
+            for line in f:
+                line = line.strip()
+                kw_match = re.search(r'keyword:\s*["\']?([^"\']+)["\']?', line)
+                type_match = re.search(r'type:\s*(\d+)', line)
+                if kw_match:
+                    current_kw = kw_match.group(1).strip()
+                if type_match:
+                    current_type = int(type_match.group(1))
+                    if current_kw is not None:
+                        if current_type == 0:
+                            prefixes.append(current_kw)
+                        elif current_type == 1:
+                            reserved.append(current_kw)
+                        current_kw = None
+                        current_type = None
+
+    return {"prefixes": prefixes, "reserved": reserved}
+
+
+REGISTRY = load_keywords_registry()
 
 # Canonical type mappings from CodingRules.md and SomeIp_Types.h
 TYPE_REPLACEMENTS = {
@@ -32,6 +90,14 @@ TYPE_REPLACEMENTS = {
     r"\bSomeIp_ReadU32\b": "SOMEIP_ReadU32",
     r"\bSomeIp_ReadU64\b": "SOMEIP_ReadU64",
 }
+
+# Dynamically add function prefix uppercase normalizations for prefixes with type 0
+for prefix in REGISTRY["prefixes"]:
+    # E.g. If prefix is "SOMEIP", map "SomeIp_" -> "SOMEIP_" and "Someip_" -> "SOMEIP_"
+    # E.g. If prefix is "ZECU", map "Zecu_" -> "ZECU_"
+    pascal_prefix = "".join(word.capitalize() for word in prefix.split("_"))
+    if pascal_prefix.upper() == prefix and pascal_prefix != prefix:
+        TYPE_REPLACEMENTS[rf"\b{pascal_prefix}_"] = f"{prefix}_"
 
 # Pointer parameter renaming (Renesas FSP convention: prefix with p_)
 POINTER_PARAM_REPLACEMENTS = [
@@ -69,7 +135,6 @@ def format_section_banners(content: str) -> str:
     /* SECTION_NAME *************************************************************
      ****************************************************************************/
     """
-    # Regex matching: /* <NAME> ****...****\n *...**/
     pattern = re.compile(
         r"/\*\s*([A-Z0-9_/ ]+?)\s*\*{5,}\s*\n\s*\*{5,}/\s*",
         re.MULTILINE
@@ -77,13 +142,11 @@ def format_section_banners(content: str) -> str:
 
     def banner_repl(match):
         title = match.group(1).strip()
-        # Header line: /* <TITLE> <asterisks>
         prefix = f"/* {title} "
         remaining_stars = BANNER_WIDTH - len(prefix)
         if remaining_stars < 3:
             remaining_stars = 3
         top_line = prefix + ("*" * remaining_stars)
-        # Footer line:  <space><asterisks>/
         bot_line = " " + ("*" * (BANNER_WIDTH - 2)) + "/"
         return f"\n\n{top_line}\n{bot_line}\n\n"
 
@@ -92,7 +155,7 @@ def format_section_banners(content: str) -> str:
 
 def apply_type_replacements(content: str) -> str:
     """
-    Replace non-compliant PascalCase types with snake_case_t types.
+    Replace non-compliant PascalCase types with canonical snake_case_t types.
     """
     for pattern, replacement in TYPE_REPLACEMENTS.items():
         content = re.sub(pattern, replacement, content)
@@ -135,36 +198,95 @@ def run_clang_format(file_path: str) -> bool:
         return False
 
 
+def print_file_diff(file_path: str, orig_text: str, formatted_text: str) -> bool:
+    """
+    Compare original and formatted content and display detailed changes:
+    - File path
+    - [Original] content
+    - [Formatted] content
+    Returns True if file was changed, False otherwise.
+    """
+    if orig_text == formatted_text:
+        return False
+
+    orig_lines = orig_text.splitlines()
+    form_lines = formatted_text.splitlines()
+
+    matcher = difflib.SequenceMatcher(None, orig_lines, form_lines)
+    changes = []
+
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            continue
+        orig_chunk = orig_lines[i1:i2]
+        form_chunk = form_lines[j1:j2]
+        changes.append((i1 + 1, orig_chunk, form_chunk))
+
+    if not changes:
+        return False
+
+    print("\n" + "=" * 90)
+    print(f"FILE: {file_path}")
+    print(f"STATUS: MODIFIED ({len(changes)} block(s) updated)")
+    print("-" * 90)
+
+    for line_num, orig_chunk, form_chunk in changes:
+        print(f"--> Around Line {line_num}:")
+        if orig_chunk:
+            print("    [Original]:")
+            for l in orig_chunk:
+                print(f"      - {l}")
+        else:
+            print("    [Original]: (none / added lines)")
+
+        if form_chunk:
+            print("    [Formatted]:")
+            for l in form_chunk:
+                print(f"      + {l}")
+        else:
+            print("    [Formatted]: (none / removed lines)")
+        print()
+
+    print("=" * 90 + "\n")
+    return True
+
+
 def format_file(file_path: str) -> bool:
     """
-    Process and reformat a single C or header file.
+    Process, reformat, and display diff report for a single C or header file.
+    Returns True if file was modified, False if unchanged.
     """
     if not os.path.isfile(file_path):
         print(f"Error: File '{file_path}' not found.", file=sys.stderr)
         return False
 
-    print(f"Formatting: {file_path}")
-
     with open(file_path, "r", encoding="utf-8") as f:
-        content = f.read()
+        original_content = f.read()
 
-    # Step 1: Standardize section banners
-    content = format_section_banners(content)
+    # Apply rule transformations
+    transformed = original_content
+    transformed = format_section_banners(transformed)
+    transformed = apply_type_replacements(transformed)
+    transformed = apply_pointer_parameter_renaming(transformed)
 
-    # Step 2: Canonical types
-    content = apply_type_replacements(content)
-
-    # Step 3: Renesas FSP pointer parameters
-    content = apply_pointer_parameter_renaming(content)
-
+    # Write transformed content temporarily to disk for clang-format
     with open(file_path, "w", encoding="utf-8") as f:
-        f.write(content)
+        f.write(transformed)
 
-    # Step 4: Run clang-format for indentation and braces
-    success = run_clang_format(file_path)
+    # Apply clang-format
+    run_clang_format(file_path)
 
-    print(f"Finished formatting: {file_path}")
-    return success
+    # Read back fully formatted content
+    with open(file_path, "r", encoding="utf-8") as f:
+        formatted_content = f.read()
+
+    # Print before/after diff report
+    was_modified = print_file_diff(file_path, original_content, formatted_content)
+
+    if not was_modified:
+        print(f"  [OK] Clean: {file_path}")
+
+    return was_modified
 
 
 EXCLUDE_DIRS = {"build", ".template", ".git", "doxygen_html", ".cache"}
@@ -175,16 +297,30 @@ def main():
         print("Usage: python3 format_rules.py <file1.c> [file2.h ...]")
         sys.exit(1)
 
+    total_files = 0
+    modified_files = 0
+
     for target in sys.argv[1:]:
         if os.path.isdir(target):
             for root, dirs, files in os.walk(target):
-                # Prune excluded directories in-place so os.walk does not traverse them
                 dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS and not d.startswith(".")]
                 for f in files:
                     if f.endswith((".c", ".h")):
-                        format_file(os.path.join(root, f))
-        else:
-            format_file(target)
+                        total_files += 1
+                        if format_file(os.path.join(root, f)):
+                            modified_files += 1
+        elif os.path.isfile(target):
+            total_files += 1
+            if format_file(target):
+                modified_files += 1
+
+    clean_files = total_files - modified_files
+    print("\n" + "=" * 90)
+    print("FORMATTING SUMMARY REPORT:")
+    print(f"  Total files scanned : {total_files}")
+    print(f"  Files modified      : {modified_files}")
+    print(f"  Files clean         : {clean_files}")
+    print("=" * 90 + "\n")
 
 
 if __name__ == "__main__":

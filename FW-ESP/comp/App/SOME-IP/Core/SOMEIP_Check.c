@@ -6,8 +6,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "SomeIp_Check.h"
-#include "SomeIp_Types.h"
+#include "SOMEIP_Check.h"
+#include "SOMEIP_Types.h"
 
 /* PRIVATE FUNCTIONS *****************************************************************************************
  ************************************************************************************************************/

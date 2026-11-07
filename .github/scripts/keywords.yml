@@ -1,0 +1,110 @@
+# ==============================================================================
+# ZonalECU-FWv2 Keywords & Prefixes Registry
+#
+# Types:
+#   0: PREFIX   - Subsystem prefix for public functions (FULL CAPS), macros, enums
+#   1: Reserved - Domain keywords, acronyms, or reserved project identifiers
+# ==============================================================================
+
+keywords:
+  # ----------------------------------------------------------------------------
+  # Core & Subsystem Prefixes (Type 0)
+  # ----------------------------------------------------------------------------
+  - keyword: "ZE"
+    type: 0
+    description: "Zonal ECU short prefix (e.g. ZE_Init, ZE_HEADER, ZE_FOOTER)"
+
+  - keyword: "ZECU"
+    type: 0
+    description: "Zonal ECU core system prefix (e.g. ZECU_Init, ZECU_ErrToStr)"
+
+  - keyword: "SOMEIP"
+    type: 0
+    description: "AUTOSAR SOME/IP protocol subsystem (e.g. SOMEIP_HeaderEncode, SOMEIP_Ser_WriteU16)"
+
+  - keyword: "SOMEIP_SD"
+    type: 0
+    description: "SOME/IP Service Discovery subsystem (e.g. SOMEIP_SD_FindService)"
+
+  - keyword: "ETH"
+    type: 0
+    description: "Ethernet peripheral driver (e.g. ETH_Open, ETH_SendPacket)"
+
+  - keyword: "W5500"
+    type: 0
+    description: "WIZnet W5500 hardware controller (e.g. W5500_Reset, W5500_ReadReg)"
+
+  - keyword: "CAN"
+    type: 0
+    description: "Classic CAN bus communication (e.g. CAN_Init, CAN_TransmitFrame)"
+
+  - keyword: "CANCC"
+    type: 0
+    description: "STM32 Classic CAN controller driver (e.g. CANCC_ConfigureFilter)"
+
+  - keyword: "SPI"
+    type: 0
+    description: "Hardware SPI bus wrapper (e.g. SPI_Transfer, SPI_Init)"
+
+  - keyword: "UART"
+    type: 0
+    description: "Hardware UART bus wrapper (e.g. UART_Write, UART_Read)"
+
+  - keyword: "I2C"
+    type: 0
+    description: "Hardware I2C bus wrapper (e.g. I2C_MasterWrite, I2C_MasterRead)"
+
+  - keyword: "GPIO"
+    type: 0
+    description: "Hardware GPIO peripheral wrapper (e.g. GPIO_SetLevel, GPIO_GetLevel)"
+
+  - keyword: "PSRAM"
+    type: 0
+    description: "External PSRAM memory allocation wrapper (e.g. PSRAM_Malloc, PSRAM_Free)"
+
+  - keyword: "LOG"
+    type: 0
+    description: "Logging and telemetry backend (e.g. LOG_Info, LOG_Warn, LOG_Error)"
+
+  - keyword: "FLASH"
+    type: 0
+    description: "Non-volatile Flash memory wrapper (e.g. FLASH_Write, FLASH_Erase)"
+
+  - keyword: "NVS"
+    type: 0
+    description: "ESP32 Non-Volatile Storage wrapper (e.g. NVS_SetKey, NVS_GetKey)"
+
+  - keyword: "ADC"
+    type: 0
+    description: "STM32 Analog-to-Digital Converter (e.g. ADC_StartConversion)"
+
+  - keyword: "PWM"
+    type: 0
+    description: "STM32 Pulse Width Modulation Actuator (e.g. PWM_SetDutyCycle)"
+
+  - keyword: "IPC"
+    type: 0
+    description: "Inter-Process / Inter-Task Communication (e.g. IPC_SendQueue)"
+
+  # ----------------------------------------------------------------------------
+  # Reserved Domain Identifiers & Acronyms (Type 1)
+  # ----------------------------------------------------------------------------
+  - keyword: "AUTOSAR"
+    type: 1
+    description: "Automotive Open System Architecture"
+
+  - keyword: "MISRA"
+    type: 1
+    description: "Motor Industry Software Reliability Association"
+
+  - keyword: "CMSIS"
+    type: 1
+    description: "Cortex Microcontroller Software Interface Standard"
+
+  - keyword: "bxCAN"
+    type: 1
+    description: "Basic Extended CAN peripheral on STM32"
+
+  - keyword: "FSP"
+    type: 1
+    description: "Flexible Software Package / Renesas FSP coding conventions"
