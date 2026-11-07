@@ -46,7 +46,7 @@ jobs:
           ./.github/scripts/check_git_conventions.sh
 
   job1_clangd_analysis:
-    name: "Job 1: Clangd Static Analysis (FW-Common/FW-ESP/FW-STM)"
+    name: "Job 1: Clangd Static Analysis"
     runs-on: ubuntu-latest
     needs: [job0_git_conventions]
     if: always()
@@ -76,7 +76,7 @@ jobs:
           ./.github/scripts/static_analysis.sh
 
   job2_compile_fw_stm:
-    name: "Job 2: FW-STM Build (Placeholder)"
+    name: "Job 2: FW-STM Build"
     runs-on: ubuntu-latest
     needs: [job1_clangd_analysis]
 
