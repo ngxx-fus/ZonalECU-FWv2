@@ -1,3 +1,8 @@
+/**
+ * @file Error.h
+ * @ingroup Common
+ * @brief Standard Zonal ECU Error Code definitions and conversion APIs.
+ */
 /* GUARD/BEGIN **********************************************************************************************
  ************************************************************************************************************/
 #ifndef __COMMON_ERROR_H__

@@ -4,8 +4,14 @@
         "--background-index",
         "--clang-tidy"
     ],
+    "cSpell.words": [
+        "ZECU"
+    ],
+    "cmake.environment": {
+        "IDF_PATH": "/home/fus/.fus/esp"
+    },
+    "cmake.configureOnOpen": false,
     "idf.currentSetup": "C:\\Espressif\\.espressif\\v6.1\\esp-idf",
     "idf.port": "COM3",
     "idf.flashType": "UART"
 }
-

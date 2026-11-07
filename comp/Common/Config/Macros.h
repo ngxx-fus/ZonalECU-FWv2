@@ -1,19 +1,17 @@
+/**
+ * @file Macros.h
+ * @ingroup Common
+ * @brief C/C++ cross-compatibility and parameter permission macros.
+ */
+
 /* GUARD/BEGIN **********************************************************************************************
  ************************************************************************************************************/
-#ifndef __COMMON_SHAREDAPIS_H__
-#define __COMMON_SHAREDAPIS_H__
+#ifndef __COMMON_MACROS_H__
+#define __COMMON_MACROS_H__
 
 /* INCLUDES *************************************************************************************************
  ************************************************************************************************************/
 
-/* Export builtin headers */
-#include "esp_log.h"
-
-
-/* Aggregated shared common headers */
-#include "Macros.h"
-#include "Error.h"
-#include "Atomic.h"
 
 /* HEADERS **************************************************************************************************
  ************************************************************************************************************/
@@ -21,8 +19,64 @@
 /* MACROS ***************************************************************************************************
  ************************************************************************************************************/
 
-/* DEFINITIONS **********************************************************************************************
- ************************************************************************************************************/
+/* C / C++ Compatibility Macros */
+#ifdef __cplusplus
+    #ifndef HEADER_CPP
+        #define HEADER_CPP extern "C" {
+    #endif
+    #ifndef FOOTER_CPP
+        #define FOOTER_CPP }
+    #endif
+
+    #ifndef EXTERN_C_BEGIN
+        #define EXTERN_C_BEGIN extern "C" {
+    #endif
+    #ifndef EXTERN_C_END
+        #define EXTERN_C_END }
+    #endif
+#else
+    #ifndef HEADER_CPP
+        #define HEADER_CPP
+    #endif
+    #ifndef FOOTER_CPP
+        #define FOOTER_CPP
+    #endif
+
+    #ifndef EXTERN_C_BEGIN
+        #define EXTERN_C_BEGIN
+    #endif
+    #ifndef EXTERN_C_END
+        #define EXTERN_C_END
+    #endif
+#endif
+
+#if !defined(ZE_HEADER) && defined(HEADER_CPP) 
+    #define ZE_HEADER HEADER_CPP
+#endif
+
+#if !defined(ZE_FOOTER) && defined(FOOTER_CPP) 
+    #define ZE_FOOTER FOOTER_CPP
+#endif
+
+/* Macros for permission */
+#ifndef RO 
+    #define   RO  const             /* Read only permission */
+#endif
+#ifndef WO 
+    #define   WO                    /* Write only permission */
+#endif
+#ifndef RW 
+    #define   RW                    /* Read/Write permission */
+#endif
+#ifndef IN 
+    #define   IN   const            /* Input parameter */
+#endif
+#ifndef OUT 
+    #define   OUT                   /* Output parameter, shall be a pointer */
+#endif
+#ifndef INOUT
+    #define   INOUT                 /* Input/Output parameter, shall be a pointer */
+#endif
 
 /* EXPORTED VARIABLES ***************************************************************************************
  ************************************************************************************************************/
@@ -38,7 +92,7 @@
 
 /* GUARD/END ************************************************************************************************
  ************************************************************************************************************/
-#endif /* __COMMON_SHAREDAPIS_H__ */
+#endif /* __COMMON_MACROS_H__ */
 
 /* EOF ******************************************************************************************************
  ************************************************************************************************************/

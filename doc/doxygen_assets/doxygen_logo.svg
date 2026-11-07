@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" width="240" height="60">
+  <defs>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#007ACC" />
+      <stop offset="100%" stop-color="#004D80" />
+    </linearGradient>
+  </defs>
+  <!-- Chip Body -->
+  <rect x="10" y="10" width="40" height="40" rx="8" fill="url(#blueGrad)" stroke="#38B2AC" stroke-width="2"/>
+  <!-- Chip Pins -->
+  <line x1="6" y1="20" x2="10" y2="20" stroke="#CBD5E0" stroke-width="2" stroke-linecap="round"/>
+  <line x1="6" y1="30" x2="10" y2="30" stroke="#CBD5E0" stroke-width="2" stroke-linecap="round"/>
+  <line x1="6" y1="40" x2="10" y2="40" stroke="#CBD5E0" stroke-width="2" stroke-linecap="round"/>
+  <line x1="50" y1="20" x2="54" y2="20" stroke="#CBD5E0" stroke-width="2" stroke-linecap="round"/>
+  <line x1="50" y1="30" x2="54" y2="30" stroke="#CBD5E0" stroke-width="2" stroke-linecap="round"/>
+  <line x1="50" y1="40" x2="54" y2="40" stroke="#CBD5E0" stroke-width="2" stroke-linecap="round"/>
+  <!-- Internal Core -->
+  <rect x="20" y="20" width="20" height="20" rx="3" fill="#1A202C" />
+  <text x="30" y="34" font-family="monospace, monospace" font-size="11" font-weight="bold" fill="#38B2AC" text-anchor="middle">ZE</text>
+  <!-- Text Label -->
+  <text x="65" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="20" font-weight="bold" fill="#2B6CB0">ZonalECU</text>
+  <text x="65" y="47" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#718096">FIRMWARE V2</text>
+</svg>
+

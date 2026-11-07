@@ -60,7 +60,7 @@ foreach(header ${component_headers})
     list(APPEND component_include_dirs ${header_dir})
 endforeach()
 
-# Step 2.3: Add the parent directory (components/) to include paths
+# Step 2.3: Add the parent directory (comp/) to include paths
 # - "${CMAKE_CURRENT_LIST_DIR}/..": Points to the parent directory.
 # - Benefit: Enables consumers to include headers with a module namespace prefix:
 #   Example: #include "Common/Error.h" or #include "w5500/w5500_driver.h"
@@ -150,4 +150,3 @@ idf_component_register(
 # target_compile_definitions(${COMPONENT_LIB} PRIVATE 
 #     MODULE_DEBUG_ENABLED=1
 # )
-

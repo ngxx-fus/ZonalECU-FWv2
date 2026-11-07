@@ -2,6 +2,7 @@
 build/
 sdkconfig.old
 sdkconfig.ci
+doc/doxygen_html/
 
 # ESP-IDF Component Manager
 managed_components/
@@ -41,4 +42,4 @@ ehthumbs.db
 *.swp
 *.swo
 *.bak
-
+.cache/

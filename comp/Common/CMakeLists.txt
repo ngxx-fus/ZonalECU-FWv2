@@ -19,7 +19,7 @@ foreach(header ${component_headers})
     list(APPEND component_include_dirs ${header_dir})
 endforeach()
 
-# Append parent directory (components/) so consumers can use: #include "Common/xxx.h"
+# Append parent directory (comp/) so consumers can use: #include "Common/xxx.h"
 list(APPEND component_include_dirs "${CMAKE_CURRENT_LIST_DIR}/..")
 
 if(component_include_dirs)
