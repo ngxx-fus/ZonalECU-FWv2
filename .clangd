@@ -36,7 +36,8 @@ Diagnostics:
       - cert-dcl37-c
       - cert-dcl51-cpp
       - readability-function-cognitive-complexity
-
+      - bugprone-easily-swappable-parameters
+      
   Suppress:
     - drv_unknown_argument
     - drv_unknown_argument_with_suggestion
