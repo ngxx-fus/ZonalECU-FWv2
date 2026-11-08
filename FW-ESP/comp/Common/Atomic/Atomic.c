@@ -32,7 +32,7 @@
         return ZE_OK;                                                                                      \
     }
 
-#define FN_ZE_AtomCLR(type, suffix)                                                                       \
+#define FN_ZE_AtomCLR(type, suffix)                                                                        \
     static inline ze_err_t ZE_AtomCLR##suffix(INOUT ze_atom_##type *p_var) {                               \
         if (IS_NULL(p_var)) {                                                                              \
             return ZE_ERR_INVALID_ARG;                                                                     \
