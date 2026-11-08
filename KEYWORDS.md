@@ -9,7 +9,7 @@ Used for **Public Functions** (`<PREFIX>_<PascalCase>()`), **Macros**, and **Enu
 
 | Prefix | Subsystem / Domain | Scope | Example Public Function | Example Macro / Enum |
 | :--- | :--- | :--- | :--- | :--- |
-| **`ZE_`** | Zonal ECU Primary Short Prefix | Cross-target | `ZE_Init()`, `ZE_ErrToStr()`, `ZE_AtomicLoad32()` | `ZE_OK`, `ZE_ERR_INVALID_ARG`, `ZE_HEADER` |
+| **`ZE_`** | Zonal ECU Primary Short Prefix | Cross-target | `ZE_Init()`, `ZE_ErrToStr()`, `ZE_AtomGET32()` | `ZE_OK`, `ZE_ERR_INVALID_ARG`, `ZE_HEADER` |
 | **`ZECU_`** | Legacy Zonal ECU Prefix (aliased to `ZE_`) | Cross-target | `ZECU_Init()`, `ZECU_ErrToStr()` | `ZECU_OK`, `ZECU_ERR_INVALID_ARG` |
 | **`SOMEIP_`** | AUTOSAR SOME/IP Protocol | `FW-ESP` | `SOMEIP_HeaderEncode()`, `SOMEIP_Ser_WriteBytes()` | `SOMEIP_PROTOCOL_VERSION`, `SOMEIP_RES_OK` |
 | **`SOMEIP_SD_`** | SOME/IP Service Discovery | `FW-ESP` | `SOMEIP_SD_FindService()`, `SOMEIP_SD_OfferService()` | `SOMEIP_SD_FLAG_REBOOT` |
