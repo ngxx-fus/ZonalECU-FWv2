@@ -185,14 +185,14 @@ someip_result_t SOMEIP_MessageBuildResponse(OUT someip_header_t *p_hdr, IN somei
     p_hdr->protocol_version = p_request->protocol_version;
     p_hdr->interface_version = p_request->interface_version;
 
-    /* Message Type and Return Code, the TP-Flag is set later on the segments [PRS_SOMEIP_00922] [PRS_SOMEIP_00722] */
+    /* Message Type and Return Code [PRS_SOMEIP_00922]
+     * The TP-Flag is set later on the segments [PRS_SOMEIP_00722] */
     p_hdr->message_type = SOMEIP_MT_RESPONSE;
     p_hdr->return_code = return_code;
 
     /* *p_hdr is valid */
     return SOMEIP_RES_OK;
 }
-
 
 someip_result_t SOMEIP_MessageBuildError(OUT someip_header_t *p_hdr, IN someip_header_t *p_request,
                                          IN someip_return_code_t return_code, IN uint32_t payload_len) {
@@ -241,7 +241,6 @@ someip_result_t SOMEIP_MessageBuildError(OUT someip_header_t *p_hdr, IN someip_h
     /* *p_hdr is valid */
     return SOMEIP_RES_OK;
 }
-
 
 /* EOF *******************************************************************************************************
  ************************************************************************************************************/
