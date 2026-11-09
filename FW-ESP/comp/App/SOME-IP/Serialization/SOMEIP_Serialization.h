@@ -9,7 +9,7 @@
 /** @brief SOME/IP payload serialization / deserialization: public API (chapter 4.1.3 / 4.1.4)
  *  @details - Byte order per parameter [PRS_SOMEIP_00369]
  *           - Basic datatypes (Table 4.6), boolean [PRS_SOMEIP_00065] [PRS_SOMEIP_00615]
- *           - Alignment / padding behind variable length p_data [00611] [00569] [00612] [00613]
+ *           - Alignment / padding behind variable length elements [00611] [00569] [00612] [00613]
  *           - Length field of struct / array [00079] [00370] [00371] [00900] [00376] [00377]
  *           - Strings (fixed / dynamic length, BOM, "\0") [PRS_SOMEIP_00087] [PRS_SOMEIP_00089]
  *           - Enumeration / bitfield: use the unsigned integer functions [00705] [00300]
@@ -33,7 +33,7 @@ HEADER_CPP
 /* DEFINITIONS ***********************************************************************************************
  ************************************************************************************************************/
 
-/** @brief Allowed alignment of p_data behind variable length p_data, in bits [PRS_SOMEIP_00613] */
+/** @brief Allowed alignment of the element behind a variable length element, in bits [PRS_SOMEIP_00613] */
 enum e_someip_align {
     SOMEIP_ALIGN_8BIT = 8,
     SOMEIP_ALIGN_16BIT = 16,
@@ -84,7 +84,8 @@ someip_result_t SOMEIP_SerInit(OUT someip_ser_cursor_t *p_cur, OUT uint8_t *p_bu
  *  @param p_cur Write cursor
  *  @param order New byte order
  *  @retval SOMEIP_RES_OK      Byte order changed
- *  @retval SOMEIP_RES_E_PARAM p_cur is NULL, or unknown byte order (stored as sticky error) */
+ *  @retval SOMEIP_RES_E_PARAM p_cur is NULL, or unknown byte order (stored as sticky error)
+ *  @retval Other              Previous sticky error, byte order not changed */
 someip_result_t SOMEIP_SerSetByteOrder(INOUT someip_ser_cursor_t *p_cur, IN someip_byte_order_t order);
 
 /** @brief Get the sticky status of a write cursor
@@ -169,7 +170,7 @@ someip_result_t SOMEIP_SerWriteF64(INOUT someip_ser_cursor_t *p_cur, IN double v
 
 /* Serializer: raw bytes / alignment */
 
-/** @brief Copy raw bytes, no byte order [PRS_SOMEIP_00099]
+/** @brief Copy raw bytes, no byte order
  *  @param p_cur    Write cursor
  *  @param p_data   Bytes to copy, may be NULL only if data_len is 0 (empty array)
  *  @param data_len Number of bytes
@@ -180,7 +181,7 @@ someip_result_t SOMEIP_SerWriteBytes(INOUT someip_ser_cursor_t *p_cur, IN uint8_
                                      IN uint32_t data_len);
 
 /** @brief Insert 0x00 padding so that the next element starts aligned to align_bits
- *  @note  Call it ONLY behind variable length p_data that is not the last element [PRS_SOMEIP_00611]
+ *  @note  Call it ONLY behind a variable length element that is not the last element [PRS_SOMEIP_00611]
  *         [PRS_SOMEIP_00612]; the serializer never pads by itself [PRS_SOMEIP_00077]. The alignment is
  *         computed from the start of the SOME/IP message [PRS_SOMEIP_00569]. The padding value is not
  *         defined by the spec, 0x00 is used.
@@ -197,9 +198,9 @@ someip_result_t SOMEIP_SerAlign(INOUT someip_ser_cursor_t *p_cur, IN uint16_t al
  *  @details Usage:
  *           @verbatim
  *           uint32_t mark = 0U;
- *           SOMEIP_SerLengthBegin(&p_cur, SOMEIP_LENGTH_FIELD_32BIT, &mark);
+ *           SOMEIP_SerLengthBegin(&cursor, SOMEIP_LENGTH_FIELD_32BIT, &mark);
  *           ... write members / elements ...
- *           SOMEIP_SerLengthEnd(&p_cur, SOMEIP_LENGTH_FIELD_32BIT, mark);
+ *           SOMEIP_SerLengthEnd(&cursor, SOMEIP_LENGTH_FIELD_32BIT, mark);
  *           @endverbatim
  *  @param p_cur   Write cursor
  *  @param lf_size 8, 16 or 32 bit
@@ -225,20 +226,20 @@ someip_result_t SOMEIP_SerLengthEnd(INOUT someip_ser_cursor_t *p_cur, IN someip_
  *  @param enc     UTF-8, UTF-16BE or UTF-16LE [PRS_SOMEIP_00372]
  *  @param lf_size 8, 16 or 32 bit (default 32) [PRS_SOMEIP_00094]
  *  @param p_str   Characters already encoded in enc, WITHOUT BOM and WITHOUT "\0"
- *  @param str_len Size of p_str in bytes
+ *  @param str_len Size of p_str in bytes, even for UTF-16; p_str may be NULL only if str_len is 0
  *  @return SOMEIP_RES_OK, SOMEIP_RES_E_PARAM or SOMEIP_RES_E_NO_SPACE */
 someip_result_t SOMEIP_SerWriteString(INOUT someip_ser_cursor_t *p_cur, IN someip_string_encoding_t enc,
                                       IN someip_length_field_size_t lf_size, IN uint8_t *p_str,
                                       IN uint32_t str_len);
 
 /** @brief Write a fixed length string: [BOM][characters]["\0"][0x00 fill] = exactly fixed_size bytes
- *  @note  fixed_size comes from the p_data type definition and includes BOM and "\0"
+ *  @note  fixed_size comes from the type definition and includes BOM and "\0"
  *         [PRS_SOMEIP_00374] [PRS_SOMEIP_00087].
  *  @param p_cur      Write cursor
  *  @param enc        String encoding
- *  @param fixed_size Size on the wire in bytes, including BOM and "\0"
+ *  @param fixed_size Size on the wire in bytes, including BOM and "\0", even for UTF-16
  *  @param p_str      Characters WITHOUT BOM and WITHOUT "\0"
- *  @param str_len    Size of p_str in bytes
+ *  @param str_len    Size of p_str in bytes, even for UTF-16; p_str may be NULL only if str_len is 0
  *  @return SOMEIP_RES_OK, SOMEIP_RES_E_PARAM (string too long) or SOMEIP_RES_E_NO_SPACE */
 someip_result_t SOMEIP_SerWriteStringFixed(INOUT someip_ser_cursor_t *p_cur,
                                            IN someip_string_encoding_t enc, IN uint32_t fixed_size,
@@ -248,7 +249,7 @@ someip_result_t SOMEIP_SerWriteStringFixed(INOUT someip_ser_cursor_t *p_cur,
 
 /** @brief Initialize a read cursor
  *  @details Typical call:
- *           SOMEIP_DeserInit(&p_cur, msg.p_payload, msg.payload_len, SOMEIP_OFS_PAYLOAD, order)
+ *           SOMEIP_DeserInit(&cursor, msg.p_payload, msg.payload_len, SOMEIP_OFS_PAYLOAD, order)
  *  @param p_cur      Cursor to initialize
  *  @param p_buf      Received payload, may be NULL only if buf_size is 0
  *  @param buf_size   Number of valid bytes in p_buf
@@ -261,7 +262,7 @@ someip_result_t SOMEIP_DeserInit(OUT someip_deser_cursor_t *p_cur, IN uint8_t *p
 /** @brief Change the byte order of the next parameters [PRS_SOMEIP_00369]
  *  @param p_cur Read cursor
  *  @param order New byte order
- *  @return SOMEIP_RES_OK or SOMEIP_RES_E_PARAM */
+ *  @return SOMEIP_RES_OK, SOMEIP_RES_E_PARAM or the previous sticky error */
 someip_result_t SOMEIP_DeserSetByteOrder(INOUT someip_deser_cursor_t *p_cur, IN someip_byte_order_t order);
 
 /** @brief Get the sticky status of a read cursor
@@ -355,13 +356,13 @@ someip_result_t SOMEIP_DeserReadF64(INOUT someip_deser_cursor_t *p_cur, OUT doub
 someip_result_t SOMEIP_DeserReadBytes(INOUT someip_deser_cursor_t *p_cur, OUT uint8_t *p_out,
                                       IN uint32_t data_len);
 
-/** @brief Skip bytes (unknown trailing p_data, padding)
+/** @brief Skip bytes (unknown trailing elements, padding)
  *  @param p_cur    Read cursor
  *  @param skip_len Number of bytes to skip
  *  @return SOMEIP_RES_OK, SOMEIP_RES_E_PARAM or SOMEIP_RES_E_MALFORMED (not enough bytes) */
 someip_result_t SOMEIP_DeserSkip(INOUT someip_deser_cursor_t *p_cur, IN uint32_t skip_len);
 
-/** @brief Skip the padding inserted by the sender behind variable length p_data
+/** @brief Skip the padding inserted by the sender behind a variable length element
  *  @note  Same computation as SOMEIP_SerAlign(). The padding value is not checked, it is not defined by the
  *         spec (note of [PRS_SOMEIP_00611]). Padding at the end of the payload may be missing ("not the last
  *         element"), so at most the remaining bytes are skipped and no error is reported.
@@ -394,8 +395,8 @@ someip_result_t SOMEIP_DeserLengthEnd(INOUT someip_deser_cursor_t *p_cur, IN uin
  *  @param p_cur     Read cursor
  *  @param enc       Expected encoding
  *  @param lf_size   8, 16 or 32 bit
- *  @param p_out     Buffer for the characters
- *  @param out_size  Capacity of p_out = maximum string size of the p_data type definition
+ *  @param p_out     Buffer for the characters, may be NULL only if out_size is 0
+ *  @param out_size  Capacity of p_out = maximum number of character bytes, without BOM and "\0"
  *  @param p_out_len Number of bytes written to p_out
  *  @return SOMEIP_RES_OK, SOMEIP_RES_E_PARAM or SOMEIP_RES_E_MALFORMED */
 someip_result_t SOMEIP_DeserReadString(INOUT someip_deser_cursor_t *p_cur, IN someip_string_encoding_t enc,
@@ -405,11 +406,11 @@ someip_result_t SOMEIP_DeserReadString(INOUT someip_deser_cursor_t *p_cur, IN so
 /** @brief Read a fixed length string of fixed_size bytes into p_out (characters only)
  *  @param p_cur      Read cursor
  *  @param enc        Expected encoding
- *  @param fixed_size Size on the wire in bytes, including BOM and "\0" [PRS_SOMEIP_00374]
- *  @param p_out      Buffer for the characters
- *  @param out_size   Capacity of p_out
+ *  @param fixed_size Size on the wire in bytes, including BOM and "\0", even for UTF-16 [PRS_SOMEIP_00374]
+ *  @param p_out      Buffer for the characters, may be NULL only if out_size is 0
+ *  @param out_size   Capacity of p_out = maximum number of character bytes, without BOM and "\0"
  *  @param p_out_len  Number of bytes written to p_out
- *  @return SOMEIP_RES_OK, SOMEIP_RES_E_PARAM or SOMEIP_RES_E_MALFORMED */
+ *  @return SOMEIP_RES_OK, SOMEIP_RES_E_PARAM (also invalid fixed_size) or SOMEIP_RES_E_MALFORMED */
 someip_result_t SOMEIP_DeserReadStringFixed(INOUT someip_deser_cursor_t *p_cur,
                                             IN someip_string_encoding_t enc, IN uint32_t fixed_size,
                                             OUT uint8_t *p_out, IN uint32_t out_size,
