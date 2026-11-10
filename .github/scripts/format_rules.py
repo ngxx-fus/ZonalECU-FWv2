@@ -3,7 +3,7 @@
 # ==============================================================================
 # Script: format_rules.py
 # Purpose: Automated source code reformatter complying with ZonalECU-FWv2 rules:
-#          - Aligns 110-character section banners
+#          - Aligns 130-character section banners
 #          - Formats indentation and wrapping using clang-format
 #          - Aligns macro backslashes (\) cleanly
 #          - Renames identifiers in place with exact origin tracking comment:
@@ -17,7 +17,7 @@ import sys
 import difflib
 import subprocess
 
-BANNER_WIDTH = 110
+BANNER_WIDTH = 130
 
 # Global registry mapping identifier -> filename where declared
 GLOBAL_DECL_REGISTRY = {}
