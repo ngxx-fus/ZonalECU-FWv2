@@ -28,7 +28,7 @@ This document details core project architectural rules, hardware targets, build 
 - **Cross-Compatibility**: All public headers must support both C and C++ callers seamlessly using `HEADER_CPP` and `FOOTER_CPP`.
 - **Indentation (`tabsize = 4`)**: Always indent using **4 spaces** per level (including nested preprocessor macros). Never use raw `\t` tab characters.
 - **Vertical Compactness**: Minimize wasted vertical space. Keep comment block heights low and functions concise (ideally within a single screen/page) to avoid unnecessary scrolling.
-- **Line Width**: No line of code or documentation may exceed **$W = 108$ characters** (up to 110 columns for standard section banners).
+- **Line Width**: No line of code or documentation may exceed **$W = 128..130$ characters** (up to 130 columns for standard section banners).
 - **Layering**: Respect strict architectural layering (Application $→$ Middleware/Services $→$ Drivers $→$ ESP-IDF/HAL). Layers must communicate only with adjacent layers via well-defined interfaces. Any performance-critical layer bypass must be explicitly documented.
 - **Header Namespace & Anti-Collision Rule**:
   - For common or shared headers across modules (e.g. `Shared_APIs.h`, `Config.h`, `Types.h`), consumers **MUST** include them using their module namespace prefix:
@@ -426,17 +426,17 @@ uint32_t delay_ms = (is_fast_mode) ? FAST_DELAY_MS : NORMAL_DELAY_MS;
 ## 6. Comment & Documentation Standards
 
 ### 6.1 Section Separator Banners
-- **Major Section Separators**: Use 2-line asterisk banners with total column width $W = 108$ characters:
+- **Major Section Separators**: Use 2-line asterisk banners with total column width $W = 130$ characters:
 
 ```c
-/* SHARED FUNCTIONS *****************************************************************************************
- ************************************************************************************************************/
+/* SHARED FUNCTIONS **************************************************************************************************************
+ ********************************************************************************************************************************/
 ```
 
-- **Sub-Section Separators**: When sub-sections are necessary, use a single-line asterisk banner aligned to the exact same column width ($W = 108$ characters):
+- **Sub-Section Separators**: When sub-sections are necessary, use a single-line asterisk banner aligned to the exact same column width ($W = 130$ characters):
 
 ```c
-/* SUB-SECTION NAME *****************************************************************************************/
+/* SUB-SECTION NAME **************************************************************************************************************/
 ```
 
 - **Prohibited Separator Formats (DON'T)**: Never use equal-sign boxed borders or custom divider lines:

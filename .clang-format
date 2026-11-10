@@ -19,7 +19,7 @@ IndentPPDirectives: None
 # ------------------------------------------------------------------------------
 # 2. Line Width & Wrapping
 # ------------------------------------------------------------------------------
-ColumnLimit: 108
+ColumnLimit: 130
 PenaltyExcessCharacter: 100
 PenaltyBreakBeforeFirstCallParameter: 50
 PenaltyBreakAssignment: 50
