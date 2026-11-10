@@ -62,5 +62,11 @@ if [ "${TOTAL_FILES}" -eq 0 ]; then
     exit 0
 fi
 
-# Run Python Clangd LSP Checker from PROJECT_ROOT
+# Phase 1: Run Python Clangd LSP Checker from PROJECT_ROOT (AST & Semantic)
+echo ">>> [Phase 1/2] Running Clangd Semantic & AST Checks..."
 python3 "${SCRIPT_DIR}/clangd_check.py" "${PROJECT_ROOT}" "${FILES[@]}"
+
+# Phase 2: Run Target Compiler Strict Semantic & Dead-Code Checks (-Werror=unused-*)
+echo ""
+echo ">>> [Phase 2/2] Running Target Compiler Strict Semantic & Warning Check..."
+python3 "${SCRIPT_DIR}/compiler_check.py" "FW-ESP/build/compile_commands.json" "${FILES[@]}"
