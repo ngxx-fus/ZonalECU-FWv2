@@ -29,4 +29,9 @@ if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/.git/hooks" AND
 endif()
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+
+# Enforce strict compiler warnings as errors (Layer 2: Build Gatekeeper)
+idf_build_set_property(COMPILE_OPTIONS "-Werror=unused-function" APPEND)
+idf_build_set_property(COMPILE_OPTIONS "-Werror=unused-variable" APPEND)
+
 project(ZonalECU-FWv2)

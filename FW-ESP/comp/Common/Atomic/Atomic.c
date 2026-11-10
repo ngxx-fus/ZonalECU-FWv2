@@ -15,7 +15,7 @@
 /* FUNCTION IMPLEMENTATION MACROS ***********************************************************************************************/
 
 #define FN_ZE_AtomGET(type, suffix)                                                                        \
-    static inline ze_err_t ZE_AtomGET##suffix(IN ze_atom_##type *p_var, OUT type *p_val) {                 \
+    ze_err_t ZE_AtomGET##suffix(IN ze_atom_##type *p_var, OUT type *p_val) {                 \
         if (IS_NULL(p_var) || IS_NULL(p_val)) {                                                            \
             return ZE_ERR_INVALID_ARG;                                                                     \
         }                                                                                                  \
@@ -24,7 +24,7 @@
     }
 
 #define FN_ZE_AtomSET(type, suffix)                                                                        \
-    static inline ze_err_t AtomSET##suffix(INOUT ze_atom_##type *p_var, IN type val) {                     \
+    ze_err_t AtomSET##suffix(INOUT ze_atom_##type *p_var, IN type val) {                     \
         if (IS_NULL(p_var)) {                                                                              \
             return ZE_ERR_INVALID_ARG;                                                                     \
         }                                                                                                  \
@@ -33,7 +33,7 @@
     }
 
 #define FN_ZE_AtomCLR(type, suffix)                                                                        \
-    static inline ze_err_t ZE_AtomCLR##suffix(INOUT ze_atom_##type *p_var) {                               \
+    ze_err_t ZE_AtomCLR##suffix(INOUT ze_atom_##type *p_var) {                               \
         if (IS_NULL(p_var)) {                                                                              \
             return ZE_ERR_INVALID_ARG;                                                                     \
         }                                                                                                  \
@@ -42,7 +42,7 @@
     }
 
 #define FN_ZE_AtomGETnCLR(type, suffix)                                                                    \
-    static inline ze_err_t ZE_AtomGETnCLR##suffix(INOUT ze_atom_##type *p_var, OUT type *p_val) {          \
+    ze_err_t ZE_AtomGETnCLR##suffix(INOUT ze_atom_##type *p_var, OUT type *p_val) {          \
         if (IS_NULL(p_var) || IS_NULL(p_val)) {                                                            \
             return ZE_ERR_INVALID_ARG;                                                                     \
         }                                                                                                  \
@@ -51,7 +51,7 @@
     }
 
 #define FN_ZE_AtomAND(type, suffix)                                                                        \
-    static inline ze_err_t ZE_AtomAND##suffix(INOUT ze_atom_##type *p_var, IN type mask,                   \
+    ze_err_t ZE_AtomAND##suffix(INOUT ze_atom_##type *p_var, IN type mask,                   \
                                               OUT type *p_old_val) {                                       \
         if (IS_NULL(p_var)) {                                                                              \
             return ZE_ERR_INVALID_ARG;                                                                     \
@@ -64,7 +64,7 @@
     }
 
 #define FN_ZE_AtomOR(type, suffix)                                                                         \
-    static inline ze_err_t ZE_AtomOR##suffix(INOUT ze_atom_##type *p_var, IN type mask,                    \
+    ze_err_t ZE_AtomOR##suffix(INOUT ze_atom_##type *p_var, IN type mask,                    \
                                              OUT type *p_old_val) {                                        \
         if (IS_NULL(p_var)) {                                                                              \
             return ZE_ERR_INVALID_ARG;                                                                     \
@@ -77,7 +77,7 @@
     }
 
 #define FN_ZE_AtomNOT(type, suffix)                                                                        \
-    static inline ze_err_t ZE_AtomNOT##suffix(INOUT ze_atom_##type *p_var, IN type mask,                   \
+    ze_err_t ZE_AtomNOT##suffix(INOUT ze_atom_##type *p_var, IN type mask,                   \
                                               OUT type *p_old_val) {                                       \
         if (IS_NULL(p_var)) {                                                                              \
             return ZE_ERR_INVALID_ARG;                                                                     \

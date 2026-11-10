@@ -41,21 +41,21 @@ ZE_HEADER
 /* FUNCTION PROTOTYPE MACROS *********************************************************************************/
 
 #define FN_ZE_AtomGET_Prototype(type, suffix)                                                              \
-    static inline ze_err_t ZE_AtomGET##suffix(IN ze_atom_##type *p_var, OUT type *p_val);
+    ze_err_t ZE_AtomGET##suffix(IN ze_atom_##type *p_var, OUT type *p_val);
 #define FN_ZE_AtomSET_Prototype(type, suffix)                                                              \
-    static inline ze_err_t AtomSET##suffix(INOUT ze_atom_##type *p_var, IN type val);
+    ze_err_t AtomSET##suffix(INOUT ze_atom_##type *p_var, IN type val);
 #define FN_ZE_AtomCLR_Prototype(type, suffix)                                                              \
-    static inline ze_err_t ZE_AtomCLR##suffix(INOUT ze_atom_##type *p_var)
+    ze_err_t ZE_AtomCLR##suffix(INOUT ze_atom_##type *p_var)
 #define FN_ZE_AtomGETnCLR_Prototype(type, suffix)                                                          \
-    static inline ze_err_t ZE_AtomGETnCLR##suffix(INOUT ze_atom_##type *p_var, OUT type *p_val);
+    ze_err_t ZE_AtomGETnCLR##suffix(INOUT ze_atom_##type *p_var, OUT type *p_val);
 #define FN_ZE_AtomAND_Prototype(type, suffix)                                                              \
-    static inline ze_err_t ZE_AtomAND##suffix(INOUT ze_atom_##type *p_var, IN type mask,                   \
+    ze_err_t ZE_AtomAND##suffix(INOUT ze_atom_##type *p_var, IN type mask,                   \
                                               OUT type *p_old_val);
 #define FN_ZE_AtomOR_Prototype(type, suffix)                                                               \
-    static inline ze_err_t ZE_AtomOR##suffix(INOUT ze_atom_##type *p_var, IN type mask,                    \
+    ze_err_t ZE_AtomOR##suffix(INOUT ze_atom_##type *p_var, IN type mask,                    \
                                              OUT type *p_old_val);
 #define FN_ZE_AtomNOT_Prototype(type, suffix)                                                              \
-    static inline ze_err_t ZE_AtomNOT##suffix(INOUT ze_atom_##type *p_var, IN type mask,                   \
+    ze_err_t ZE_AtomNOT##suffix(INOUT ze_atom_##type *p_var, IN type mask,                   \
                                               OUT type *p_old_val);
 
 /* DEFINITIONS ***********************************************************************************************
