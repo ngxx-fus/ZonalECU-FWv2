@@ -16,7 +16,7 @@ This document records technical issues diagnosed across the project, root causes
 
 ## 2. Detailed Technical Entries
 
-### [ENTRY-001] CI Docker Container Lacks `sudo` (Exit Code 127)
+### [ENTRY-001] CI Docker Container Lacks `sudo` & Bashism In `/bin/sh` (Exit Code 127)
 - **Date**: 2026-11-11
 - **Component**: `.github/workflows/ci.yml` (`Job 1: Clangd Static Analysis`)
 - **Symptom**:
@@ -28,18 +28,22 @@ This document records technical issues diagnosed across the project, root causes
   Error: Process completed with exit code 127.
   ```
 - **Root Cause**:
-  - `Job 0` runs directly on the GitHub Actions host runner (`runs-on: ubuntu-latest`), where a non-root `runner` user has `sudo` privileges.
-  - `Job 1` runs inside a Docker container (`container: image: espressif/idf:release-v6.1`). Docker containers typically run as the `root` user (`uid=0`) and do not have the `sudo` package installed. Calling `sudo apt-get` directly triggers a command-not-found error.
+  1. `Job 1` runs inside an `espressif/idf:release-v6.1` Docker container as root (`uid=0`), which does not bundle the `sudo` binary.
+  2. In GitHub Actions, workflow `run:` steps run under `/bin/sh -e` (POSIX `dash` on Ubuntu). The syntax `command -v sudo &> /dev/null` is a **bashism**: in POSIX `dash`, `&` puts the command in the background, and `> /dev/null` redirects a null command, which **always returns exit code 0 (success)**! As a result, `if command -v sudo &> /dev/null; then SUDO="sudo"; fi` was **always evaluated to true**, forcing `$SUDO` to be `"sudo"` even when `sudo` did not exist.
 - **Fix Applied**:
-  - Added dynamic `sudo` resolution before running package management commands:
+  - Replaced non-POSIX `&> /dev/null` with standard POSIX redirection `> /dev/null 2>&1`.
+  - Added an explicit non-root user check `[ "$(id -u)" -ne 0 ]` so that container environments running as root never attempt to invoke `sudo`:
     ```bash
     SUDO=""
-    if command -v sudo &> /dev/null; then SUDO="sudo"; fi
+    if [ "$(id -u)" -ne 0 ] && command -v sudo > /dev/null 2>&1; then
+      SUDO="sudo"
+    fi
     $SUDO apt-get update -o Acquire::Retries=3 || true
     $SUDO apt-get install -y --no-install-recommends clangd
     ```
 - **Key Lesson & Prevention Rule**:
-  - Never assume `sudo` exists in Docker/containerized CI steps. Always detect `command -v sudo` or invoke commands directly when running as root.
+  - Never use bash-specific `&> /dev/null` inside GitHub Actions workflow inline scripts unless `shell: bash` is explicitly specified; always use POSIX `> /dev/null 2>&1`.
+  - Check `[ "$(id -u)" -ne 0 ]` in addition to `command -v sudo` to properly detect container root environments.
 
 ---
 
