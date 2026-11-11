@@ -34,8 +34,10 @@ jobs:
         run: |
           if ! command -v clang-format &> /dev/null; then
             echo "clang-format not found. Installing..."
-            sudo apt-get update -o Acquire::Retries=3 || true
-            sudo apt-get install -y --no-install-recommends clang-format
+            SUDO=""
+            if command -v sudo &> /dev/null; then SUDO="sudo"; fi
+            $SUDO apt-get update -o Acquire::Retries=3 || true
+            $SUDO apt-get install -y --no-install-recommends clang-format
           else
             echo "clang-format is already available: $(clang-format --version)"
           fi
@@ -160,8 +162,10 @@ jobs:
           fi
           if [ -n "$PACKAGES_TO_INSTALL" ]; then
             echo "Installing missing package(s):$PACKAGES_TO_INSTALL..."
-            sudo apt-get update -o Acquire::Retries=3 || true
-            sudo apt-get install -y --no-install-recommends $PACKAGES_TO_INSTALL
+            SUDO=""
+            if command -v sudo &> /dev/null; then SUDO="sudo"; fi
+            $SUDO apt-get update -o Acquire::Retries=3 || true
+            $SUDO apt-get install -y --no-install-recommends $PACKAGES_TO_INSTALL
           fi
 
       - name: Run Doxygen (FW-ESP & FW-STM)
