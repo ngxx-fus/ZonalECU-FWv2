@@ -59,6 +59,7 @@ jobs:
     if: always()
     container:
       image: espressif/idf:release-v6.1
+      options: --dns 8.8.8.8 --dns 1.1.1.1
 
     steps:
       - name: Checkout repository
@@ -70,6 +71,10 @@ jobs:
         run: |
           if ! command -v clangd > /dev/null 2>&1; then
             echo "clangd not found. Installing..."
+            if [ -w /etc/resolv.conf ]; then
+              echo "nameserver 8.8.8.8" > /etc/resolv.conf
+              echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+            fi
             SUDO=""
             if [ "$(id -u)" -ne 0 ] && command -v sudo > /dev/null 2>&1; then SUDO="sudo"; fi
             $SUDO apt-get update -o Acquire::Retries=3 || true
@@ -113,6 +118,7 @@ jobs:
     needs: [job2_compile_fw_stm]
     container:
       image: espressif/idf:release-v6.1
+      options: --dns 8.8.8.8 --dns 1.1.1.1
 
     steps:
       - name: Checkout repository

@@ -11,6 +11,7 @@ This document records technical issues diagnosed across the project, root causes
 | **001** | CI / Container | `/bin/sh: sudo: not found` (Exit Code 127) | Container (`espressif/idf`) runs as root and lacks `sudo`. | Detect `sudo` availability before invoking package managers in CI scripts. |
 | **002** | Formatting | Enum assignment (`=`) alignment collapsed by `clang-format` | `.clang-format` `AlignConsecutiveAssignments` affects local function variables. | Isolate enum alignment into `format_rules.py`; do not mix with general-purpose C formater. |
 | **003** | Documentation | ASCII table inside `@verbatim` merged with tag line | Regex parser treated `@verbatim` as a generic Doxygen header tag. | Isolate verbatim blocks with strict passthrough logic in doc parsing scripts. |
+| **004** | CI / Docker DNS | `Could not resolve 'security.ubuntu.com'` in container | Docker inherits unreachable loopback resolver (`127.0.0.53`) from host. | Add `options: --dns 8.8.8.8 --dns 1.1.1.1` and fallback nameservers in container steps. |
 
 ---
 
@@ -77,3 +78,40 @@ This document records technical issues diagnosed across the project, root causes
   - Lines between `@verbatim` and `@endverbatim` (inclusive) are passed through 100% untouched without any regex parsing or tag reformatting.
 - **Key Lesson & Prevention Rule**:
   - Any automated comment or documentation formatter must treat preformatted blocks (`@verbatim`, `@code`, ASCII diagrams) as atomic raw text blocks and bypass standard indentation rules.
+
+---
+
+### [ENTRY-004] Docker Container DNS Failure Causing "Could not resolve 'archive.ubuntu.com'"
+- **Date**: 2026-11-11
+- **Component**: `.github/workflows/ci.yml` (`Job 1: Clangd Static Analysis` & `Job 3: FW-ESP Build`)
+- **Symptom**:
+  ```text
+  Ign:1 http://security.ubuntu.com/ubuntu noble-security InRelease
+  Err:1 http://security.ubuntu.com/ubuntu noble-security InRelease
+    Could not resolve 'security.ubuntu.com'
+  Err:2 http://archive.ubuntu.com/ubuntu noble InRelease
+    Could not resolve 'archive.ubuntu.com'
+  Reading package lists...
+  E: Unable to locate package clangd
+  Error: Process completed with exit code 100.
+  ```
+- **Root Cause**:
+  - On Ubuntu GitHub Actions host runners, system DNS resolution is handled by `systemd-resolved` listening on loopback `127.0.0.53`.
+  - When a container job starts (`container: image: espressif/idf:release-v6.1`), Docker inherits `/etc/resolv.conf` from the host runner. Inside the container's isolated network namespace, `127.0.0.53` points to the container's own loopback interface where no DNS resolver is running. Consequently, all domain name lookups fail with `Could not resolve ...`.
+  - Because DNS lookups fail, `apt-get update` cannot fetch repository indices, leaving package lists empty and causing `apt-get install clangd` to fail with `E: Unable to locate package clangd` (Exit Code 100).
+- **Fix Applied**:
+  1. Configured explicit public DNS servers directly in GitHub Actions container jobs using `options: --dns 8.8.8.8 --dns 1.1.1.1`:
+     ```yaml
+     container:
+       image: espressif/idf:release-v6.1
+       options: --dns 8.8.8.8 --dns 1.1.1.1
+     ```
+  2. Added runtime fallback inside the installation script to populate `/etc/resolv.conf` if writeable:
+     ```bash
+     if [ -w /etc/resolv.conf ]; then
+       echo "nameserver 8.8.8.8" > /etc/resolv.conf
+       echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+     fi
+     ```
+- **Key Lesson & Prevention Rule**:
+  - Whenever running CI jobs inside Docker containers that require outbound internet connectivity (package managers, git submodules), always declare `options: --dns 8.8.8.8 --dns 1.1.1.1` to prevent host `systemd-resolved` loopback leakage.
