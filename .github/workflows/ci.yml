@@ -32,10 +32,10 @@ jobs:
 
       - name: Install clang-format
         run: |
-          if ! command -v clang-format &> /dev/null; then
+          if ! command -v clang-format > /dev/null 2>&1; then
             echo "clang-format not found. Installing..."
             SUDO=""
-            if command -v sudo &> /dev/null; then SUDO="sudo"; fi
+            if [ "$(id -u)" -ne 0 ] && command -v sudo > /dev/null 2>&1; then SUDO="sudo"; fi
             $SUDO apt-get update -o Acquire::Retries=3 || true
             $SUDO apt-get install -y --no-install-recommends clang-format
           else
@@ -68,10 +68,10 @@ jobs:
 
       - name: Install clangd
         run: |
-          if ! command -v clangd &> /dev/null; then
+          if ! command -v clangd > /dev/null 2>&1; then
             echo "clangd not found. Installing..."
             SUDO=""
-            if command -v sudo &> /dev/null; then SUDO="sudo"; fi
+            if [ "$(id -u)" -ne 0 ] && command -v sudo > /dev/null 2>&1; then SUDO="sudo"; fi
             $SUDO apt-get update -o Acquire::Retries=3 || true
             $SUDO apt-get install -y --no-install-recommends clangd
           else
@@ -150,12 +150,12 @@ jobs:
       - name: Install Doxygen & Graphviz
         run: |
           PACKAGES_TO_INSTALL=""
-          if ! command -v doxygen &> /dev/null; then
+          if ! command -v doxygen > /dev/null 2>&1; then
             PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL doxygen"
           else
             echo "doxygen is already available: $(doxygen --version)"
           fi
-          if ! command -v dot &> /dev/null; then
+          if ! command -v dot > /dev/null 2>&1; then
             PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL graphviz"
           else
             echo "graphviz (dot) is already available: $(dot -V 2>&1)"
@@ -163,7 +163,7 @@ jobs:
           if [ -n "$PACKAGES_TO_INSTALL" ]; then
             echo "Installing missing package(s):$PACKAGES_TO_INSTALL..."
             SUDO=""
-            if command -v sudo &> /dev/null; then SUDO="sudo"; fi
+            if [ "$(id -u)" -ne 0 ] && command -v sudo > /dev/null 2>&1; then SUDO="sudo"; fi
             $SUDO apt-get update -o Acquire::Retries=3 || true
             $SUDO apt-get install -y --no-install-recommends $PACKAGES_TO_INSTALL
           fi
