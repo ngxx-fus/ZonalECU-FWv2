@@ -17,7 +17,7 @@ import sys
 import difflib
 import subprocess
 
-BANNER_WIDTH = 110
+BANNER_WIDTH = 130
 
 # Global registry mapping identifier -> filename where declared
 GLOBAL_DECL_REGISTRY = {}
@@ -341,6 +341,250 @@ def print_file_diff(file_path: str, orig_text: str, formatted_text: str) -> bool
     return True
 
 
+def align_enum_block(body_lines: list) -> list:
+    """
+    Format a single enum body:
+    1. Sub-section divider comments (e.g. /* Reserved ranges */ without @brief/@note):
+       Ensure at least 1 empty line before and after.
+    2. Member lines:
+       Align '=' after the longest member identifier + 1 space.
+    3. Trailing comments (/*!< ... */ or /* ... */ or // ...):
+       Align all trailing comments after the longest code part + 1 space.
+    """
+    member_pattern = re.compile(
+        r"^(\s*)([A-Za-z0-9_]+)\s*(?:=\s*([^,/\n]+?))?\s*(,)?\s*(/\*.*?\*/|//.*)?$"
+    )
+    divider_pattern = re.compile(r"^\s*/\*(?!\*).*\*/\s*$")
+
+    # Step 1: Normalize empty lines around sub-section divider comments
+    norm_lines = []
+    for i, line in enumerate(body_lines):
+        if divider_pattern.match(line):
+            if norm_lines and norm_lines[-1].strip() != "":
+                norm_lines.append("")
+            norm_lines.append(line)
+            if i + 1 < len(body_lines) and body_lines[i + 1].strip() != "":
+                norm_lines.append("")
+        else:
+            norm_lines.append(line)
+
+    # Step 2: Parse member lines
+    parsed = []
+    max_name_len = 0
+    has_assignment = False
+
+    for line in norm_lines:
+        m = member_pattern.match(line)
+        if m and m.group(2) not in ("typedef", "enum", "struct", "union"):
+            indent, name, val, comma, comment = m.groups()
+            if val is not None:
+                has_assignment = True
+            max_name_len = max(max_name_len, len(name))
+            parsed.append((True, indent, name, val, comma or "", comment or ""))
+        else:
+            parsed.append((False, line))
+
+    if not has_assignment and max_name_len == 0:
+        return norm_lines
+
+    # Step 3: Reconstruct code parts
+    reconstructed = []
+    max_code_len = 0
+
+    for item in parsed:
+        if not item[0]:
+            reconstructed.append(item)
+            continue
+        _, indent, name, val, comma, comment = item
+        if val is not None:
+            code_part = f"{indent}{name.ljust(max_name_len)} = {val.strip()}{comma}"
+        else:
+            code_part = f"{indent}{name}{comma}"
+
+        if comment:
+            max_code_len = max(max_code_len, len(code_part))
+        reconstructed.append((True, code_part, comment))
+
+    # Step 4: Assemble with aligned comments
+    out_lines = []
+    for item in reconstructed:
+        if not item[0]:
+            out_lines.append(item[1])
+            continue
+        _, code_part, comment = item
+        if comment:
+            line = f"{code_part.ljust(max_code_len)} {comment.strip()}"
+        else:
+            line = code_part
+        out_lines.append(line)
+
+    return out_lines
+
+
+def align_all_enums(text: str) -> str:
+    """
+    Find all enum definitions and align member assignments and comments.
+    """
+    lines = text.splitlines()
+    out = []
+    i = 0
+    n = len(lines)
+    while i < n:
+        line = lines[i]
+        if re.search(r"\b(enum\s+[A-Za-z0-9_]*\s*\{|typedef\s+enum\b[^{;]*\{)", line):
+            out.append(line)
+            body = []
+            i += 1
+            brace_count = 1
+            while i < n:
+                cur = lines[i]
+                brace_count += cur.count("{") - cur.count("}")
+                if brace_count == 0:
+                    aligned_body = align_enum_block(body)
+                    out.extend(aligned_body)
+                    out.append(cur)
+                    i += 1
+                    break
+                else:
+                    body.append(cur)
+                    i += 1
+        else:
+            out.append(line)
+            i += 1
+    return "\n".join(out)
+
+
+def align_macro_definitions_in_section(lines: list, max_line_width: int = BANNER_WIDTH) -> list:
+    """
+    Align single-line #define macros in a section:
+    - Target value column is max(len(#define + name)) + 1
+    - If #define + value + comment exceeds max_line_width, break to next line with trailing '\\'
+    - Trailing comments are aligned to max(code_length) + 1
+    """
+    single_define_pattern = re.compile(
+        r"^(\s*#\s*define\s+)([A-Za-z0-9_]+)(\s+)(.+?)(?:\s*(/\*.*?\*/|//.*))?$"
+    )
+    candidates = []
+    for idx, line in enumerate(lines):
+        m = single_define_pattern.match(line)
+        if m and not line.rstrip().endswith("\\"):
+            prefix, name, spaces, val_and_comment, comment = m.groups()
+            full_val = val_and_comment.strip()
+            comment_str = comment.strip() if comment else ""
+            if not comment_str:
+                cm = re.search(r"\s*(/\*.*?\*/|//.*)$", full_val)
+                if cm:
+                    comment_str = cm.group(1).strip()
+                    val = full_val[:cm.start()].strip()
+                else:
+                    val = full_val
+            else:
+                val = full_val
+            candidates.append((idx, prefix, name, val, comment_str))
+
+    if not candidates:
+        return lines
+
+    max_prefix_len = max(len(c[1] + c[2]) for c in candidates)
+    target_val_col = max_prefix_len + 1
+
+    formatted_dict = {}
+    max_code_len = 0
+    for idx, prefix, name, val, comment in candidates:
+        name_part = prefix + name
+        total_len = target_val_col + len(val) + (len(comment) + 1 if comment else 0)
+        if total_len > max_line_width:
+            line1 = name_part.ljust(max_line_width - 1) + "\\"
+            line2 = "    " + val + (f" {comment}" if comment else "")
+            formatted_dict[idx] = f"{line1}\n{line2}"
+        else:
+            padding = " " * (target_val_col - len(name_part))
+            code_part = f"{name_part}{padding}{val}"
+            if comment:
+                max_code_len = max(max_code_len, len(code_part))
+            formatted_dict[idx] = (code_part, comment)
+
+    out_lines = []
+    for idx, line in enumerate(lines):
+        if idx in formatted_dict:
+            item = formatted_dict[idx]
+            if isinstance(item, str):
+                out_lines.append(item)
+            else:
+                code_part, comment = item
+                if comment:
+                    out_lines.append(f"{code_part.ljust(max_code_len)} {comment}")
+                else:
+                    out_lines.append(code_part)
+        else:
+            out_lines.append(line)
+    return out_lines
+
+
+def align_all_macros(text: str, max_line_width: int = BANNER_WIDTH) -> str:
+    """
+    Split text by section banners and align #define macros within each section.
+    """
+    banner_pattern = re.compile(r"/\*\s*[A-Z0-9_/ ]+?\s*\*{5,}\s*\n\s*\*{5,}/\s*")
+
+    chunks = []
+    last_end = 0
+    for m in banner_pattern.finditer(text):
+        chunk = text[last_end:m.start()]
+        chunks.append(chunk)
+        chunks.append(m.group(0))
+        last_end = m.end()
+    chunks.append(text[last_end:])
+
+    formatted_chunks = []
+    for chunk in chunks:
+        if "#define" in chunk and not banner_pattern.match(chunk):
+            suffix_match = re.search(r"(\n*)$", chunk)
+            suffix = suffix_match.group(1) if suffix_match else ""
+            lines = chunk.splitlines()
+            formatted_lines = align_macro_definitions_in_section(lines, max_line_width)
+            formatted_chunks.append("\n".join(formatted_lines).rstrip("\r\n") + suffix)
+        else:
+            formatted_chunks.append(chunk)
+
+    return "".join(formatted_chunks)
+
+
+def align_macro_backslashes(content: str, target_col: int = BANNER_WIDTH) -> str:
+    """
+    Align backslashes of multi-line #define macros cleanly at target_col.
+    """
+    lines = content.splitlines()
+    out = []
+    i = 0
+    n = len(lines)
+    while i < n:
+        line = lines[i]
+        if re.match(r"^\s*#\s*define\b", line) and line.rstrip().endswith("\\"):
+            macro_lines = []
+            while i < n and lines[i].rstrip().endswith("\\"):
+                macro_lines.append(lines[i])
+                i += 1
+            if i < n:
+                last_line = lines[i]
+                i += 1
+            else:
+                last_line = None
+
+            stripped_codes = [l.rstrip()[:-1].rstrip() for l in macro_lines]
+            max_code = max(len(c) for c in stripped_codes) if stripped_codes else 0
+            align_col = max(target_col, max_code + 2)
+
+            for c in stripped_codes:
+                out.append(c.ljust(align_col - 1) + "\\")
+            if last_line is not None:
+                out.append(last_line)
+        else:
+            out.append(line)
+            i += 1
+    return "\n".join(out)
+
+
 def format_file(file_path: str) -> bool:
     """
     Process, reformat, and display diff report for a single C or header file.
@@ -355,7 +599,7 @@ def format_file(file_path: str) -> bool:
 
     file_name = os.path.basename(file_path)
 
-    # 1. Standardize 110-character section banners
+    # 1. Standardize 130-character section banners
     transformed = format_section_banners(original_content)
 
     # 2. Rename pointers and types in place while appending inline tracking comments
@@ -372,7 +616,18 @@ def format_file(file_path: str) -> bool:
     with open(file_path, "r", encoding="utf-8") as f:
         formatted_content = f.read()
 
-    # 6. Print before/after diff report
+    # 6. Post-processing:
+    #    - Align #define macros within sections
+    #    - Align enum member '=' and comments
+    #    - Align macro trailing backslashes '\'
+    formatted_content = align_all_macros(formatted_content, BANNER_WIDTH)
+    formatted_content = align_all_enums(formatted_content)
+    formatted_content = align_macro_backslashes(formatted_content, BANNER_WIDTH)
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(formatted_content)
+
+    # 7. Print before/after diff report
     was_modified = print_file_diff(file_path, original_content, formatted_content)
 
     if not was_modified:

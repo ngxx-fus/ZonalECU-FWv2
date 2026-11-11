@@ -28,7 +28,7 @@ This document details core project architectural rules, hardware targets, build 
 - **Cross-Compatibility**: All public headers must support both C and C++ callers seamlessly using `HEADER_CPP` and `FOOTER_CPP`.
 - **Indentation (`tabsize = 4`)**: Always indent using **4 spaces** per level (including nested preprocessor macros). Never use raw `\t` tab characters.
 - **Vertical Compactness**: Minimize wasted vertical space. Keep comment block heights low and functions concise (ideally within a single screen/page) to avoid unnecessary scrolling.
-- **Line Width**: No line of code or documentation may exceed **$W = 108$ characters** (up to 110 columns for standard section banners).
+- **Line Width**: No line of code or documentation may exceed **$W = 128..130$ characters** (up to 130 columns for standard section banners).
 - **Layering**: Respect strict architectural layering (Application $→$ Middleware/Services $→$ Drivers $→$ ESP-IDF/HAL). Layers must communicate only with adjacent layers via well-defined interfaces. Any performance-critical layer bypass must be explicitly documented.
 - **Header Namespace & Anti-Collision Rule**:
   - For common or shared headers across modules (e.g. `Shared_APIs.h`, `Config.h`, `Types.h`), consumers **MUST** include them using their module namespace prefix:
@@ -426,17 +426,17 @@ uint32_t delay_ms = (is_fast_mode) ? FAST_DELAY_MS : NORMAL_DELAY_MS;
 ## 6. Comment & Documentation Standards
 
 ### 6.1 Section Separator Banners
-- **Major Section Separators**: Use 2-line asterisk banners with total column width $W = 108$ characters:
+- **Major Section Separators**: Use 2-line asterisk banners with total column width $W = 130$ characters:
 
 ```c
-/* SHARED FUNCTIONS *****************************************************************************************
- ************************************************************************************************************/
+/* SHARED FUNCTIONS **************************************************************************************************************
+ ********************************************************************************************************************************/
 ```
 
-- **Sub-Section Separators**: When sub-sections are necessary, use a single-line asterisk banner aligned to the exact same column width ($W = 108$ characters):
+- **Sub-Section Separators**: When sub-sections are necessary, use a single-line asterisk banner aligned to the exact same column width ($W = 130$ characters):
 
 ```c
-/* SUB-SECTION NAME *****************************************************************************************/
+/* SUB-SECTION NAME **************************************************************************************************************/
 ```
 
 - **Prohibited Separator Formats (DON'T)**: Never use equal-sign boxed borders or custom divider lines:
@@ -497,18 +497,37 @@ uint32_t timeout_ms = 100U;  /* Must be >= 50 ms per W5500 PLL lock specificatio
 #define  ETH_PORT_MAX (4U)
 ```
 
-### 6.4 In-Code Grouping Comments
-- For grouping enum fields, struct members, or local code blocks, use **plain text-only** comments without any separator characters or decorative lines:
+### 6.4 In-Code Grouping Comments, Enum/Struct Alignment & Multi-Line Macros
+- **Sub-Section Divider Comments Inside Types (`enum`, `struct`, `union`, `class`)**:
+  - For grouping fields into sub-sections or categories, use plain text-only comments: `/* Category Name */`.
+  - **Mandatory Spacing**: Always leave **at least 01 empty line before and after** the divider comment to maintain visual separation between logical groups.
+- **Detailed Multi-Line Block Comments**:
+  - Inside an enum, struct, or union, if a member requires in-depth documentation, place a Doxygen block (`/** @brief ... *  @note ... */`) **directly above** that member. Never leave extra blank lines between the Doxygen block and its target member.
+- **Enum Member Assignment (`=`) Alignment**:
+  - All assignment operators (`=`) within the same `enum` definition **MUST be vertically aligned**.
+  - The `=` column is aligned at `longest_member_name + 1 space`.
+- **Trailing Comments (`/*!< ... */`) Alignment**:
+  - Short member documentation on the same line must use Doxygen trailing format (`/*!< ... */`).
+  - All trailing comments within the block **MUST be vertically aligned** starting at `longest_code_expression + 1 space`.
+- **Multi-Line Macro Continuation Backslash (`\`) Alignment**:
+  - All trailing continuation backslashes (`\`) on `#define` multi-line macros **MUST be aligned to column 130** (standard banner margin).
+- **Macro Definition (`#define`) Value & Trailing Comment Alignment**:
+  - Within each section, single-line `#define` values **MUST be vertically aligned**.
+  - The value column begins at `longest_#define_name + 1 space`.
+  - If a macro name or expansion would exceed the maximum line width ($W = 130$ columns), it breaks onto the next line using a continuation backslash (`\`).
+  - Trailing comments (`/*!< ... */`) on `#define` lines **MUST be vertically aligned** starting at `longest_code_expression + 1 space`.
 
 ```c
-/* Success & Generic Status (ESP_OK, ESP_FAIL) */
-ZE_OK                               = ESP_OK,                  /*!< 0x000: Success / No error */
-ZE_SUCCESS                          = ESP_OK,                  /*!< 0x000: Success alias */
-ZE_FAIL                             = ESP_FAIL,                /*!< 0x1  : Generic failure */
+enum e_someip_return_code {
+    SOMEIP_E_OK                      = 0x00,
+    SOMEIP_E_NOT_OK                  = 0x01, /*!< Unspecified error */
+    SOMEIP_E_WRONG_INTERFACE_VERSION = 0x08,
 
-/* Standard ESP-IDF System Error Codes (Mapped from ESP_ERR_*) */
-ZE_ERR_NO_MEM                       = ESP_ERR_NO_MEM,          /*!< 0x101: Out of memory */
-ZE_ERR_INVALID_ARG                  = ESP_ERR_INVALID_ARG,     /*!< 0x102: Invalid argument */
+    /* Reserved ranges */
+
+    SOMEIP_E_GENERIC_RESERVED_MIN    = 0x10, /*!< 0x10..0x1F: reserved for generic errors */
+    SOMEIP_E_GENERIC_RESERVED_MAX    = 0x1F,
+};
 ```
 
 ### 6.5 Comment Block Height & Doxygen Tagging (Compact Documentation)
