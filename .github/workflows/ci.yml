@@ -33,7 +33,11 @@ jobs:
       - name: Install clang-format
         run: |
           if ! command -v clang-format &> /dev/null; then
-            sudo apt-get update && sudo apt-get install -y clang-format
+            echo "clang-format not found. Installing..."
+            sudo apt-get update -o Acquire::Retries=3 || true
+            sudo apt-get install -y --no-install-recommends clang-format
+          else
+            echo "clang-format is already available: $(clang-format --version)"
           fi
 
       - name: Run Code Formatting Check
@@ -62,8 +66,15 @@ jobs:
 
       - name: Install clangd
         run: |
-          apt-get update
-          apt-get install -y clangd
+          if ! command -v clangd &> /dev/null; then
+            echo "clangd not found. Installing..."
+            SUDO=""
+            if command -v sudo &> /dev/null; then SUDO="sudo"; fi
+            $SUDO apt-get update -o Acquire::Retries=3 || true
+            $SUDO apt-get install -y --no-install-recommends clangd
+          else
+            echo "clangd is already available: $(clangd --version)"
+          fi
 
       - name: Generate compilation database for FW-ESP
         run: |
@@ -136,8 +147,22 @@ jobs:
 
       - name: Install Doxygen & Graphviz
         run: |
-          sudo apt-get update
-          sudo apt-get install -y doxygen graphviz
+          PACKAGES_TO_INSTALL=""
+          if ! command -v doxygen &> /dev/null; then
+            PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL doxygen"
+          else
+            echo "doxygen is already available: $(doxygen --version)"
+          fi
+          if ! command -v dot &> /dev/null; then
+            PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL graphviz"
+          else
+            echo "graphviz (dot) is already available: $(dot -V 2>&1)"
+          fi
+          if [ -n "$PACKAGES_TO_INSTALL" ]; then
+            echo "Installing missing package(s):$PACKAGES_TO_INSTALL..."
+            sudo apt-get update -o Acquire::Retries=3 || true
+            sudo apt-get install -y --no-install-recommends $PACKAGES_TO_INSTALL
+          fi
 
       - name: Run Doxygen (FW-ESP & FW-STM)
         run: |

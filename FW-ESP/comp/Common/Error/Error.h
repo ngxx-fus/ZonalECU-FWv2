@@ -24,8 +24,8 @@ HEADER_CPP
 /* DEFINITIONS *******************************************************************************************************************
  ********************************************************************************************************************************/
 
-/** @brief Standard Zonal ECU Error Code definitions (ze_err_t)
- *  @note  Mapped with ESP-IDF standard error codes (esp_err_t) and extended for ECU peripherals. */
+/** @brief   Standard Zonal ECU Error Code definitions (ze_err_t)
+ *  @note    Mapped with ESP-IDF standard error codes (esp_err_t) and extended for ECU peripherals. */
 typedef enum ze_err_e {
 
     /* Success & Generic Status (ESP_OK, ESP_FAIL) */
@@ -63,9 +63,9 @@ typedef enum ze_err_e {
 /* SHARED FUNCTIONS **************************************************************************************************************
  ********************************************************************************************************************************/
 
-/** @brief Returns constant string representation of a ze_err_t error code
- *  @param err Error code
- *  @return const char* Static string representation of the error name */
+/** @brief   Returns constant string representation of a ze_err_t error code
+ *  @param   err Error code
+ *  @return  const char* Static string representation of the error name */
 const char *ZE_ErrToStr(IN ze_err_t err);
 
 /* FOOTERS ***********************************************************************************************************************

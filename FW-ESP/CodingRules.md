@@ -497,12 +497,18 @@ uint32_t timeout_ms = 100U;  /* Must be >= 50 ms per W5500 PLL lock specificatio
 #define  ETH_PORT_MAX (4U)
 ```
 
-### 6.4 In-Code Grouping Comments, Enum/Struct Alignment & Multi-Line Macros
+### 6.4 Type Definitions (`enum`, `struct`, `union`, `class`) & Macro Alignment
+> [!IMPORTANT]
+> **Strict Context Separation (Isolation Principle)**:
+> - Quy tắc định dạng cho **Types (`enum`, `struct`, `union`, `class`)** và **Macros** tại mục này là **hoàn toàn độc lập** với quy tắc tài liệu hóa **Functions & Multi-Param Macros** tại Mục 6.5 & 6.6.
+> - Tuyệt đối không để các quy tắc căn lề Doxygen của hàm/macro làm thay đổi hoặc phá vỡ cấu trúc căn chỉnh dấu `=` và comment nội bộ của enum/struct/macro.
+
 - **Sub-Section Divider Comments Inside Types (`enum`, `struct`, `union`, `class`)**:
   - For grouping fields into sub-sections or categories, use plain text-only comments: `/* Category Name */`.
   - **Mandatory Spacing**: Always leave **at least 01 empty line before and after** the divider comment to maintain visual separation between logical groups.
-- **Detailed Multi-Line Block Comments**:
+- **Detailed Multi-Line Block Comments Inside Types**:
   - Inside an enum, struct, or union, if a member requires in-depth documentation, place a Doxygen block (`/** @brief ... *  @note ... */`) **directly above** that member. Never leave extra blank lines between the Doxygen block and its target member.
+  - Standard type-level or member-level header blocks with only `@brief` and `@note` maintain the standard Column 12 content alignment (`/** @brief ` and ` *  @note  `).
 - **Enum Member Assignment (`=`) Alignment**:
   - All assignment operators (`=`) within the same `enum` definition **MUST be vertically aligned**.
   - The `=` column is aligned at `longest_member_name + 1 space`.
@@ -530,7 +536,10 @@ enum e_someip_return_code {
 };
 ```
 
-### 6.5 Comment Block Height & Doxygen Tagging (Compact Documentation)
+### 6.5 Functions & Multi-Parameter Macros Doxygen Documentation (Compact Documentation)
+> [!IMPORTANT]
+> **Function & Multi-Param Macro Isolation**:
+> Quy tắc tại mục này chỉ áp dụng cho khối tài liệu Doxygen (`/** @... */`) đứng trước **hàm (Functions)** hoặc **macro đa tham số (Multi-Param Function-Like Macros)** có các tag phức tạp như `@details`, `@warning`, `@param`, `@retval`. Không áp dụng định dạng đa cột này vào trong nội bộ phần thân enum, struct hay union.
 - Comments should tell a story and document design decisions (*why* a choice was made, not just *what* the code does).
 - Place function documentation headers in the `.h` file where public functions are declared, and in the `.c` file for private (`static`) functions (unless the private function name and parameters are completely self-explanatory).
 - Keep comment block heights as compact as possible to minimize vertical scrolling:
@@ -540,6 +549,30 @@ enum e_someip_return_code {
   - Use `@brief <summary>` on the first line.
   - Follow with `@details <details>`, `@note <note>`, `@warning <warning>`, `@see <ref>`, `@todo [<author> <date>] <task>`, or `@bug [<author> <date>] <issue>` when applicable. Omit any unnecessary tags.
   - Do not use loose, untagged continuation lines directly beneath `@brief`.
+- **Vertical & Horizontal Content Text Column Alignment**:
+  1. **Start Column Prefix**: The prefix `/** ` on Line 1 and ` *  ` on subsequent lines maintains a fixed width of 4 characters (`StartCol = 4`).
+  2. **Header Tag Alignment**: All header tags (`@brief`, `@details`, `@note`, `@warning`, etc.) are padded to `max(header_tags_length) + 1` space so that all section descriptions begin at the exact same vertical column (Column 12 for standard `@brief`/`@note`, Column 14 when `@details` or `@warning` is present).
+  3. **List Items (`-`, `+`, `*`)**: Nested bulleted lists within description text are indented by 2 spaces (` *             - Item`), and their multi-line continuation text is indented by an additional 2 spaces (` *               continued text`) to align directly under the bullet item text.
+  4. **Parameter Names Alignment (`@param`)**: Parameter variable names in `@param` statements are vertically aligned to the longest parameter name.
+  5. **Parameter Descriptions Alignment**: Parameter description texts begin at the same column (1 space after the longest parameter name).
+  6. **Return Values Alignment (`@retval`)**: Return values and their descriptions in `@retval` statements are vertically aligned to the longest return code identifier.
+
+```c
+/** @brief   Build the header of the ERROR message that answers a received request
+ *  @details Copied from p_rx [PRS_SOMEIP_00190]: Message ID, Request ID [00704], Interface Version.
+ *           Set:
+ *             - Protocol Version = p_rx->protocol_version, except for SOMEIP_E_WRONG_PROTOCOL_VERSION where it
+ *               is SOMEIP_PROTOCOL_VERSION (0x01) (Figure 4.21)
+ *             - Message Type = SOMEIP_MT_ERROR (0x81), TP-Flag never set
+ *             - Return Code = rc
+ *             - Length = SOMEIP_HEADER_PART2_SIZE (8): the payload is NOT copied [PRS_SOMEIP_00190]
+ *  @note    p_rx and p_err may point to the same header.
+ *  @param   p_rx  Header of the received request
+ *  @param   rc    Return Code to send, must not be SOMEIP_E_OK
+ *  @param   p_err ERROR header, ready for SOMEIP_HeaderEncode()
+ *  @retval  SOMEIP_RES_OK      *p_err is valid
+ *  @retval  SOMEIP_RES_E_PARAM p_rx or p_err is NULL, or rc is SOMEIP_E_OK */
+```
 
 **DON'T**:
 

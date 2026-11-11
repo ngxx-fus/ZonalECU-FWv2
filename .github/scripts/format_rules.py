@@ -421,6 +421,230 @@ def align_enum_block(body_lines: list) -> list:
     return out_lines
 
 
+KNOWN_HEADER_TAGS = {"@brief", "@details", "@note", "@warning", "@see", "@todo", "@bug", "@attention"}
+
+
+def align_doxygen_block(raw_block_lines: list) -> list:
+    """
+    Format a multi-line Doxygen comment block following project conventions:
+    .1. StartCol = 4 via '/** ' or ' *  '
+    .2. Tag alignment for header tags (@brief, @details, @note, etc.):
+        Col begins at 4 + max_header_tag_len + 1 (e.g. 13 for @details)
+    .3. List characters (-, +, *) indented with continuation lines aligned to list text
+    .4. Align parameter names in @param lines
+    .5. Align parameter descriptions after @param
+    .6. Align return values and descriptions in @retval lines
+    """
+    if not raw_block_lines or not re.match(r"^\s*/\*\*\s*@", raw_block_lines[0]):
+        return raw_block_lines
+
+    indent_m = re.match(r"^(\s*)", raw_block_lines[0])
+    indent = indent_m.group(1) if indent_m else ""
+    has_end_marker = any("*/" in l for l in raw_block_lines)
+
+    cleaned = []
+    in_verbatim = False
+    for idx, line in enumerate(raw_block_lines):
+        if "@verbatim" in line:
+            in_verbatim = True
+        elif "@endverbatim" in line:
+            in_verbatim = False
+
+        if in_verbatim or "@endverbatim" in line:
+            cleaned.append({"is_verbatim": True, "raw": line.rstrip()})
+            continue
+
+        l = line.strip()
+        if idx == 0:
+            l = re.sub(r"^/\*\*\s*", "", l)
+        else:
+            l = re.sub(r"^\*\s*", "", l)
+        if idx == len(raw_block_lines) - 1:
+            l = re.sub(r"\s*\*/$", "", l)
+        cleaned.append({"is_verbatim": False, "text": l})
+
+    elements = []
+    current_elem = None
+
+    for item in cleaned:
+        if item["is_verbatim"]:
+            current_elem = None
+            elements.append({"type": "verbatim", "line": item["raw"]})
+            continue
+
+        l = item["text"]
+        if not l:
+            continue
+
+        tag_match = re.match(r"^(@[a-zA-Z0-9_]+)\s*(.*)$", l)
+        if tag_match and tag_match.group(1) in (KNOWN_HEADER_TAGS | {"@param", "@tparam", "@retval", "@return", "@returns"}):
+            tag, rest = tag_match.groups()
+            if tag in ("@param", "@tparam"):
+                pm = re.match(r"^(?:(\[[a-zA-Z,]+\])\s+)?([A-Za-z0-9_]+)\s*(.*)$", rest)
+                if pm:
+                    direction, name, desc = pm.groups()
+                    current_elem = {
+                        "type": "param",
+                        "tag": tag,
+                        "dir": direction or "",
+                        "name": name,
+                        "desc_lines": [desc] if desc else [],
+                    }
+                else:
+                    current_elem = {"type": "raw", "line": l}
+                elements.append(current_elem)
+            elif tag in ("@retval", "@return", "@returns"):
+                rm = re.match(r"^([A-Za-z0-9_]+)\s*(.*)$", rest)
+                if rm and tag == "@retval":
+                    val, desc = rm.groups()
+                    current_elem = {
+                        "type": "retval",
+                        "tag": tag,
+                        "val": val,
+                        "desc_lines": [desc] if desc else [],
+                    }
+                else:
+                    current_elem = {
+                        "type": "return",
+                        "tag": tag,
+                        "desc_lines": [rest] if rest else [],
+                    }
+                elements.append(current_elem)
+            else:
+                current_elem = {
+                    "type": "header",
+                    "tag": tag,
+                    "desc_lines": [rest] if rest else [],
+                }
+                elements.append(current_elem)
+        else:
+            if current_elem and current_elem["type"] in ("param", "retval", "return", "header"):
+                current_elem["desc_lines"].append(l)
+            else:
+                current_elem = {"type": "desc_cont", "line": l}
+                elements.append(current_elem)
+
+    all_tags = [e["tag"] for e in elements if "tag" in e]
+    max_tag_len = max([len(t) for t in all_tags] + [8])
+    tag_field_width = max(9, max_tag_len + 1)
+
+    param_elems = [e for e in elements if e["type"] == "param"]
+    max_param_len = max([len(e["name"]) for e in param_elems] + [0])
+
+    retval_elems = [e for e in elements if e["type"] == "retval"]
+    max_retval_len = max([len(e["val"]) for e in retval_elems] + [0])
+
+    out_lines = []
+    is_first_line = True
+
+    for elem in elements:
+        t = elem["type"]
+        if t == "verbatim":
+            out_lines.append(elem["line"])
+        elif t == "header":
+            tag = elem["tag"]
+            tag_padded = tag + (" " * (tag_field_width - len(tag)))
+            desc_lines = elem["desc_lines"]
+
+            first_text = desc_lines[0] if desc_lines else ""
+            if is_first_line:
+                out_lines.append(f"{indent}/** {tag_padded}{first_text}")
+                is_first_line = False
+            else:
+                out_lines.append(f"{indent} *  {tag_padded}{first_text}")
+
+            in_list = False
+            base_spaces = " " * tag_field_width
+            for cl in desc_lines[1:]:
+                list_m = re.match(r"^(\s*)([-+*])\s+(.*)$", cl)
+                if list_m:
+                    in_list = True
+                    bullet = list_m.group(2)
+                    list_text = list_m.group(3)
+                    out_lines.append(f"{indent} *  {base_spaces}  {bullet} {list_text}")
+                elif in_list:
+                    out_lines.append(f"{indent} *  {base_spaces}    {cl}")
+                else:
+                    out_lines.append(f"{indent} *  {base_spaces}{cl}")
+
+        elif t == "param":
+            tag = elem["tag"]
+            tag_padded = tag + (" " * (tag_field_width - len(tag)))
+            name = elem["name"]
+            name_padded = name + (" " * (max_param_len - len(name)))
+            first_text = elem["desc_lines"][0] if elem["desc_lines"] else ""
+            out_lines.append(f"{indent} *  {tag_padded}{name_padded} {first_text}")
+
+            param_cont_spaces = " " * (tag_field_width + max_param_len + 1)
+            for cl in elem["desc_lines"][1:]:
+                out_lines.append(f"{indent} *  {param_cont_spaces}{cl}")
+
+        elif t == "retval":
+            tag = elem["tag"]
+            tag_padded = tag + (" " * (tag_field_width - len(tag)))
+            val = elem["val"]
+            val_padded = val + (" " * (max_retval_len - len(val)))
+            first_text = elem["desc_lines"][0] if elem["desc_lines"] else ""
+            out_lines.append(f"{indent} *  {tag_padded}{val_padded} {first_text}")
+
+            retval_cont_spaces = " " * (tag_field_width + max_retval_len + 1)
+            for cl in elem["desc_lines"][1:]:
+                out_lines.append(f"{indent} *  {retval_cont_spaces}{cl}")
+
+        elif t == "return":
+            tag = elem["tag"]
+            tag_padded = tag + (" " * (tag_field_width - len(tag)))
+            first_text = elem["desc_lines"][0] if elem["desc_lines"] else ""
+            out_lines.append(f"{indent} *  {tag_padded}{first_text}")
+            cont_sp = " " * tag_field_width
+            for cl in elem["desc_lines"][1:]:
+                out_lines.append(f"{indent} *  {cont_sp}{cl}")
+
+        elif t == "desc_cont":
+            base_spaces = " " * tag_field_width
+            out_lines.append(f"{indent} *  {base_spaces}{elem['line']}")
+
+        elif t == "raw":
+            out_lines.append(f"{indent} *  {elem['line']}")
+
+    if has_end_marker and out_lines:
+        if not out_lines[-1].endswith("*/"):
+            out_lines[-1] = out_lines[-1].rstrip() + " */"
+
+    return out_lines
+
+
+def align_all_doxygen_comments(text: str) -> str:
+    """
+    Scan text for all multi-line Doxygen comments and format their content columns.
+    """
+    lines = text.splitlines()
+    out = []
+    i = 0
+    n = len(lines)
+    while i < n:
+        line = lines[i]
+        if re.match(r"^\s*/\*\*\s*@", line):
+            block = [line]
+            if "*/" in line:
+                out.append(line)
+                i += 1
+                continue
+            i += 1
+            while i < n:
+                cur = lines[i]
+                block.append(cur)
+                i += 1
+                if "*/" in cur:
+                    break
+            aligned = align_doxygen_block(block)
+            out.extend(aligned)
+        else:
+            out.append(line)
+            i += 1
+    return "\n".join(out)
+
+
 def align_all_enums(text: str) -> str:
     """
     Find all enum definitions and align member assignments and comments.
@@ -619,9 +843,11 @@ def format_file(file_path: str) -> bool:
     # 6. Post-processing:
     #    - Align #define macros within sections
     #    - Align enum member '=' and comments
+    #    - Align multi-line Doxygen comments text column
     #    - Align macro trailing backslashes '\'
     formatted_content = align_all_macros(formatted_content, BANNER_WIDTH)
     formatted_content = align_all_enums(formatted_content)
+    formatted_content = align_all_doxygen_comments(formatted_content)
     formatted_content = align_macro_backslashes(formatted_content, BANNER_WIDTH)
 
     with open(file_path, "w", encoding="utf-8") as f:

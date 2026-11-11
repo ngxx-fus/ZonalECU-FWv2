@@ -29,8 +29,8 @@
 /* PUBLIC VARIABLES **************************************************************************************************************
  ********************************************************************************************************************************/
 
-/** @brief Open ESP/SPI driver
- *  @return ZE_SUCCESS if success */
+/** @brief   Open ESP/SPI driver
+ *  @return  ZE_SUCCESS if success */
 int32_t ESPSPI_Open() {
     static int32_t A = MAX_A;
     return A;

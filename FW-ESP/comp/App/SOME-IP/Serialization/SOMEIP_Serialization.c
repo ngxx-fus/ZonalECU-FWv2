@@ -51,11 +51,11 @@ static uint32_t prv_get_terminator_size(IN someip_string_encoding_t enc);
 
 /* Private helpers */
 
-/** @brief Check that len more bytes can be written
- *  @param p_cur Write cursor, not NULL (checked by the caller)
- *  @param len   Number of bytes the caller wants to write
- *  @retval SOMEIP_RES_OK         Enough space
- *  @retval SOMEIP_RES_E_NO_SPACE Buffer too small, or a previous sticky error */
+/** @brief   Check that len more bytes can be written
+ *  @param   p_cur Write cursor, not NULL (checked by the caller)
+ *  @param   len   Number of bytes the caller wants to write
+ *  @retval  SOMEIP_RES_OK         Enough space
+ *  @retval  SOMEIP_RES_E_NO_SPACE Buffer too small, or a previous sticky error */
 static someip_result_t prv_ser_reserve(INOUT someip_ser_cursor_t *p_cur, IN uint32_t len) {
     /* Previous error: stop all following writes */
     if (SOMEIP_RES_OK != p_cur->status) {
@@ -75,11 +75,11 @@ static someip_result_t prv_ser_reserve(INOUT someip_ser_cursor_t *p_cur, IN uint
     return SOMEIP_RES_OK;
 }
 
-/** @brief Check that len more bytes can be read
- *  @param p_cur Read cursor, not NULL (checked by the caller)
- *  @param len   Number of bytes the caller wants to read
- *  @retval SOMEIP_RES_OK          Enough bytes
- *  @retval SOMEIP_RES_E_MALFORMED Not enough bytes, or a previous sticky error */
+/** @brief   Check that len more bytes can be read
+ *  @param   p_cur Read cursor, not NULL (checked by the caller)
+ *  @param   len   Number of bytes the caller wants to read
+ *  @retval  SOMEIP_RES_OK          Enough bytes
+ *  @retval  SOMEIP_RES_E_MALFORMED Not enough bytes, or a previous sticky error */
 static someip_result_t prv_deser_require(INOUT someip_deser_cursor_t *p_cur, IN uint32_t len) {
     /* Previous error: stop all following reads */
     if (SOMEIP_RES_OK != p_cur->status) {
@@ -99,10 +99,10 @@ static someip_result_t prv_deser_require(INOUT someip_deser_cursor_t *p_cur, IN 
     return SOMEIP_RES_OK;
 }
 
-/** @brief Get the number of padding bytes so that the next element starts aligned
- *  @param abs_pos    Position from the start of the SOME/IP message [PRS_SOMEIP_00569]
- *  @param align_bits Valid alignment (already checked by prv_is_align_valid())
- *  @return Number of padding bytes, 0 .. align_bits / 8 - 1 */
+/** @brief   Get the number of padding bytes so that the next element starts aligned
+ *  @param   abs_pos    Position from the start of the SOME/IP message [PRS_SOMEIP_00569]
+ *  @param   align_bits Valid alignment (already checked by prv_is_align_valid())
+ *  @return  Number of padding bytes, 0 .. align_bits / 8 - 1 */
 static uint32_t prv_padding_size(IN uint32_t abs_pos, IN uint16_t align_bits) {
     uint32_t align_bytes = 0U;
     uint32_t remainder = 0U;
@@ -123,10 +123,10 @@ static uint32_t prv_padding_size(IN uint32_t abs_pos, IN uint16_t align_bits) {
     return align_bytes - remainder;
 }
 
-/** @brief Check an alignment value: 8, 16, 32, 64, 128 or 256 bit [PRS_SOMEIP_00613]
- *  @param align_bits Alignment in bits
- *  @retval true  Valid
- *  @retval false Invalid */
+/** @brief   Check an alignment value: 8, 16, 32, 64, 128 or 256 bit [PRS_SOMEIP_00613]
+ *  @param   align_bits Alignment in bits
+ *  @retval  true  Valid
+ *  @retval  false Invalid */
 static bool prv_is_align_valid(IN uint16_t align_bits) {
     bool status = false;
 
@@ -154,12 +154,12 @@ static bool prv_is_align_valid(IN uint16_t align_bits) {
     return status;
 }
 
-/** @brief Check a length field size of struct / array / string
- *  @note  SOMEIP_LENGTH_FIELD_NONE is invalid here: without length field, do not call LengthBegin / End.
- *  @param lf_size Length field size
- *  @retval true  Valid (8, 16 or 32 bit)
- *  @retval false Invalid
- *  @see   [PRS_SOMEIP_00079] [PRS_SOMEIP_00093] [PRS_SOMEIP_00107] */
+/** @brief   Check a length field size of struct / array / string
+ *  @note    SOMEIP_LENGTH_FIELD_NONE is invalid here: without length field, do not call LengthBegin / End.
+ *  @param   lf_size Length field size
+ *  @retval  true  Valid (8, 16 or 32 bit)
+ *  @retval  false Invalid
+ *  @see     [PRS_SOMEIP_00079] [PRS_SOMEIP_00093] [PRS_SOMEIP_00107] */
 static bool prv_is_length_field_valid(IN someip_length_field_size_t lf_size) {
     bool status = false;
 
@@ -185,10 +185,10 @@ static bool prv_is_length_field_valid(IN someip_length_field_size_t lf_size) {
     return status;
 }
 
-/** @brief Get the Byte Order Mark of a string encoding [PRS_SOMEIP_00087]
- *  @param enc        String encoding
- *  @param p_bom_size Size of the BOM in bytes, 0 for an unknown encoding
- *  @return Pointer to the BOM bytes, or NULL for an unknown encoding */
+/** @brief   Get the Byte Order Mark of a string encoding [PRS_SOMEIP_00087]
+ *  @param   enc        String encoding
+ *  @param   p_bom_size Size of the BOM in bytes, 0 for an unknown encoding
+ *  @return  Pointer to the BOM bytes, or NULL for an unknown encoding */
 static uint8_t const *prv_get_bom(IN someip_string_encoding_t enc, OUT uint32_t *p_bom_size) {
     uint8_t const *p_bom = NULL;
 
@@ -228,9 +228,9 @@ static uint8_t const *prv_get_bom(IN someip_string_encoding_t enc, OUT uint32_t 
     return p_bom;
 }
 
-/** @brief Get the size of the "\0" terminator of a string encoding [PRS_SOMEIP_00948] [PRS_SOMEIP_00084]
- *  @param enc String encoding
- *  @return Terminator size in bytes, 0 for an unknown encoding */
+/** @brief   Get the size of the "\0" terminator of a string encoding [PRS_SOMEIP_00948] [PRS_SOMEIP_00084]
+ *  @param   enc String encoding
+ *  @return  Terminator size in bytes, 0 for an unknown encoding */
 static uint32_t prv_get_terminator_size(IN someip_string_encoding_t enc) {
     uint32_t term_size = 0U;
 

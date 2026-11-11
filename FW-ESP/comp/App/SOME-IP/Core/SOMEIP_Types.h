@@ -6,8 +6,8 @@
 #ifndef __SOMEIP_TYPES_H__
 #define __SOMEIP_TYPES_H__
 
-/** @brief SOME/IP basic definitions: header layout, wire constants and common types
- *  @see   AUTOSAR_PRS_SOMEIPProtocol (FO R22-11) */
+/** @brief   SOME/IP basic definitions: header layout, wire constants and common types
+ *  @see     AUTOSAR_PRS_SOMEIPProtocol (FO R22-11) */
 
 /* INCLUDES **********************************************************************************************************************
  ********************************************************************************************************************************/
@@ -26,8 +26,8 @@ HEADER_CPP
 /** @brief Supported protocol version [PRS_SOMEIP_00051] */
 #define SOMEIP_PROTOCOL_VERSION      (0x01U)
 
-/** @brief Build Message ID (Service ID << 16 | Method ID) and Request ID (Client ID << 16 | Session ID)
- *  @see   [PRS_SOMEIP_00034] */
+/** @brief   Build Message ID (Service ID << 16 | Method ID) and Request ID (Client ID << 16 | Session ID)
+ *  @see     [PRS_SOMEIP_00034] */
 #define SOMEIP_ID_HIGH_SHIFT         (16U)
 #define SOMEIP_MESSAGE_ID(service_id, method_id)                                                                                 \
     ((someip_message_id_t)(((uint32_t)(service_id) << SOMEIP_ID_HIGH_SHIFT) | (uint32_t)(method_id)))
@@ -38,9 +38,9 @@ HEADER_CPP
 #define SOMEIP_MT_FLAG_RESPONSE      (0x80U)
 #define SOMEIP_MT_FLAG_TP            (0x20U)
 
-/** @brief SOME/IP-TP header bit fields, 4 bytes big-endian right after the SOME/IP header
- *  @note  | Offset [31:4] (unit = 16 bytes) | Reserved [3:1] | More Segments [0] |
- *         [PRS_SOMEIP_00723] [00724] [00726] [00727] [00931] */
+/** @brief   SOME/IP-TP header bit fields, 4 bytes big-endian right after the SOME/IP header
+ *  @note    | Offset [31:4] (unit = 16 bytes) | Reserved [3:1] | More Segments [0] |
+ *           [PRS_SOMEIP_00723] [00724] [00726] [00727] [00931] */
 #define SOMEIP_TP_OFFSET_MASK        (0xFFFFFFF0U)
 #define SOMEIP_TP_RESERVED_MASK      (0x0000000EU) /*!< Sender writes 0, receiver ignores */
 #define SOMEIP_TP_MORE_SEGMENTS_MASK (0x00000001U)
@@ -56,9 +56,9 @@ HEADER_CPP
 /* DEFINITIONS *******************************************************************************************************************
  ********************************************************************************************************************************/
 
-/** @brief Header sizes; all header fields are big-endian           [PRS_SOMEIP_00030] [00368] [00042]
- *  @note  Part 1 (Message ID + Length) is NOT counted by Length, part 2 (Request ID .. Return Code) is.
- *         Length = SOMEIP_HEADER_PART2_SIZE + payload length. */
+/** @brief   Header sizes; all header fields are big-endian           [PRS_SOMEIP_00030] [00368] [00042]
+ *  @note    Part 1 (Message ID + Length) is NOT counted by Length, part 2 (Request ID .. Return Code) is.
+ *           Length = SOMEIP_HEADER_PART2_SIZE + payload length. */
 enum e_someip_header_size {
     SOMEIP_HEADER_SIZE       = 16,
     SOMEIP_HEADER_PART1_SIZE = 8,
@@ -93,8 +93,8 @@ enum e_someip_session_id {
     SOMEIP_SESSION_ID_MAX      = 0xFFFF,
 };
 
-/** @brief Message Type values (Table 4.4)                                        [PRS_SOMEIP_00055] [00367]
- *  @note  Stored on the wire / in structs as someip_message_type_t (uint8_t), never as this enum. */
+/** @brief   Message Type values (Table 4.4)                                        [PRS_SOMEIP_00055] [00367]
+ *  @note    Stored on the wire / in structs as someip_message_type_t (uint8_t), never as this enum. */
 enum e_someip_message_type {
     SOMEIP_MT_REQUEST              = 0x00, /*!< Request expecting a response (even void) */
     SOMEIP_MT_REQUEST_NO_RETURN    = 0x01, /*!< Fire & forget request */
@@ -108,10 +108,10 @@ enum e_someip_message_type {
     SOMEIP_MT_TP_ERROR             = 0xA1,
 };
 
-/** @brief Return Code values (Table 4.11) [PRS_SOMEIP_00191]
- *  @note  REQUEST / REQUEST_NO_RETURN / NOTIFICATION: always E_OK (Table 4.5).
- *         RESPONSE: any code (normally E_OK). ERROR: any code except E_OK.
- *         Stored as someip_return_code_t (uint8_t), never as this enum. */
+/** @brief   Return Code values (Table 4.11) [PRS_SOMEIP_00191]
+ *  @note    REQUEST / REQUEST_NO_RETURN / NOTIFICATION: always E_OK (Table 4.5).
+ *           RESPONSE: any code (normally E_OK). ERROR: any code except E_OK.
+ *           Stored as someip_return_code_t (uint8_t), never as this enum. */
 enum e_someip_return_code {
     SOMEIP_E_OK                      = 0x00,
     SOMEIP_E_NOT_OK                  = 0x01, /*!< Unspecified error */
@@ -189,8 +189,8 @@ typedef enum e_someip_byte_order {
     SOMEIP_BYTE_ORDER_LITTLE_ENDIAN = 1,
 } someip_byte_order_t;
 
-/** @brief Size of the length field of dynamic array / string, struct, union             [PRS_SOMEIP_00121]
- *  @note  Enumerator value = size in bytes, 0 = no length field. */
+/** @brief   Size of the length field of dynamic array / string, struct, union             [PRS_SOMEIP_00121]
+ *  @note    Enumerator value = size in bytes, 0 = no length field. */
 typedef enum e_someip_length_field_size {
     SOMEIP_LENGTH_FIELD_NONE  = 0,
     SOMEIP_LENGTH_FIELD_8BIT  = 1,
@@ -205,8 +205,8 @@ typedef enum e_someip_string_encoding {
     SOMEIP_STRING_UTF16LE = 2,
 } someip_string_encoding_t;
 
-/** @brief Internal API result
- *  @note  NOT a wire value; the wire Return Code is someip_return_code_t. */
+/** @brief   Internal API result
+ *  @note    NOT a wire value; the wire Return Code is someip_return_code_t. */
 typedef enum e_someip_result {
     SOMEIP_RES_OK            = 0,
     SOMEIP_RES_E_PARAM       = 1, /*!< NULL pointer / invalid argument */
@@ -218,7 +218,7 @@ typedef enum e_someip_result {
     SOMEIP_RES_E_TIMEOUT     = 7,
 } someip_result_t;
 
-/** @brief Decoded SOME/IP header, fields in HOST byte order
+/** @brief   Decoded SOME/IP header, fields in HOST byte order
  *  @warning Not a packed image of the wire (ESP32 is little-endian, the wire is big-endian): the header is
  *           always encoded/decoded field by field (SomeIp_Header.c). Never cast a receive buffer to it.
  *  @note    Members keep wire order; the layout has no padding (16 bytes). */
@@ -234,7 +234,7 @@ typedef struct st_someip_header {
     someip_return_code_t return_code;
 } someip_header_t;
 
-/** @brief One SOME/IP message as a zero-copy view: decoded header + payload inside the receive buffer
+/** @brief   One SOME/IP message as a zero-copy view: decoded header + payload inside the receive buffer
  *  @warning Valid only while the receive buffer is alive. */
 typedef struct st_someip_message {
     someip_header_t header;
