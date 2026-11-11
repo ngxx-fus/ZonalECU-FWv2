@@ -12,6 +12,7 @@ This document records technical issues diagnosed across the project, root causes
 | **002** | Formatting | Enum assignment (`=`) alignment collapsed by `clang-format` | `.clang-format` `AlignConsecutiveAssignments` affects local function variables. | Isolate enum alignment into `format_rules.py`; do not mix with general-purpose C formater. |
 | **003** | Documentation | ASCII table inside `@verbatim` merged with tag line | Regex parser treated `@verbatim` as a generic Doxygen header tag. | Isolate verbatim blocks with strict passthrough logic in doc parsing scripts. |
 | **004** | CI / Docker DNS | `Could not resolve 'security.ubuntu.com'` in container | Docker inherits unreachable loopback resolver (`127.0.0.53`) from host. | Add `options: --dns 8.8.8.8 --dns 1.1.1.1` and fallback nameservers in container steps. |
+| **005** | CI / APT Network | `azure.archive.ubuntu.com` stalled / hung for 3+ minutes | Default APT TCP timeout is 120s with retries on throttled Azure mirror. | Added `Acquire::http::Timeout=5`, `timeout 30s` guard, mirror replacement, and `timeout-minutes`. |
 
 ---
 
@@ -115,3 +116,34 @@ This document records technical issues diagnosed across the project, root causes
      ```
 - **Key Lesson & Prevention Rule**:
   - Whenever running CI jobs inside Docker containers that require outbound internet connectivity (package managers, git submodules), always declare `options: --dns 8.8.8.8 --dns 1.1.1.1` to prevent host `systemd-resolved` loopback leakage.
+
+---
+
+### [ENTRY-005] APT Mirror Stalling on Azure Ubuntu Mirrors Causing CI Hang
+- **Date**: 2026-11-11
+- **Component**: `.github/workflows/ci.yml` (Package installation across all jobs)
+- **Symptom**:
+  ```text
+  Ign:2 http://azure.archive.ubuntu.com/ubuntu resolute InRelease
+  Ign:3 http://azure.archive.ubuntu.com/ubuntu resolute-updates InRelease
+  Ign:4 http://azure.archive.ubuntu.com/ubuntu resolute-backports InRelease
+  Ign:5 http://azure.archive.ubuntu.com/ubuntu resolute-security InRelease
+  ... (retrying repeatedly, hanging for 3+ minutes)
+  ```
+- **Root Cause**:
+  - GitHub Actions Ubuntu runners use Microsoft Azure network mirrors (`azure.archive.ubuntu.com`). During peak loads or regional network throttling, these mirrors drop TCP connections or become completely unresponsive.
+  - By default, `apt-get` has an aggressive TCP timeout of 120–300 seconds per mirror connection. Combined with retries, a single stalled mirror blocks CI execution for several minutes.
+- **Fix Applied**:
+  1. Replaced flaky Azure mirrors with official canonical Ubuntu mirrors:
+     ```bash
+     $SUDO sed -i 's/azure\.archive\.ubuntu\.com/archive\.ubuntu\.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+     ```
+  2. Enforced aggressive 5-second HTTP/HTTPS connection timeouts and 1 retry on `apt-get`:
+     `-o Acquire::http::Timeout=5 -o Acquire::https::Timeout=5 -o Acquire::Retries=1`
+  3. Wrapped `apt-get update` with the Linux coreutils `timeout 30s` command to guarantee execution never stalls past 30 seconds:
+     ```bash
+     timeout 30s $SUDO apt-get update -o Acquire::http::Timeout=5 -o Acquire::https::Timeout=5 -o Acquire::Retries=1 || true
+     ```
+  4. Added explicit job-level `timeout-minutes: 5` (and 10/15 where appropriate) across all jobs in `.github/workflows/ci.yml`.
+- **Key Lesson & Prevention Rule**:
+  - Never allow unbounded network operations in CI scripts. Always configure short connect timeouts, command-level `timeout` wrappers, and job-level `timeout-minutes`.

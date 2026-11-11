@@ -23,6 +23,7 @@ jobs:
   job0_git_conventions:
     name: "Job 0: Conventions & Formatting"
     runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     steps:
       - name: Checkout repository
@@ -36,8 +37,10 @@ jobs:
             echo "clang-format not found. Installing..."
             SUDO=""
             if [ "$(id -u)" -ne 0 ] && command -v sudo > /dev/null 2>&1; then SUDO="sudo"; fi
-            $SUDO apt-get update -o Acquire::Retries=3 || true
-            $SUDO apt-get install -y --no-install-recommends clang-format
+            echo -e "nameserver 8.8.8.8\nnameserver 1.1.1.1" | $SUDO tee /etc/resolv.conf > /dev/null 2>&1 || true
+            $SUDO sed -i 's/azure\.archive\.ubuntu\.com/archive\.ubuntu\.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+            timeout 30s $SUDO apt-get update -o Acquire::http::Timeout=5 -o Acquire::https::Timeout=5 -o Acquire::Retries=1 || true
+            $SUDO apt-get install -y --no-install-recommends -o Acquire::http::Timeout=10 -o Acquire::https::Timeout=10 clang-format
           else
             echo "clang-format is already available: $(clang-format --version)"
           fi
@@ -55,6 +58,7 @@ jobs:
   job1_clangd_analysis:
     name: "Job 1: Clangd Static Analysis"
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: [job0_git_conventions]
     if: always()
     container:
@@ -77,8 +81,8 @@ jobs:
             fi
             SUDO=""
             if [ "$(id -u)" -ne 0 ] && command -v sudo > /dev/null 2>&1; then SUDO="sudo"; fi
-            $SUDO apt-get update -o Acquire::Retries=3 || true
-            $SUDO apt-get install -y --no-install-recommends clangd
+            timeout 30s $SUDO apt-get update -o Acquire::http::Timeout=5 -o Acquire::https::Timeout=5 -o Acquire::Retries=1 || true
+            $SUDO apt-get install -y --no-install-recommends -o Acquire::http::Timeout=10 -o Acquire::https::Timeout=10 clangd
           else
             echo "clangd is already available: $(clangd --version)"
           fi
@@ -97,6 +101,7 @@ jobs:
   job2_compile_fw_stm:
     name: "Job 2: FW-STM Build"
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [job1_clangd_analysis]
 
     steps:
@@ -115,6 +120,7 @@ jobs:
   job3_compile_fw_esp:
     name: "Job 3: FW-ESP Build"
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [job2_compile_fw_stm]
     container:
       image: espressif/idf:release-v6.1
@@ -147,6 +153,7 @@ jobs:
   job4_generate_doxygen:
     name: "Job 4: Project Doxygen Docs"
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [job3_compile_fw_esp]
 
     steps:
@@ -170,8 +177,10 @@ jobs:
             echo "Installing missing package(s):$PACKAGES_TO_INSTALL..."
             SUDO=""
             if [ "$(id -u)" -ne 0 ] && command -v sudo > /dev/null 2>&1; then SUDO="sudo"; fi
-            $SUDO apt-get update -o Acquire::Retries=3 || true
-            $SUDO apt-get install -y --no-install-recommends $PACKAGES_TO_INSTALL
+            echo -e "nameserver 8.8.8.8\nnameserver 1.1.1.1" | $SUDO tee /etc/resolv.conf > /dev/null 2>&1 || true
+            $SUDO sed -i 's/azure\.archive\.ubuntu\.com/archive\.ubuntu\.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+            timeout 30s $SUDO apt-get update -o Acquire::http::Timeout=5 -o Acquire::https::Timeout=5 -o Acquire::Retries=1 || true
+            $SUDO apt-get install -y --no-install-recommends -o Acquire::http::Timeout=10 -o Acquire::https::Timeout=10 $PACKAGES_TO_INSTALL
           fi
 
       - name: Run Doxygen (FW-ESP & FW-STM)
@@ -199,6 +208,7 @@ jobs:
   job5_deploy_pages:
     name: "Job 5: Deploy to GitHub Pages"
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [job4_generate_doxygen]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/ZE-Master' || github.ref == 'refs/heads/FWv2-Master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     environment:
