@@ -108,36 +108,34 @@ enum e_someip_message_type {
     SOMEIP_MT_TP_ERROR             = 0xA1,
 };
 
-#define SOMEIP_ERROR_BASE (0x1000)
-
 /** @brief Return Code values (Table 4.11) [PRS_SOMEIP_00191]
  *  @note  REQUEST / REQUEST_NO_RETURN / NOTIFICATION: always E_OK (Table 4.5).
  *         RESPONSE: any code (normally E_OK). ERROR: any code except E_OK.
  *         Stored as someip_return_code_t (uint8_t), never as this enum. */
 enum e_someip_return_code {
-    SOMEIP_E_OK                      = SOMEIP_ERROR_BASE + 0x00,
-    SOMEIP_E_NOT_OK                  = SOMEIP_ERROR_BASE + 0x01, /*!< Unspecified error */
-    SOMEIP_E_UNKNOWN_SERVICE         = SOMEIP_ERROR_BASE + 0x02,
-    SOMEIP_E_UNKNOWN_METHOD          = SOMEIP_ERROR_BASE + 0x03,
-    SOMEIP_E_NOT_READY               = SOMEIP_ERROR_BASE + 0x04, /*!< Service/method known, application not running */
-    SOMEIP_E_NOT_REACHABLE           = SOMEIP_ERROR_BASE + 0x05, /*!< Internal only, never sent */
-    SOMEIP_E_TIMEOUT                 = SOMEIP_ERROR_BASE + 0x06, /*!< Internal only, never sent */
-    SOMEIP_E_WRONG_PROTOCOL_VERSION  = SOMEIP_ERROR_BASE + 0x07,
-    SOMEIP_E_WRONG_INTERFACE_VERSION = SOMEIP_ERROR_BASE + 0x08,
-    SOMEIP_E_MALFORMED_MESSAGE       = SOMEIP_ERROR_BASE + 0x09, /*!< Payload cannot be deserialized */
-    SOMEIP_E_WRONG_MESSAGE_TYPE      = SOMEIP_ERROR_BASE + 0x0A,
-    SOMEIP_E_E2E_REPEATED            = SOMEIP_ERROR_BASE + 0x0B,
-    SOMEIP_E_E2E_WRONG_SEQUENCE      = SOMEIP_ERROR_BASE + 0x0C,
-    SOMEIP_E_E2E                     = SOMEIP_ERROR_BASE + 0x0D, /*!< E2E error, not further specified */
-    SOMEIP_E_E2E_NOT_AVAILABLE       = SOMEIP_ERROR_BASE + 0x0E,
-    SOMEIP_E_E2E_NO_NEW_DATA         = SOMEIP_ERROR_BASE + 0x0F,
+    SOMEIP_E_OK                      = 0x00,
+    SOMEIP_E_NOT_OK                  = 0x01, /*!< Unspecified error */
+    SOMEIP_E_UNKNOWN_SERVICE         = 0x02,
+    SOMEIP_E_UNKNOWN_METHOD          = 0x03,
+    SOMEIP_E_NOT_READY               = 0x04, /*!< Service/method known, application not running */
+    SOMEIP_E_NOT_REACHABLE           = 0x05, /*!< Internal only, never sent */
+    SOMEIP_E_TIMEOUT                 = 0x06, /*!< Internal only, never sent */
+    SOMEIP_E_WRONG_PROTOCOL_VERSION  = 0x07,
+    SOMEIP_E_WRONG_INTERFACE_VERSION = 0x08,
+    SOMEIP_E_MALFORMED_MESSAGE       = 0x09, /*!< Payload cannot be deserialized */
+    SOMEIP_E_WRONG_MESSAGE_TYPE      = 0x0A,
+    SOMEIP_E_E2E_REPEATED            = 0x0B,
+    SOMEIP_E_E2E_WRONG_SEQUENCE      = 0x0C,
+    SOMEIP_E_E2E                     = 0x0D, /*!< E2E error, not further specified */
+    SOMEIP_E_E2E_NOT_AVAILABLE       = 0x0E,
+    SOMEIP_E_E2E_NO_NEW_DATA         = 0x0F,
 
     /* Reserved ranges */
 
-    SOMEIP_E_GENERIC_RESERVED_MIN    = SOMEIP_ERROR_BASE + 0x10, /*!< 0x10..0x1F: reserved for generic errors */
-    SOMEIP_E_GENERIC_RESERVED_MAX    = SOMEIP_ERROR_BASE + 0x1F,
-    SOMEIP_E_SERVICE_SPECIFIC_MIN    = SOMEIP_ERROR_BASE + 0x20, /*!< 0x20..0x5E: defined by the interface spec */
-    SOMEIP_E_SERVICE_SPECIFIC_MAX    = SOMEIP_ERROR_BASE + 0x5E,
+    SOMEIP_E_GENERIC_RESERVED_MIN    = 0x10, /*!< 0x10..0x1F: reserved for generic errors */
+    SOMEIP_E_GENERIC_RESERVED_MAX    = 0x1F,
+    SOMEIP_E_SERVICE_SPECIFIC_MIN    = 0x20, /*!< 0x20..0x5E: defined by the interface spec */
+    SOMEIP_E_SERVICE_SPECIFIC_MAX    = 0x5E,
 };
 
 /** @brief Payload and segment size limits                          chapter 4.1.2.9, [PRS_SOMEIP_00730] */
