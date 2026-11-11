@@ -38,7 +38,8 @@ jobs:
             SUDO=""
             if [ "$(id -u)" -ne 0 ] && command -v sudo > /dev/null 2>&1; then SUDO="sudo"; fi
             echo -e "nameserver 8.8.8.8\nnameserver 1.1.1.1" | $SUDO tee /etc/resolv.conf > /dev/null 2>&1 || true
-            $SUDO sed -i 's/azure\.archive\.ubuntu\.com/archive\.ubuntu\.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+            $SUDO sed -i 's|mirror+file:/etc/apt/apt-mirrors.txt|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true
+            $SUDO sed -i 's/azure\.archive\.ubuntu\.com/archive\.ubuntu\.com/g' /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
             timeout 30s $SUDO apt-get update -o Acquire::http::Timeout=5 -o Acquire::https::Timeout=5 -o Acquire::Retries=1 || true
             $SUDO apt-get install -y --no-install-recommends -o Acquire::http::Timeout=10 -o Acquire::https::Timeout=10 clang-format
           else
@@ -81,6 +82,8 @@ jobs:
             fi
             SUDO=""
             if [ "$(id -u)" -ne 0 ] && command -v sudo > /dev/null 2>&1; then SUDO="sudo"; fi
+            $SUDO sed -i 's|mirror+file:/etc/apt/apt-mirrors.txt|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true
+            $SUDO sed -i 's/azure\.archive\.ubuntu\.com/archive\.ubuntu\.com/g' /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
             timeout 30s $SUDO apt-get update -o Acquire::http::Timeout=5 -o Acquire::https::Timeout=5 -o Acquire::Retries=1 || true
             $SUDO apt-get install -y --no-install-recommends -o Acquire::http::Timeout=10 -o Acquire::https::Timeout=10 clangd
           else
@@ -178,7 +181,8 @@ jobs:
             SUDO=""
             if [ "$(id -u)" -ne 0 ] && command -v sudo > /dev/null 2>&1; then SUDO="sudo"; fi
             echo -e "nameserver 8.8.8.8\nnameserver 1.1.1.1" | $SUDO tee /etc/resolv.conf > /dev/null 2>&1 || true
-            $SUDO sed -i 's/azure\.archive\.ubuntu\.com/archive\.ubuntu\.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+            $SUDO sed -i 's|mirror+file:/etc/apt/apt-mirrors.txt|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true
+            $SUDO sed -i 's/azure\.archive\.ubuntu\.com/archive\.ubuntu\.com/g' /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
             timeout 30s $SUDO apt-get update -o Acquire::http::Timeout=5 -o Acquire::https::Timeout=5 -o Acquire::Retries=1 || true
             $SUDO apt-get install -y --no-install-recommends -o Acquire::http::Timeout=10 -o Acquire::https::Timeout=10 $PACKAGES_TO_INSTALL
           fi
