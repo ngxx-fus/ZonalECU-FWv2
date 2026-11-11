@@ -1,7 +1,7 @@
 
 
-/* INCLUDES **************************************************************************************************
- ************************************************************************************************************/
+/* INCLUDES **********************************************************************************************************************
+ ********************************************************************************************************************************/
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -9,29 +9,26 @@
 #include "SOMEIP_Check.h"
 #include "SOMEIP_Types.h"
 
-/* PRIVATE FUNCTIONS *****************************************************************************************
- ************************************************************************************************************/
+/* PRIVATE FUNCTIONS *************************************************************************************************************
+ ********************************************************************************************************************************/
 
 static bool prv_is_type_supported(IN someip_message_type_t msg_type);
-static bool prv_is_type_as_configured(IN someip_message_type_t msg_type,
-                                      IN someip_message_type_t expected_type);
-static someip_service_cfg_t const *prv_find_service(IN someip_service_cfg_t *p_services,
-                                                    IN uint16_t service_len,
+static bool prv_is_type_as_configured(IN someip_message_type_t msg_type, IN someip_message_type_t expected_type);
+static someip_service_cfg_t const *prv_find_service(IN someip_service_cfg_t *p_services, IN uint16_t service_len,
                                                     IN someip_service_id_t service_id);
-static someip_method_cfg_t const *prv_find_method(IN someip_service_cfg_t *p_service,
-                                                  IN someip_method_id_t method_id);
+static someip_method_cfg_t const *prv_find_method(IN someip_service_cfg_t *p_service, IN someip_method_id_t method_id);
 
-/* FUNCTION IMPLEMENTATIONS **********************************************************************************
- ************************************************************************************************************/
+/* FUNCTION IMPLEMENTATIONS ******************************************************************************************************
+ ********************************************************************************************************************************/
 
 /* Private helpers */
 
-/** @brief Check whether a Message Type is one of Table 4.4 (step 5 of Figure 4.21)
+/** @brief   Check whether a Message Type is one of Table 4.4 (step 5 of Figure 4.21)
  *  @details Supported: REQUEST 0x00, REQUEST_NO_RETURN 0x01, NOTIFICATION 0x02, RESPONSE 0x80, ERROR 0x81
  *           and the same with the TP-Flag: 0x20, 0x21, 0x22, 0xA0, 0xA1 [PRS_SOMEIP_00055] [PRS_SOMEIP_00367]
- *  @param msg_type Received Message Type
- *  @retval true  Supported
- *  @retval false Not supported (e.g. 0x03, 0x40, 0xFF) */
+ *  @param   msg_type Received Message Type
+ *  @retval  true  Supported
+ *  @retval  false Not supported (e.g. 0x03, 0x40, 0xFF) */
 static bool prv_is_type_supported(IN someip_message_type_t msg_type) {
     someip_message_type_t base = 0U;
     bool status = false;
@@ -62,8 +59,10 @@ static bool prv_is_type_supported(IN someip_message_type_t msg_type) {
     return status;
 }
 
-/** @brief Check whether a Message Type matches the configuration of the method (step 6 of Figure 4.21)
+/** @brief   Check whether a Message Type matches the configuration of the method (step 6 of Figure 4.21)
  *  @details The TP-Flag is ignored. Accepted combinations:
+ *           RESPONSE / ERROR are accepted for a request/response method because the client receives them
+ *           for the same Message ID.
  *           @verbatim
  *           expected_type (config)       accepted received base type
  *           ---------------------------  ------------------------------------
@@ -71,14 +70,11 @@ static bool prv_is_type_supported(IN someip_message_type_t msg_type) {
  *           SOMEIP_MT_REQUEST_NO_RETURN  REQUEST_NO_RETURN
  *           SOMEIP_MT_NOTIFICATION       NOTIFICATION
  *           @endverbatim
- *           RESPONSE / ERROR are accepted for a request/response method because the client receives them
- *           for the same Message ID.
- *  @param msg_type      Received Message Type
- *  @param expected_type Configured type of the method
- *  @retval true  As configured
- *  @retval false Not as configured */
-static bool prv_is_type_as_configured(IN someip_message_type_t msg_type,
-                                      IN someip_message_type_t expected_type) {
+ *  @param   msg_type      Received Message Type
+ *  @param   expected_type Configured type of the method
+ *  @retval  true  As configured
+ *  @retval  false Not as configured */
+static bool prv_is_type_as_configured(IN someip_message_type_t msg_type, IN someip_message_type_t expected_type) {
     someip_message_type_t base = 0U;
     bool status = false;
 
@@ -89,8 +85,7 @@ static bool prv_is_type_as_configured(IN someip_message_type_t msg_type,
     switch (expected_type) {
         case SOMEIP_MT_REQUEST:
             /* Request/response method: REQUEST, RESPONSE or ERROR */
-            if (((someip_message_type_t)SOMEIP_MT_REQUEST == base) ||
-                ((someip_message_type_t)SOMEIP_MT_RESPONSE == base) ||
+            if (((someip_message_type_t)SOMEIP_MT_REQUEST == base) || ((someip_message_type_t)SOMEIP_MT_RESPONSE == base) ||
                 ((someip_message_type_t)SOMEIP_MT_ERROR == base)) {
                 status = true;
             }
@@ -125,13 +120,12 @@ static bool prv_is_type_as_configured(IN someip_message_type_t msg_type,
     return status;
 }
 
-/** @brief Find a service in the configuration table
- *  @param p_services  Configuration table, may be NULL if service_len is 0
- *  @param service_len Number of entries in p_services
- *  @param service_id  Service ID to look for
- *  @return Pointer to the entry, or NULL if not found */
-static someip_service_cfg_t const *prv_find_service(IN someip_service_cfg_t *p_services,
-                                                    IN uint16_t service_len,
+/** @brief   Find a service in the configuration table
+ *  @param   p_services  Configuration table, may be NULL if service_len is 0
+ *  @param   service_len Number of entries in p_services
+ *  @param   service_id  Service ID to look for
+ *  @return  Pointer to the entry, or NULL if not found */
+static someip_service_cfg_t const *prv_find_service(IN someip_service_cfg_t *p_services, IN uint16_t service_len,
                                                     IN someip_service_id_t service_id) {
     uint16_t i = 0U;
 
@@ -147,12 +141,11 @@ static someip_service_cfg_t const *prv_find_service(IN someip_service_cfg_t *p_s
     return NULL;
 }
 
-/** @brief Find a method / event in the configuration of one service
- *  @param p_service Service entry
- *  @param method_id Method ID / Event ID to look for
- *  @return Pointer to the entry, or NULL if not found (or p_service / p_service->p_methods is NULL) */
-static someip_method_cfg_t const *prv_find_method(IN someip_service_cfg_t *p_service,
-                                                  IN someip_method_id_t method_id) {
+/** @brief   Find a method / event in the configuration of one service
+ *  @param   p_service Service entry
+ *  @param   method_id Method ID / Event ID to look for
+ *  @return  Pointer to the entry, or NULL if not found (or p_service / p_service->p_methods is NULL) */
+static someip_method_cfg_t const *prv_find_method(IN someip_service_cfg_t *p_service, IN someip_method_id_t method_id) {
     uint16_t i = 0U;
 
     /* Check parameters */
@@ -175,15 +168,13 @@ static someip_method_cfg_t const *prv_find_method(IN someip_service_cfg_t *p_ser
 
 /* Public functions */
 
-someip_result_t SOMEIP_CheckHeader(IN someip_header_t *p_rx, IN someip_service_cfg_t *p_services,
-                                   IN uint16_t service_len, OUT someip_return_code_t *p_rc,
-                                   OUT someip_method_cfg_t const **pp_method) {
+someip_result_t SOMEIP_CheckHeader(IN someip_header_t *p_rx, IN someip_service_cfg_t *p_services, IN uint16_t service_len,
+                                   OUT someip_return_code_t *p_rc, OUT someip_method_cfg_t const **pp_method) {
     someip_service_cfg_t const *p_svc = NULL;
     someip_method_cfg_t const *p_m = NULL;
 
     /* Validate parameters */
-    if ((NULL == p_rx) || (NULL == p_rc) || (NULL == pp_method) ||
-        ((NULL == p_services) && (0U < service_len))) {
+    if ((NULL == p_rx) || (NULL == p_rc) || (NULL == pp_method) || ((NULL == p_services) && (0U < service_len))) {
         /* Invalid parameter */
         return SOMEIP_RES_E_PARAM;
     }
@@ -282,8 +273,7 @@ uint8_t SOMEIP_CheckShouldReplyError(IN someip_header_t *p_rx, IN someip_method_
     return 1U;
 }
 
-someip_result_t SOMEIP_BuildErrorHeader(IN someip_header_t *p_rx, IN someip_return_code_t rc,
-                                        OUT someip_header_t *p_err) {
+someip_result_t SOMEIP_BuildErrorHeader(IN someip_header_t *p_rx, IN someip_return_code_t rc, OUT someip_header_t *p_err) {
     someip_service_id_t service_id = 0U;
     someip_method_id_t method_id = 0U;
     someip_client_id_t client_id = 0U;
@@ -335,5 +325,5 @@ someip_result_t SOMEIP_BuildErrorHeader(IN someip_header_t *p_rx, IN someip_retu
     return SOMEIP_RES_OK;
 }
 
-/* EOF *******************************************************************************************************
- ************************************************************************************************************/
+/* EOF ***************************************************************************************************************************
+ ********************************************************************************************************************************/

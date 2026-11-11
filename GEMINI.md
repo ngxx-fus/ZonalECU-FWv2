@@ -13,6 +13,7 @@ This document persists repository-level rules, multi-target architecture definit
 - **Structural Change Confirmation (Mandatory)**: Whenever any structural change is proposed — including file/directory reorganization, moving/renaming/merging files, code architecture modifications, or restructuring documentation — the assistant **MUST** explicitly explain the intended structural changes and ask for user confirmation BEFORE making any edits.
 - **Directory README & Context Alignment (Pre-Modification Check)**: Whenever modifying code or configuration in any directory, the assistant **MUST** first read the local `readme.md`, project-level `readme.md`, `GEMINI.md`, and local rules. Verify whether the local directory's Readme aligns with the intended modification.
 - **Brief Pre-Execution Explanation**: The assistant **MUST** provide a brief explanation of what it is about to do and why BEFORE performing any edits or tool executions.
+- **Troubleshooting & Engineering Lessons Log (`NoteWhileFixing.md` — Mandatory)**: Whenever any bug, CI failure, tool conflict, or technical limitation is diagnosed and resolved, the assistant **MUST** document the issue symptom, root cause analysis, fix applied, and preventive lesson in [`NoteWhileFixing.md`](NoteWhileFixing.md) at the repository root.
 - **Language Convention**: All source code comments, header file documentation, function descriptions, and build scripts must be written strictly in **English**.
 
 ---

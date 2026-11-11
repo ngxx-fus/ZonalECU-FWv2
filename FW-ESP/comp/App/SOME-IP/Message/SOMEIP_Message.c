@@ -1,7 +1,7 @@
 
 
-/* INCLUDES **************************************************************************************************
- ************************************************************************************************************/
+/* INCLUDES **********************************************************************************************************************
+ ********************************************************************************************************************************/
 
 #include <stddef.h>
 #include <stdint.h>
@@ -9,13 +9,12 @@
 #include "SOMEIP_Check.h"
 #include "SOMEIP_Types.h"
 
-/* FUNCTION IMPLEMENTATIONS **********************************************************************************
- ************************************************************************************************************/
+/* FUNCTION IMPLEMENTATIONS ******************************************************************************************************
+ ********************************************************************************************************************************/
 
 someip_result_t SOMEIP_MessageBuildRequest(OUT someip_header_t *p_hdr, IN someip_service_id_t service_id,
                                            IN someip_method_id_t method_id, IN someip_client_id_t client_id,
-                                           IN someip_session_id_t session_id,
-                                           IN someip_interface_version_t interface_version,
+                                           IN someip_session_id_t session_id, IN someip_interface_version_t interface_version,
                                            IN uint32_t payload_len) {
     /* Validate parameters */
     if (NULL == p_hdr) {
@@ -58,10 +57,10 @@ someip_result_t SOMEIP_MessageBuildRequest(OUT someip_header_t *p_hdr, IN someip
     return SOMEIP_RES_OK;
 }
 
-someip_result_t SOMEIP_MessageBuildRequestNoReturn(
-    OUT someip_header_t *p_hdr, IN someip_service_id_t service_id, IN someip_method_id_t method_id,
-    IN someip_client_id_t client_id, IN someip_session_id_t session_id,
-    IN someip_interface_version_t interface_version, IN uint32_t payload_len) {
+someip_result_t SOMEIP_MessageBuildRequestNoReturn(OUT someip_header_t *p_hdr, IN someip_service_id_t service_id,
+                                                   IN someip_method_id_t method_id, IN someip_client_id_t client_id,
+                                                   IN someip_session_id_t session_id,
+                                                   IN someip_interface_version_t interface_version, IN uint32_t payload_len) {
     /* Validate parameters */
     if (NULL == p_hdr) {
         /* Invalid parameter */
@@ -97,10 +96,9 @@ someip_result_t SOMEIP_MessageBuildRequestNoReturn(
     return SOMEIP_RES_OK;
 }
 
-someip_result_t
-SOMEIP_MessageBuildNotification(OUT someip_header_t *p_hdr, IN someip_service_id_t service_id,
-                                IN someip_event_id_t event_id, IN someip_session_id_t session_id,
-                                IN someip_interface_version_t interface_version, IN uint32_t payload_len) {
+someip_result_t SOMEIP_MessageBuildNotification(OUT someip_header_t *p_hdr, IN someip_service_id_t service_id,
+                                                IN someip_event_id_t event_id, IN someip_session_id_t session_id,
+                                                IN someip_interface_version_t interface_version, IN uint32_t payload_len) {
     /* Validate parameters */
     if (NULL == p_hdr) {
         /* Invalid parameter */
@@ -242,5 +240,5 @@ someip_result_t SOMEIP_MessageBuildError(OUT someip_header_t *p_hdr, IN someip_h
     return SOMEIP_RES_OK;
 }
 
-/* EOF *******************************************************************************************************
- ************************************************************************************************************/
+/* EOF ***************************************************************************************************************************
+ ********************************************************************************************************************************/

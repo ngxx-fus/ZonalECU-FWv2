@@ -1,7 +1,7 @@
 
 
-/* INCLUDES **************************************************************************************************
- ************************************************************************************************************/
+/* INCLUDES **********************************************************************************************************************
+ ********************************************************************************************************************************/
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -11,33 +11,32 @@
 #include "SOMEIP_Endian.h"
 #include "SOMEIP_Types.h"
 
-/* MACROS ****************************************************************************************************
- ************************************************************************************************************/
+/* MACROS ************************************************************************************************************************
+ ********************************************************************************************************************************/
 
 #define SOMEIP_U8_SIZE       (1U)
 #define SOMEIP_BITS_PER_BYTE (8U)
 
-/* DEFINITIONS ***********************************************************************************************
- ************************************************************************************************************/
+/* DEFINITIONS *******************************************************************************************************************
+ ********************************************************************************************************************************/
 
 /** @brief Size of the "\0" terminator per string encoding [PRS_SOMEIP_00948] [PRS_SOMEIP_00084] */
 enum e_someip_str_term_size {
-    SOMEIP_STR_TERM_NONE_SIZE = 0,
-    SOMEIP_STR_TERM_UTF8_SIZE = 1,
+    SOMEIP_STR_TERM_NONE_SIZE  = 0,
+    SOMEIP_STR_TERM_UTF8_SIZE  = 1,
     SOMEIP_STR_TERM_UTF16_SIZE = 2,
 };
 
-/* PRIVATE VARIABLES *****************************************************************************************
- ************************************************************************************************************/
+/* PRIVATE VARIABLES *************************************************************************************************************
+ ********************************************************************************************************************************/
 
 /* String Byte Order Marks [PRS_SOMEIP_00087] */
-static const uint8_t s_bom_utf8[SOMEIP_BOM_UTF8_SIZE] = {SOMEIP_BOM_UTF8_0, SOMEIP_BOM_UTF8_1,
-                                                         SOMEIP_BOM_UTF8_2};
+static const uint8_t s_bom_utf8[SOMEIP_BOM_UTF8_SIZE] = {SOMEIP_BOM_UTF8_0, SOMEIP_BOM_UTF8_1, SOMEIP_BOM_UTF8_2};
 static const uint8_t s_bom_utf16_be[SOMEIP_BOM_UTF16_SIZE] = {SOMEIP_BOM_UTF16BE_0, SOMEIP_BOM_UTF16BE_1};
 static const uint8_t s_bom_utf16_le[SOMEIP_BOM_UTF16_SIZE] = {SOMEIP_BOM_UTF16LE_0, SOMEIP_BOM_UTF16LE_1};
 
-/* PRIVATE FUNCTIONS *****************************************************************************************
- ************************************************************************************************************/
+/* PRIVATE FUNCTIONS *************************************************************************************************************
+ ********************************************************************************************************************************/
 
 static someip_result_t prv_ser_reserve(INOUT someip_ser_cursor_t *p_cur, IN uint32_t len);
 static someip_result_t prv_deser_require(INOUT someip_deser_cursor_t *p_cur, IN uint32_t len);
@@ -47,16 +46,16 @@ static bool prv_is_length_field_valid(IN someip_length_field_size_t lf_size);
 static uint8_t const *prv_get_bom(IN someip_string_encoding_t enc, OUT uint32_t *p_bom_size);
 static uint32_t prv_get_terminator_size(IN someip_string_encoding_t enc);
 
-/* FUNCTION IMPLEMENTATIONS **********************************************************************************
- ************************************************************************************************************/
+/* FUNCTION IMPLEMENTATIONS ******************************************************************************************************
+ ********************************************************************************************************************************/
 
 /* Private helpers */
 
-/** @brief Check that len more bytes can be written
- *  @param p_cur Write cursor, not NULL (checked by the caller)
- *  @param len   Number of bytes the caller wants to write
- *  @retval SOMEIP_RES_OK         Enough space
- *  @retval SOMEIP_RES_E_NO_SPACE Buffer too small, or a previous sticky error */
+/** @brief   Check that len more bytes can be written
+ *  @param   p_cur Write cursor, not NULL (checked by the caller)
+ *  @param   len   Number of bytes the caller wants to write
+ *  @retval  SOMEIP_RES_OK         Enough space
+ *  @retval  SOMEIP_RES_E_NO_SPACE Buffer too small, or a previous sticky error */
 static someip_result_t prv_ser_reserve(INOUT someip_ser_cursor_t *p_cur, IN uint32_t len) {
     /* Previous error: stop all following writes */
     if (SOMEIP_RES_OK != p_cur->status) {
@@ -76,11 +75,11 @@ static someip_result_t prv_ser_reserve(INOUT someip_ser_cursor_t *p_cur, IN uint
     return SOMEIP_RES_OK;
 }
 
-/** @brief Check that len more bytes can be read
- *  @param p_cur Read cursor, not NULL (checked by the caller)
- *  @param len   Number of bytes the caller wants to read
- *  @retval SOMEIP_RES_OK          Enough bytes
- *  @retval SOMEIP_RES_E_MALFORMED Not enough bytes, or a previous sticky error */
+/** @brief   Check that len more bytes can be read
+ *  @param   p_cur Read cursor, not NULL (checked by the caller)
+ *  @param   len   Number of bytes the caller wants to read
+ *  @retval  SOMEIP_RES_OK          Enough bytes
+ *  @retval  SOMEIP_RES_E_MALFORMED Not enough bytes, or a previous sticky error */
 static someip_result_t prv_deser_require(INOUT someip_deser_cursor_t *p_cur, IN uint32_t len) {
     /* Previous error: stop all following reads */
     if (SOMEIP_RES_OK != p_cur->status) {
@@ -100,10 +99,10 @@ static someip_result_t prv_deser_require(INOUT someip_deser_cursor_t *p_cur, IN 
     return SOMEIP_RES_OK;
 }
 
-/** @brief Get the number of padding bytes so that the next element starts aligned
- *  @param abs_pos    Position from the start of the SOME/IP message [PRS_SOMEIP_00569]
- *  @param align_bits Valid alignment (already checked by prv_is_align_valid())
- *  @return Number of padding bytes, 0 .. align_bits / 8 - 1 */
+/** @brief   Get the number of padding bytes so that the next element starts aligned
+ *  @param   abs_pos    Position from the start of the SOME/IP message [PRS_SOMEIP_00569]
+ *  @param   align_bits Valid alignment (already checked by prv_is_align_valid())
+ *  @return  Number of padding bytes, 0 .. align_bits / 8 - 1 */
 static uint32_t prv_padding_size(IN uint32_t abs_pos, IN uint16_t align_bits) {
     uint32_t align_bytes = 0U;
     uint32_t remainder = 0U;
@@ -124,10 +123,10 @@ static uint32_t prv_padding_size(IN uint32_t abs_pos, IN uint16_t align_bits) {
     return align_bytes - remainder;
 }
 
-/** @brief Check an alignment value: 8, 16, 32, 64, 128 or 256 bit [PRS_SOMEIP_00613]
- *  @param align_bits Alignment in bits
- *  @retval true  Valid
- *  @retval false Invalid */
+/** @brief   Check an alignment value: 8, 16, 32, 64, 128 or 256 bit [PRS_SOMEIP_00613]
+ *  @param   align_bits Alignment in bits
+ *  @retval  true  Valid
+ *  @retval  false Invalid */
 static bool prv_is_align_valid(IN uint16_t align_bits) {
     bool status = false;
 
@@ -155,12 +154,12 @@ static bool prv_is_align_valid(IN uint16_t align_bits) {
     return status;
 }
 
-/** @brief Check a length field size of struct / array / string
- *  @note  SOMEIP_LENGTH_FIELD_NONE is invalid here: without length field, do not call LengthBegin / End.
- *  @param lf_size Length field size
- *  @retval true  Valid (8, 16 or 32 bit)
- *  @retval false Invalid
- *  @see   [PRS_SOMEIP_00079] [PRS_SOMEIP_00093] [PRS_SOMEIP_00107] */
+/** @brief   Check a length field size of struct / array / string
+ *  @note    SOMEIP_LENGTH_FIELD_NONE is invalid here: without length field, do not call LengthBegin / End.
+ *  @param   lf_size Length field size
+ *  @retval  true  Valid (8, 16 or 32 bit)
+ *  @retval  false Invalid
+ *  @see     [PRS_SOMEIP_00079] [PRS_SOMEIP_00093] [PRS_SOMEIP_00107] */
 static bool prv_is_length_field_valid(IN someip_length_field_size_t lf_size) {
     bool status = false;
 
@@ -186,10 +185,10 @@ static bool prv_is_length_field_valid(IN someip_length_field_size_t lf_size) {
     return status;
 }
 
-/** @brief Get the Byte Order Mark of a string encoding [PRS_SOMEIP_00087]
- *  @param enc        String encoding
- *  @param p_bom_size Size of the BOM in bytes, 0 for an unknown encoding
- *  @return Pointer to the BOM bytes, or NULL for an unknown encoding */
+/** @brief   Get the Byte Order Mark of a string encoding [PRS_SOMEIP_00087]
+ *  @param   enc        String encoding
+ *  @param   p_bom_size Size of the BOM in bytes, 0 for an unknown encoding
+ *  @return  Pointer to the BOM bytes, or NULL for an unknown encoding */
 static uint8_t const *prv_get_bom(IN someip_string_encoding_t enc, OUT uint32_t *p_bom_size) {
     uint8_t const *p_bom = NULL;
 
@@ -229,9 +228,9 @@ static uint8_t const *prv_get_bom(IN someip_string_encoding_t enc, OUT uint32_t 
     return p_bom;
 }
 
-/** @brief Get the size of the "\0" terminator of a string encoding [PRS_SOMEIP_00948] [PRS_SOMEIP_00084]
- *  @param enc String encoding
- *  @return Terminator size in bytes, 0 for an unknown encoding */
+/** @brief   Get the size of the "\0" terminator of a string encoding [PRS_SOMEIP_00948] [PRS_SOMEIP_00084]
+ *  @param   enc String encoding
+ *  @return  Terminator size in bytes, 0 for an unknown encoding */
 static uint32_t prv_get_terminator_size(IN someip_string_encoding_t enc) {
     uint32_t term_size = 0U;
 
@@ -266,8 +265,8 @@ static uint32_t prv_get_terminator_size(IN someip_string_encoding_t enc) {
 
 /* Serializer: cursor */
 
-someip_result_t SOMEIP_SerInit(OUT someip_ser_cursor_t *p_cur, OUT uint8_t *p_buf, IN uint32_t buf_size,
-                               IN uint32_t msg_offset, IN someip_byte_order_t order) {
+someip_result_t SOMEIP_SerInit(OUT someip_ser_cursor_t *p_cur, OUT uint8_t *p_buf, IN uint32_t buf_size, IN uint32_t msg_offset,
+                               IN someip_byte_order_t order) {
     /* Validate parameters */
     if ((NULL == p_cur) || (NULL == p_buf)) {
         /* Invalid parameter */
@@ -500,8 +499,7 @@ someip_result_t SOMEIP_SerWriteF64(INOUT someip_ser_cursor_t *p_cur, IN double v
 
 /* Serializer: raw bytes / alignment */
 
-someip_result_t SOMEIP_SerWriteBytes(INOUT someip_ser_cursor_t *p_cur, IN uint8_t *p_data,
-                                     IN uint32_t data_len) {
+someip_result_t SOMEIP_SerWriteBytes(INOUT someip_ser_cursor_t *p_cur, IN uint8_t *p_data, IN uint32_t data_len) {
     someip_result_t res = SOMEIP_RES_OK;
 
     /* Validate parameters */
@@ -588,8 +586,8 @@ someip_result_t SOMEIP_SerAlign(INOUT someip_ser_cursor_t *p_cur, IN uint16_t al
     return SOMEIP_RES_OK;
 }
 
-someip_result_t SOMEIP_SerLengthBegin(INOUT someip_ser_cursor_t *p_cur,
-                                      IN someip_length_field_size_t lf_size, OUT uint32_t *p_mark) {
+someip_result_t SOMEIP_SerLengthBegin(INOUT someip_ser_cursor_t *p_cur, IN someip_length_field_size_t lf_size,
+                                      OUT uint32_t *p_mark) {
     someip_result_t res = SOMEIP_RES_OK;
 
     /* Validate parameters */
@@ -632,8 +630,7 @@ someip_result_t SOMEIP_SerLengthBegin(INOUT someip_ser_cursor_t *p_cur,
     return SOMEIP_RES_OK;
 }
 
-someip_result_t SOMEIP_SerLengthEnd(INOUT someip_ser_cursor_t *p_cur, IN someip_length_field_size_t lf_size,
-                                    IN uint32_t mark) {
+someip_result_t SOMEIP_SerLengthEnd(INOUT someip_ser_cursor_t *p_cur, IN someip_length_field_size_t lf_size, IN uint32_t mark) {
     uint32_t len = 0U;
 
     /* Validate parameters */
@@ -719,8 +716,7 @@ someip_result_t SOMEIP_SerLengthEnd(INOUT someip_ser_cursor_t *p_cur, IN someip_
 /* Serializer: strings (chapter 4.1.4.4) */
 
 someip_result_t SOMEIP_SerWriteString(INOUT someip_ser_cursor_t *p_cur, IN someip_string_encoding_t enc,
-                                      IN someip_length_field_size_t lf_size, IN uint8_t *p_str,
-                                      IN uint32_t str_len) {
+                                      IN someip_length_field_size_t lf_size, IN uint8_t *p_str, IN uint32_t str_len) {
     uint8_t const terminator[SOMEIP_STR_TERM_UTF16_SIZE] = {0U};
     uint8_t const *p_bom = NULL;
     uint32_t bom_size = 0U;
@@ -791,9 +787,8 @@ someip_result_t SOMEIP_SerWriteString(INOUT someip_ser_cursor_t *p_cur, IN somei
     return SOMEIP_RES_OK;
 }
 
-someip_result_t SOMEIP_SerWriteStringFixed(INOUT someip_ser_cursor_t *p_cur,
-                                           IN someip_string_encoding_t enc, IN uint32_t fixed_size,
-                                           IN uint8_t *p_str, IN uint32_t str_len) {
+someip_result_t SOMEIP_SerWriteStringFixed(INOUT someip_ser_cursor_t *p_cur, IN someip_string_encoding_t enc,
+                                           IN uint32_t fixed_size, IN uint8_t *p_str, IN uint32_t str_len) {
     uint8_t *p_dst = NULL;
     uint8_t const *p_bom = NULL;
     uint32_t bom_size = 0U;
@@ -833,8 +828,8 @@ someip_result_t SOMEIP_SerWriteStringFixed(INOUT someip_ser_cursor_t *p_cur,
     term_size = prv_get_terminator_size(enc);
 
     /* UTF-16 strings shall have an even length [PRS_SOMEIP_00085] */
-    if ((SOMEIP_STRING_UTF8 != enc) && ((0U != (str_len % (uint32_t)SOMEIP_U16_SIZE)) ||
-                                        (0U != (fixed_size % (uint32_t)SOMEIP_U16_SIZE)))) {
+    if ((SOMEIP_STRING_UTF8 != enc) &&
+        ((0U != (str_len % (uint32_t)SOMEIP_U16_SIZE)) || (0U != (fixed_size % (uint32_t)SOMEIP_U16_SIZE)))) {
         p_cur->status = SOMEIP_RES_E_PARAM;
 
         /* Odd number of bytes in UTF-16 */
@@ -1237,8 +1232,7 @@ someip_result_t SOMEIP_DeserReadF64(INOUT someip_deser_cursor_t *p_cur, OUT doub
 
 /* Deserializer: raw bytes / alignment */
 
-someip_result_t SOMEIP_DeserReadBytes(INOUT someip_deser_cursor_t *p_cur, OUT uint8_t *p_out,
-                                      IN uint32_t data_len) {
+someip_result_t SOMEIP_DeserReadBytes(INOUT someip_deser_cursor_t *p_cur, OUT uint8_t *p_out, IN uint32_t data_len) {
     someip_result_t res = SOMEIP_RES_OK;
 
     /* Validate parameters */
@@ -1347,8 +1341,8 @@ someip_result_t SOMEIP_DeserAlign(INOUT someip_deser_cursor_t *p_cur, IN uint16_
 
 /* Deserializer: length field [PRS_SOMEIP_00370] [PRS_SOMEIP_00371] [PRS_SOMEIP_00900] */
 
-someip_result_t SOMEIP_DeserLengthBegin(INOUT someip_deser_cursor_t *p_cur,
-                                        IN someip_length_field_size_t lf_size, OUT uint32_t *p_end) {
+someip_result_t SOMEIP_DeserLengthBegin(INOUT someip_deser_cursor_t *p_cur, IN someip_length_field_size_t lf_size,
+                                        OUT uint32_t *p_end) {
     uint8_t len_8 = 0U;
     uint16_t len_16 = 0U;
     uint32_t len = 0U;
@@ -1469,8 +1463,8 @@ someip_result_t SOMEIP_DeserLengthEnd(INOUT someip_deser_cursor_t *p_cur, IN uin
 /* Deserializer: strings (chapter 4.1.4.4) */
 
 someip_result_t SOMEIP_DeserReadString(INOUT someip_deser_cursor_t *p_cur, IN someip_string_encoding_t enc,
-                                       IN someip_length_field_size_t lf_size, OUT uint8_t *p_out,
-                                       IN uint32_t out_size, OUT uint32_t *p_out_len) {
+                                       IN someip_length_field_size_t lf_size, OUT uint8_t *p_out, IN uint32_t out_size,
+                                       OUT uint32_t *p_out_len) {
     uint8_t const terminator[SOMEIP_STR_TERM_UTF16_SIZE] = {0U};
     uint8_t const *p_bom = NULL;
     uint8_t const *p_src = NULL;
@@ -1583,9 +1577,8 @@ someip_result_t SOMEIP_DeserReadString(INOUT someip_deser_cursor_t *p_cur, IN so
     return SOMEIP_DeserLengthEnd(p_cur, end);
 }
 
-someip_result_t SOMEIP_DeserReadStringFixed(INOUT someip_deser_cursor_t *p_cur,
-                                            IN someip_string_encoding_t enc, IN uint32_t fixed_size,
-                                            OUT uint8_t *p_out, IN uint32_t out_size,
+someip_result_t SOMEIP_DeserReadStringFixed(INOUT someip_deser_cursor_t *p_cur, IN someip_string_encoding_t enc,
+                                            IN uint32_t fixed_size, OUT uint8_t *p_out, IN uint32_t out_size,
                                             OUT uint32_t *p_out_len) {
     uint8_t const terminator[SOMEIP_STR_TERM_UTF16_SIZE] = {0U};
     uint8_t const *p_bom = NULL;
@@ -1704,5 +1697,5 @@ someip_result_t SOMEIP_DeserReadStringFixed(INOUT someip_deser_cursor_t *p_cur,
     return SOMEIP_RES_OK;
 }
 
-/* EOF *******************************************************************************************************
- ************************************************************************************************************/
+/* EOF ***************************************************************************************************************************
+ ********************************************************************************************************************************/
