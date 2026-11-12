@@ -32,15 +32,12 @@ ZE_HEADER
 #endif
 
 #ifndef ZE_CORE_LOG
-#define ZE_CORE_LOG(p_fmt, ...) ZE_SysLog_Printf(p_fmt, ##__VA_ARGS__ )
+#define ZE_CORE_LOG(p_fmt, ...) ZE_SysLog_Printf(p_fmt, ##__VA_ARGS__)
 #endif
 
-#define ZE_LOGI(p_fmt, ...)                                                        \
-    ZE_CORE_LOG("[I] " __FILE__ ":" TO_STR(__LINE__) ": " p_fmt "\n", ##__VA_ARGS__)
-#define ZE_LOGE(p_fmt, ...)                                                        \
-    ZE_CORE_LOG("[E] " __FILE__ ":" TO_STR(__LINE__) ": " p_fmt "\n", ##__VA_ARGS__)
-#define ZE_LOGW(p_fmt, ...)                                                        \
-    ZE_CORE_LOG("[W] " __FILE__ ":" TO_STR(__LINE__) ": " p_fmt "\n", ##__VA_ARGS__)
+#define ZE_LOGI(p_fmt, ...) ZE_CORE_LOG("[I] " __FILE__ ":" TO_STR(__LINE__) ": " p_fmt "\n", ##__VA_ARGS__)
+#define ZE_LOGE(p_fmt, ...) ZE_CORE_LOG("[E] " __FILE__ ":" TO_STR(__LINE__) ": " p_fmt "\n", ##__VA_ARGS__)
+#define ZE_LOGW(p_fmt, ...) ZE_CORE_LOG("[W] " __FILE__ ":" TO_STR(__LINE__) ": " p_fmt "\n", ##__VA_ARGS__)
 
 /* SHARED FUNCTIONS **************************************************************************************************************
  ********************************************************************************************************************************/
