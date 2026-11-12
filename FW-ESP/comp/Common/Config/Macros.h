@@ -58,7 +58,7 @@
 #define ZE_FOOTER      FOOTER_CPP
 #endif
 
-/* Macros for permission */
+/* Macros for permission **********************************************************/
 #ifndef RO
 #define RO             const /* Read only permission */
 #endif
@@ -78,21 +78,17 @@
 #define INOUT                /* Input/Output parameter, shall be a pointer */
 #endif
 
-/* Readable check macros*/
+/* Readable check macros **********************************************************/
 
-#define IS_NULL(X) ((X) == ((void *)0))
+#define IS_NULL(X) ((X) == (NULL))
 #define IS_ZERO(X) ((X) == 0)
 
-#define ISNOT_NULL(X) ((X) != ((void *)0))
-#define ISNOT_ZERO(X) ((X) != 0)
+#define IS_NOT_NULL(X) ((X) != (NULL))
+#define IS_NOT_ZERO(X) ((X) != 0)
 
 #define IS_GT(X, Y) ((X) > (Y))
 #define IS_LT(X, Y) ((X) < (Y))
 #define IS_EQ(X, Y) ((X) == (Y))
-
-#define NOT(X)    (!(X))
-#define AND(A, B) ((A) & (B))
-#define INV(X)    (~(X))
 
 /* EXPORTED VARIABLES ************************************************************************************************************
  ********************************************************************************************************************************/
