@@ -84,7 +84,7 @@ ze_err_t prv_sys_log_resource_give() {
 /* PUBLIC FUNCTIONS **************************************************************************************************************
  ********************************************************************************************************************************/
 
-ze_err_t SysLog_Init() {
+ze_err_t ZE_SysLog_Init() {
     uint32_t prv_flag = ZE_ATOMIC_GET(&prv_sys_log_flag);
     if (UINT32_IS_SET(prv_flag, SYS_LOG_RESOURCE_LOCKED)) {
         return ZE_ERR_RESOURCE_LOCKED;
@@ -96,7 +96,7 @@ ze_err_t SysLog_Init() {
     return ZE_SUCCESS;
 }
 
-ze_err_t SysLog_Printf(const char *p_fmt /* RENAMED: fmt -> p_fmt | FILE: SysLog.c */, ...) {
+ze_err_t ZE_SysLog_Printf(const char *p_fmt, ...) {
     /* Place the code uart here! */
 
     return ZE_SUCCESS;

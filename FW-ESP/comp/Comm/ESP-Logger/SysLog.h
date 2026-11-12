@@ -27,25 +27,25 @@ ZE_HEADER
 #define TO_STR(x) #x
 #endif
 
-#ifndef SYS_LOG_LEVEL
-#define SYS_LOG_LEVEL (0U)
+#ifndef ZE_LOG_LEVEL
+#define ZE_LOG_LEVEL (0U)
 #endif
 
-#ifndef CORE_LOG
-#define CORE_LOG(...) SysLog_Printf(__VA_ARGS__)
+#ifndef ZE_CORE_LOG
+#define ZE_CORE_LOG(p_fmt, ...) ZE_SysLog_Printf(p_fmt, ##__VA_ARGS__ )
 #endif
 
-#define SYS_LOGI(p_fmt /* RENAMED: fmt -> p_fmt | FILE: SysLog.h */, ...)                                                        \
-    CORE_LOG("[I] " __FILE__ ":" TO_STR(__LINE__) ": " p_fmt /* RENAMED: fmt -> p_fmt | FILE: SysLog.h */ "\n", __VA_ARGS__)
-#define SYS_LOGE(p_fmt /* RENAMED: fmt -> p_fmt | FILE: SysLog.h */, ...)                                                        \
-    CORE_LOG("[E] " __FILE__ ":" TO_STR(__LINE__) ": " p_fmt /* RENAMED: fmt -> p_fmt | FILE: SysLog.h */ "\n", __VA_ARGS__)
-#define SYS_LOGW(p_fmt /* RENAMED: fmt -> p_fmt | FILE: SysLog.h */, ...)                                                        \
-    CORE_LOG("[W] " __FILE__ ":" TO_STR(__LINE__) ": " p_fmt /* RENAMED: fmt -> p_fmt | FILE: SysLog.h */ "\n", __VA_ARGS__)
+#define ZE_LOGI(p_fmt, ...)                                                        \
+    ZE_CORE_LOG("[I] " __FILE__ ":" TO_STR(__LINE__) ": " p_fmt "\n", ##__VA_ARGS__)
+#define ZE_LOGE(p_fmt, ...)                                                        \
+    ZE_CORE_LOG("[E] " __FILE__ ":" TO_STR(__LINE__) ": " p_fmt "\n", ##__VA_ARGS__)
+#define ZE_LOGW(p_fmt, ...)                                                        \
+    ZE_CORE_LOG("[W] " __FILE__ ":" TO_STR(__LINE__) ": " p_fmt "\n", ##__VA_ARGS__)
 
 /* SHARED FUNCTIONS **************************************************************************************************************
  ********************************************************************************************************************************/
 
-ze_err_t SysLog_Printf(const char *p_fmt /* RENAMED: fmt -> p_fmt | FILE: SysLog.h */, ...);
+ze_err_t ZE_SysLog_Printf(const char *p_fmt, ...);
 
 /* FOOTERS ***********************************************************************************************************************
  ********************************************************************************************************************************/
