@@ -12,6 +12,7 @@
 
 import sys
 import os
+import re
 import json
 import shlex
 import subprocess
@@ -39,8 +40,9 @@ def main():
     # Build mapping from relative/absolute path to compilation entry
     entry_map = {}
     for entry in db:
-        entry_file = os.path.abspath(entry.get("file", ""))
-        entry_map[entry_file] = entry
+        raw_f = entry.get("file", "")
+        norm_f = os.path.normpath(os.path.abspath(raw_f)).lower()
+        entry_map[norm_f] = entry
 
     failed_files = 0
     total_files = len(files_to_check)
@@ -50,13 +52,14 @@ def main():
     print("==================================================")
 
     for rel_path in files_to_check:
-        abs_path = os.path.abspath(rel_path)
-        entry = entry_map.get(abs_path)
+        norm_abs = os.path.normpath(os.path.abspath(rel_path)).lower()
+        entry = entry_map.get(norm_abs)
 
         if not entry:
             # Fallback: substring match on file path
+            norm_rel = rel_path.replace("\\", "/").lower()
             for ef, e in entry_map.items():
-                if ef.endswith(rel_path):
+                if ef.replace("\\", "/").endswith(norm_rel):
                     entry = e
                     break
 
@@ -65,27 +68,32 @@ def main():
             continue
 
         cmd_str = entry.get("command")
-        if not cmd_str:
-            args = entry.get("arguments", [])
-        else:
-            args = shlex.split(cmd_str)
-
-        # Substitute output object with /dev/null to perform fast check without side-effects
-        new_args = []
-        skip_next = False
-        for arg in args:
-            if skip_next:
-                skip_next = False
-                continue
-            if arg == "-o":
-                skip_next = True
-                continue
-            new_args.append(arg)
-
-        new_args.extend(["-o", os.devnull, "-Werror=unused-function", "-Werror=unused-variable"])
-
         work_dir = entry.get("directory", os.getcwd())
-        res = subprocess.run(new_args, cwd=work_dir, capture_output=True, text=True)
+
+        if os.name == "nt" and cmd_str:
+            # On Windows, preserving the exact escape sequences avoids shlex mangling backslashes and quotes
+            new_cmd = re.sub(r'\s-o\s+\S+', f' -o {os.devnull} -Werror=unused-function -Werror=unused-variable', cmd_str)
+            res = subprocess.run(new_cmd, cwd=work_dir, capture_output=True, text=True)
+        else:
+            if not cmd_str:
+                args = list(entry.get("arguments", []))
+            else:
+                args = shlex.split(cmd_str)
+
+            # Substitute output object with os.devnull to perform fast check without side-effects
+            new_args = []
+            skip_next = False
+            for arg in args:
+                if skip_next:
+                    skip_next = False
+                    continue
+                if arg == "-o":
+                    skip_next = True
+                    continue
+                new_args.append(arg)
+
+            new_args.extend(["-o", os.devnull, "-Werror=unused-function", "-Werror=unused-variable"])
+            res = subprocess.run(new_args, cwd=work_dir, capture_output=True, text=True)
 
         if res.returncode != 0:
             failed_files += 1

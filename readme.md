@@ -60,6 +60,9 @@ ZonalECU-FWv2/
 │   │   └── doxygen_assets/          # Logo, custom styles, and navtree scripts
 │   ├── drawio/                      # System architecture diagrams
 │   │   └── SystemView.drawio        # Z-ECU electrical & network block diagrams
+│   ├── scripts/                     # Pre-commit & working tree update tools
+│   │   ├── working_tree_update.ps1  # Windows PowerShell local pre-commit runner (Job 0 & 1)
+│   │   └── working_tree_update.sh   # Linux / WSL / Bash local pre-commit runner (Job 0 & 1)
 │   └── readme.md                    # Common resources overview
 │
 ├── FW-ESP/                          # ESP32 Firmware Subsystem
@@ -173,7 +176,43 @@ sudo apt-get install -y gcc-arm-none-eabi
 
 ---
 
-### 4.2 Running CI Jobs Locally
+### 4.2 Local Pre-Commit Runner & Auto-Formatting (Recommended)
+
+Before creating a commit or opening a Pull Request, run the local pre-commit script. It ports **Job 0 (Formatting & Conventions)** and **Job 1 (Clangd Static Analysis & Strict Compiler Checks)** into a single local command that auto-formats your working tree, verifies Git conventions, and checks for static errors.
+
+#### Windows (PowerShell)
+```powershell
+# Standard run: auto-formats code, verifies branch/commit format, and runs static analysis:
+pwsh -File .\FW-Common\scripts\working_tree_update.ps1
+
+# Strict check-only mode (fails with exit 1 if any unformatted code is detected):
+pwsh -File .\FW-Common\scripts\working_tree_update.ps1 -CheckOnly
+
+# Skip Git branch and commit conventions check:
+pwsh -File .\FW-Common\scripts\working_tree_update.ps1 -SkipGitConventions
+
+# Analyze only specific files:
+pwsh -File .\FW-Common\scripts\working_tree_update.ps1 -Files "FW-ESP\main\ZonalECU-FWv2.c"
+```
+
+#### Linux / WSL / macOS (Bash)
+```bash
+# Standard run:
+./FW-Common/scripts/working_tree_update.sh
+
+# Strict check-only mode:
+./FW-Common/scripts/working_tree_update.sh --check-only
+
+# Skip Git conventions check:
+./FW-Common/scripts/working_tree_update.sh --skip-git-conventions
+```
+
+> [!TIP]
+> The script auto-discovers Espressif toolchains (`esp-clang`, `esp-clangd`, `xtensa-esp-elf`) and system Python/LLVM paths automatically, eliminating the need to manually set PATH on Windows.
+
+---
+
+### 4.3 Running Individual CI Scripts Locally
 
 Developers should run the verification scripts before pushing code to avoid failing PR checks:
 
@@ -209,7 +248,7 @@ python3 .github/scripts/format_rules.py FW-Common FW-ESP FW-STM
 
 ---
 
-### 4.3 Pre-Push All-in-One Check
+### 4.4 Pre-Push All-in-One Check
 
 Run all local CI validations in a single command before submitting a Pull Request:
 
