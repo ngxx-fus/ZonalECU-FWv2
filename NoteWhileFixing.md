@@ -15,6 +15,7 @@ This document records technical issues diagnosed across the project, root causes
 | **005** | CI / APT Network | `azure.archive.ubuntu.com` stalled / hung for 3+ minutes | Default APT TCP timeout is 120s with retries on throttled Azure mirror. | Added `Acquire::http::Timeout=5`, `timeout 30s` guard, mirror replacement, and `timeout-minutes`. |
 | **006** | Static Analysis / Windows | `OSError: [WinError 10093]` in `clangd_check.py` & invalid URI | `select.select` only works on sockets on Windows; `file://C:\...` is malformed URI. | Use reader thread + `queue.Queue` and `pathlib.Path.as_uri()` for cross-platform LSP. |
 | **007** | Static Analysis / Windows | `compiler_check.py` WinError 2 file not found | `shlex.split` removes backslashes on Windows; mangles escaped compiler flags. | Use native command string with regex replacement on Windows; normalize paths with lowercase. |
+| **008** | Formatting | Header guard & top-level `#include` indented by `BeforeHash` | `clang-format` fails to detect header guards preceded by comment banners, indenting file-level directives. | Keep `.clang-format` `IndentPPDirectives: None`; delegate scope-aware preprocessor indent to `format_rules.py`. |
 
 ---
 
@@ -186,3 +187,23 @@ This document records technical issues diagnosed across the project, root causes
   - Normalized all file keys with `os.path.normpath(os.path.abspath(f)).lower()` to handle case-insensitivity and slash discrepancies between CMake entries and CLI paths.
 - **Key Lesson & Prevention Rule**:
   - Never parse Windows command strings with POSIX `shlex.split()`. On Windows, invoke subprocesses with the modified command string directly or use `posix=(os.name != 'nt')`.
+
+---
+
+### [ENTRY-008] Clang-Format `BeforeHash` Indenting Top-Level Header Guards & `#include`
+- **Date**: 2026-11-13
+- **Component**: `.clang-format` & `.github/scripts/format_rules.py`
+- **Symptom**:
+  - Top-level preprocessor directives in header files (guard `#define`, `#include <stdint.h>`, standalone `#define`) were erroneously indented by 4 spaces (`    #define __GUARD__`, `    #include`).
+  - Preprocessor directives inside functions (e.g. `#if PARAM_CHECK` inside `void foo()`) were forced to column 0 by clang-format instead of aligning with the enclosing C code scope.
+- **Root Cause**:
+  1. `clang-format`'s include guard recognition heuristic only detects header guards when `#ifndef` is at the very beginning of the file. In ZonalECU-FWv2, header files have top Doxygen comment blocks (`/* @file ... */`) and section banners (`/* GUARD/BEGIN ... */`) before `#ifndef`. Consequently, `clang-format` treats `#ifndef __HEADER_H__` as a normal nested block and indents every subsequent preprocessor directive in the file by 4 spaces.
+  2. `clang-format` always resets `#` to column 0 inside functions, ignoring enclosing C block indentation.
+- **Fix Applied**:
+  1. Set `IndentPPDirectives: None` in `.clang-format`.
+  2. Implemented `format_preprocessor_indentation()` in `format_rules.py`:
+     - Accurately detects header guards regardless of preceding comments, keeping `#ifndef __..._H__`, `#define __..._H__`, `#include`, and top-level `#define` at column 0.
+     - Indents conditional blocks (`#ifndef ZE_ASSERT_EXPR`) so inner macros receive 4 spaces per nesting level.
+     - Detects C scope brace depth and aligns `#if`/`#endif` with the surrounding function statements.
+- **Key Lesson & Prevention Rule**:
+  - Do not use `IndentPPDirectives: BeforeHash` when headers contain pre-guard comment banners. Keep clang-format preprocessor indentation disabled (`None`) and let the dedicated AST/regex engine in `format_rules.py` apply scope-aware preprocessor indentation.

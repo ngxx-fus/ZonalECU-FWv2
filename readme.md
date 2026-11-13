@@ -272,7 +272,7 @@ All commits (excluding automatic pull request merge commits) MUST strictly follo
 
 ### Components
 * `<REPO>`: Project identifier (`ZonalECU-FWv2` or `ZE`).
-* `<DATETIME>`: Timestamp formatted as `MM/DD/YY HH:MM:SS`.
+* `<DATETIME>`: Timestamp formatted as `MM/DD/YY HH:MM:SS` (or `MM-DD-YYYY HH:MM:SS`).
 * `<TAG>`: Classification tag:
   * `FEAT`: New feature or hardware peripheral implementation.
   * `FIX`: Bug fix, error code resolution, or assertion fix.

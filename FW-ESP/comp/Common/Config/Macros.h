@@ -21,61 +21,61 @@
 
 /* C / C++ Compatibility Macros */
 #ifdef __cplusplus
-#ifndef HEADER_CPP
-#define HEADER_CPP     extern "C" {
-#endif
-#ifndef FOOTER_CPP
-#define FOOTER_CPP     }
-#endif
+    #ifndef HEADER_CPP
+        #define HEADER_CPP     extern "C" {
+    #endif
+    #ifndef FOOTER_CPP
+        #define FOOTER_CPP     }
+    #endif
 
-#ifndef EXTERN_C_BEGIN
-#define EXTERN_C_BEGIN extern "C" {
-#endif
-#ifndef EXTERN_C_END
-#define EXTERN_C_END   }
-#endif
+    #ifndef EXTERN_C_BEGIN
+        #define EXTERN_C_BEGIN extern "C" {
+    #endif
+    #ifndef EXTERN_C_END
+        #define EXTERN_C_END   }
+    #endif
 #else
-#ifndef HEADER_CPP
-#define HEADER_CPP
-#endif
-#ifndef FOOTER_CPP
-#define FOOTER_CPP
-#endif
+    #ifndef HEADER_CPP
+        #define HEADER_CPP
+    #endif
+    #ifndef FOOTER_CPP
+        #define FOOTER_CPP
+    #endif
 
-#ifndef EXTERN_C_BEGIN
-#define EXTERN_C_BEGIN
-#endif
-#ifndef EXTERN_C_END
-#define EXTERN_C_END
-#endif
+    #ifndef EXTERN_C_BEGIN
+        #define EXTERN_C_BEGIN
+    #endif
+    #ifndef EXTERN_C_END
+        #define EXTERN_C_END
+    #endif
 #endif
 
 #if !defined(ZE_HEADER) && defined(HEADER_CPP)
-#define ZE_HEADER      HEADER_CPP
+    #define ZE_HEADER      HEADER_CPP
 #endif
 
 #if !defined(ZE_FOOTER) && defined(FOOTER_CPP)
-#define ZE_FOOTER      FOOTER_CPP
+    #define ZE_FOOTER      FOOTER_CPP
 #endif
 
 /* Macros for permission **********************************************************/
 #ifndef RO
-#define RO             const /* Read only permission */
+    #define RO             const /* Read only permission */
 #endif
 #ifndef WO
-#define WO                   /* Write only permission */
+    #define WO                   /* Write only permission */
 #endif
 #ifndef RW
-#define RW                   /* Read/Write permission */
+    #define RW                   /* Read/Write permission */
 #endif
 #ifndef IN
-#define IN             const /* Input parameter */
+    #define IN             const /* Input parameter */
 #endif
 #ifndef OUT
-#define OUT                  /* Output parameter, shall be a pointer */
+    #define OUT                  /* Output parameter, shall be a pointer */
 #endif
 #ifndef INOUT
-#define INOUT                /* Input/Output parameter, shall be a pointer */
+    #define INOUT                /* Input/Output parameter, shall be a pointer */
 #endif
 
 /* Readable check macros **********************************************************/

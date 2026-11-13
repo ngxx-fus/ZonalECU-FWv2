@@ -24,7 +24,7 @@ ZE_HEADER
  ********************************************************************************************************************************/
 
 #ifndef ZE_ASSERT_EXPR
-#define ZE_ASSERT_EXPR(x) /*Place holder for assert function*/
+    #define ZE_ASSERT_EXPR(x) /*Place holder for assert function*/
 #endif
 
 #define ZE_ASSERT

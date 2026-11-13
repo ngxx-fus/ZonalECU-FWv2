@@ -21,7 +21,7 @@
 #define CPU_YIELD() /* Place holder */
 #endif
 #ifndef CPU_RESET_WDT
-#define CPU_WDT_RESET() /* Place holder */
+    #define CPU_WDT_RESET() /* Place holder */
 #endif
 
 /* DEFINITIONS *******************************************************************************************************************

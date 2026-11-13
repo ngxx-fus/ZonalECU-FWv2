@@ -24,15 +24,15 @@ ZE_HEADER
  ********************************************************************************************************************************/
 
 #ifndef TO_STR
-#define TO_STR(x) #x
+    #define TO_STR(x) #x
 #endif
 
 #ifndef ZE_LOG_LEVEL
-#define ZE_LOG_LEVEL (0U)
+    #define ZE_LOG_LEVEL (0U)
 #endif
 
 #ifndef ZE_CORE_LOG
-#define ZE_CORE_LOG(p_fmt, ...) ZE_SysLog_Printf(p_fmt, ##__VA_ARGS__)
+    #define ZE_CORE_LOG(p_fmt, ...) ZE_SysLog_Printf(p_fmt, ##__VA_ARGS__)
 #endif
 
 #define ZE_LOGI(p_fmt, ...) ZE_CORE_LOG("[I] " __FILE__ ":" TO_STR(__LINE__) ": " p_fmt "\n", ##__VA_ARGS__)

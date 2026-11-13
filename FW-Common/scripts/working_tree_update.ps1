@@ -141,7 +141,7 @@ if (-not $SkipGitConventions) {
 
     # --- Step 0.2: Check Latest Commit Format ---
     $LatestMsg = git log -1 --format="%s" 2>$null
-    $CommitRegex = "^(ZE|ZonalECU|ZonalECU-FWv2) \| [0-9]{2}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} \| .+$"
+    $CommitRegex = "^(ZE|ZonalECU|ZonalECU-FWv2) \| [0-9]{2}[/-][0-9]{2}[/-][0-9]{2,4} [0-9]{2}:[0-9]{2}:[0-9]{2} \| .+$"
     $MergeRegex = "^Merge .+$"
 
     if ($LatestMsg) {

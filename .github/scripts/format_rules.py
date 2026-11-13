@@ -809,6 +809,107 @@ def align_macro_backslashes(content: str, target_col: int = BANNER_WIDTH) -> str
     return "\n".join(out)
 
 
+def format_preprocessor_indentation(text: str) -> str:
+    """
+    Format preprocessor directives with scope-aware indentation:
+    - Header guard (#ifndef __..._H__, #define __..._H__, #endif) remains at column 0.
+    - Top-level #include and #define remain at column 0.
+    - Conditional blocks (#ifndef, #ifdef, #if) indent nested directives by 4 spaces.
+    - Preprocessor directives inside functions/blocks align with the surrounding C code.
+    """
+    lines = text.splitlines()
+    out = []
+
+    # 1. Identify header guard if any (within first 35 lines)
+    guard_macro = None
+    for i in range(min(35, len(lines))):
+        line = lines[i]
+        m = re.match(r"^\s*#\s*(?:ifndef|if\s+!defined)\s+([A-Za-z0-9_]+)", line)
+        if m:
+            macro = m.group(1)
+            for j in range(i + 1, min(i + 15, len(lines))):
+                m_def = re.match(r"^\s*#\s*define\s+([A-Za-z0-9_]+)", lines[j])
+                if m_def and m_def.group(1) == macro:
+                    guard_macro = macro
+                    break
+            if guard_macro:
+                break
+
+    brace_depth = 0
+    pp_stack = []  # list of (is_guard, base_indent)
+
+    for line in lines:
+        stripped = line.strip()
+
+        if stripped.startswith("#"):
+            pp_cmd = re.match(r"^#\s*([a-zA-Z]+)", stripped)
+            cmd = pp_cmd.group(1) if pp_cmd else ""
+
+            code_indent = brace_depth * 4
+
+            if cmd in ("if", "ifdef", "ifndef"):
+                m_guard = re.match(r"^#\s*(?:ifndef|if\s+!defined)\s+([A-Za-z0-9_]+)", stripped)
+                if m_guard and m_guard.group(1) == guard_macro and not pp_stack:
+                    pp_stack.append((True, 0))
+                    out.append(stripped)
+                    continue
+
+                current_pp_indent = code_indent + len([x for x in pp_stack if not x[0]]) * 4
+                indented_line = (" " * current_pp_indent) + stripped
+                out.append(indented_line)
+                pp_stack.append((False, current_pp_indent))
+
+            elif cmd in ("elif", "else"):
+                if pp_stack and pp_stack[-1][0]:
+                    out.append(stripped)
+                else:
+                    parent_indent = pp_stack[-1][1] if pp_stack else code_indent
+                    out.append((" " * parent_indent) + stripped)
+
+            elif cmd == "endif":
+                if pp_stack:
+                    is_guard, parent_indent = pp_stack.pop()
+                    if is_guard:
+                        out.append(stripped)
+                    else:
+                        out.append((" " * parent_indent) + stripped)
+                else:
+                    out.append(stripped)
+
+            elif cmd == "define":
+                m_def = re.match(r"^#\s*define\s+([A-Za-z0-9_]+)", stripped)
+                if m_def and m_def.group(1) == guard_macro and pp_stack and pp_stack[-1][0]:
+                    out.append(stripped)
+                else:
+                    current_pp_indent = code_indent + len([x for x in pp_stack if not x[0]]) * 4
+                    out.append((" " * current_pp_indent) + stripped)
+
+            else:  # #include, #pragma, #error, etc.
+                current_pp_indent = code_indent + len([x for x in pp_stack if not x[0]]) * 4
+                out.append((" " * current_pp_indent) + stripped)
+
+        else:
+            clean_line = re.sub(r"//.*$", "", re.sub(r"/\*.*?\*/", "", line))
+            open_braces = clean_line.count("{")
+            close_braces = clean_line.count("}")
+
+            effective_pp_indent = len([x for x in pp_stack if not x[0]]) * 4
+            if stripped:
+                if effective_pp_indent > 0 and brace_depth > 0:
+                    leading_spaces = len(line) - len(line.lstrip())
+                    out.append((" " * (leading_spaces + effective_pp_indent)) + stripped)
+                else:
+                    out.append(line)
+            else:
+                out.append(line)
+
+            brace_depth += open_braces - close_braces
+            if brace_depth < 0:
+                brace_depth = 0
+
+    return "\n".join(out)
+
+
 def format_file(file_path: str) -> bool:
     """
     Process, reformat, and display diff report for a single C or header file.
@@ -849,6 +950,7 @@ def format_file(file_path: str) -> bool:
     formatted_content = align_all_enums(formatted_content)
     formatted_content = align_all_doxygen_comments(formatted_content)
     formatted_content = align_macro_backslashes(formatted_content, BANNER_WIDTH)
+    formatted_content = format_preprocessor_indentation(formatted_content)
 
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(formatted_content)
