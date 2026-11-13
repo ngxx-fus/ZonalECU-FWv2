@@ -9,7 +9,9 @@ import os
 import subprocess
 import json
 import time
-import select
+import threading
+import queue
+import pathlib
 
 def main():
     if len(sys.argv) < 3:
@@ -40,7 +42,7 @@ def main():
         "id": 1,
         "method": "initialize",
         "params": {
-            "rootUri": f"file://{project_root}",
+            "rootUri": pathlib.Path(project_root).as_uri(),
             "capabilities": {}
         }
     })
@@ -63,7 +65,7 @@ def main():
             "method": "textDocument/didOpen",
             "params": {
                 "textDocument": {
-                    "uri": f"file://{full_path}",
+                    "uri": pathlib.Path(full_path).as_uri(),
                     "languageId": "c",
                     "version": 1,
                     "text": text
@@ -71,28 +73,45 @@ def main():
             }
         })
 
+    # Background reader thread for cross-platform LSP reading (compatible with Windows & POSIX)
+    msg_queue = queue.Queue()
+
+    def stdout_reader():
+        try:
+            while True:
+                line = proc.stdout.readline()
+                if not line:
+                    break
+                line_str = line.decode("utf-8", errors="ignore")
+                if line_str.startswith("Content-Length: "):
+                    cl = int(line_str[16:].strip())
+                    proc.stdout.readline()  # empty separator line
+                    body_bytes = proc.stdout.read(cl)
+                    msg = json.loads(body_bytes.decode("utf-8", errors="ignore"))
+                    msg_queue.put(msg)
+        except Exception:
+            pass
+
+    reader_thread = threading.Thread(target=stdout_reader, daemon=True)
+    reader_thread.start()
+
     # 3. Collect publishDiagnostics
     diagnostics_map = {}
     start_time = time.time()
     max_wait = 5.0 + len(files_to_check) * 0.5
 
     while time.time() - start_time < max_wait:
-        r, _, _ = select.select([proc.stdout], [], [], 0.2)
-        if r:
-            line = proc.stdout.readline().decode("utf-8", errors="ignore")
-            if line.startswith("Content-Length: "):
-                try:
-                    cl = int(line[16:].strip())
-                    proc.stdout.readline()  # empty separator line
-                    body_bytes = proc.stdout.read(cl)
-                    msg = json.loads(body_bytes.decode("utf-8", errors="ignore"))
-                    if msg.get("method") == "textDocument/publishDiagnostics":
-                        uri = msg["params"]["uri"]
-                        for rel in files_to_check:
-                            if uri.endswith(rel):
-                                diagnostics_map[rel] = msg["params"]["diagnostics"]
-                except Exception:
-                    pass
+        try:
+            msg = msg_queue.get(timeout=0.2)
+            if msg.get("method") == "textDocument/publishDiagnostics":
+                uri = msg.get("params", {}).get("uri", "").replace("\\", "/")
+                for rel in files_to_check:
+                    rel_norm = rel.replace("\\", "/")
+                    if uri.endswith(rel_norm):
+                        diagnostics_map[rel] = msg["params"]["diagnostics"]
+        except queue.Empty:
+            pass
+
         if len(diagnostics_map) >= len(files_to_check):
             break
 

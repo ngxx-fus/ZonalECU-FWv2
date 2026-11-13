@@ -8,7 +8,8 @@
 #include "freertos/FreeRTOS.h" /* IWYU pragma: keep (must be included before task.h) */
 #include "freertos/task.h"
 #include "driver/gpio.h"
-#include "Common/SharedAPIs.h"
+#include "Common/All.h"
+#include "Comm/ESP-Logger/All.h"
 
 /* MACROS ************************************************************************************************************************
  ********************************************************************************************************************************/
@@ -19,8 +20,6 @@
 /* PRIVATE VARIABLES *************************************************************************************************************
  ********************************************************************************************************************************/
 
-static const char *sp_tag = "MAIN";
-
 /* FUNCTION IMPLEMENTATIONS ******************************************************************************************************
  ********************************************************************************************************************************/
 
@@ -30,14 +29,14 @@ void app_main(void) {
     uint32_t blink_cnt = 0U;
     uint32_t led_level = 0U;
 
-    ESP_LOGI(sp_tag, "Zonal ECU Firmware v2 starting...");
-    ESP_LOGI(sp_tag, "Sample error check: code %d -> %s", err, ZE_ErrToStr(err));
+    ZE_LOGI("Zonal ECU Firmware v2 starting...");
+    ZE_LOGI("Sample error check: code %d -> %s", err, ZE_ErrToStr(err));
 
     err = gpio_reset_pin(MAIN_LED_GPIO);
 
     /* Stop here if the LED pin cannot be reset */
     if (ZE_OK != err) {
-        ESP_LOGE(sp_tag, "gpio_reset_pin failed: %s", ZE_ErrToStr(err));
+        ZE_LOGE("gpio_reset_pin failed: %s", ZE_ErrToStr(err));
 
         /* Nothing else to run without the LED */
         return;
@@ -47,7 +46,7 @@ void app_main(void) {
 
     /* Stop here if the LED pin cannot be configured as output */
     if (ZE_OK != err) {
-        ESP_LOGE(sp_tag, "gpio_set_direction failed: %s", ZE_ErrToStr(err));
+        ZE_LOGE("gpio_set_direction failed: %s", ZE_ErrToStr(err));
 
         /* Nothing else to run without the LED */
         return;
@@ -57,7 +56,7 @@ void app_main(void) {
     while (true) {
         led_level = blink_cnt % 2U;
         (void)gpio_set_level(MAIN_LED_GPIO, led_level);
-        ESP_LOGW(sp_tag, "LED %s (count=%lu)", (0U != led_level) ? "ON" : "OFF", (unsigned long)blink_cnt);
+        ZE_LOGW("LED %s (count=%lu)", (0U != led_level) ? "ON" : "OFF", (unsigned long)blink_cnt);
         blink_cnt++;
         vTaskDelay(pdMS_TO_TICKS(MAIN_LED_TOGGLE_MS));
     }

@@ -1,0 +1,307 @@
+{
+    "C Source File Skeleton": {
+        "include": ["**/*.c", "**/*.cpp"],
+        "prefix": "lazy-c-source",
+        "description": "Insert standard C/C++ source file skeleton",
+        "body": [
+            "/********************************************************************************************************************************",
+            " * @file $TM_FILENAME",
+            " * @ingroup ${DIRECTORY/.*[\\/]([^\\/]+)$/$1/}",
+            " * @brief ${1:Source file for [[${TM_FILENAME_BASE}]]}",
+            " ********************************************************************************************************************************/",
+            "",
+            "/* INCLUDES *********************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "",
+            "/* MACROS ***********************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "",
+            "/* DEFINITIONS ******************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "",
+            "/* EXPORTED VARIABLES ***********************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "",
+            "/* PRIVATE VARIABLES ************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "",
+            "/* PUBLIC VARIABLES *************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "",
+            "/* PRIVATE FUNCTIONS ************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "",
+            "/* PUBLIC FUNCTIONS *************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "",
+            "/* EOF **************************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            ""
+        ]
+    },
+    "C Header File Skeleton": {
+        "include": ["**/*.h", "**/*.hpp"],
+        "prefix": "lazy-c-header",
+        "description": "Insert standard C/C++ header file skeleton with directory guard",
+        "body": [
+            "/********************************************************************************************************************************",
+            " * @file $TM_FILENAME",
+            " * @ingroup ${WORKSPACE_NAME/([^a-zA-Z0-9_])|([a-zA-Z0-9_]+)/${1:+_}$2/g}",
+            " * @brief ${1:Header file for [[${TM_FILENAME_BASE}]]}",
+            " ********************************************************************************************************************************/",
+            "",
+            "/* GUARD/BEGIN ******************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "#ifndef __${WORKSPACE_NAME/([^a-zA-Z0-9_])|([a-zA-Z0-9_]+)/${1:+_}${2:/upcase}/g}_${RELATIVE_FILEPATH/([^a-zA-Z0-9_])|([a-zA-Z0-9_]+)/${1:+_}${2:/upcase}/g}__",
+            "#define __${WORKSPACE_NAME/([^a-zA-Z0-9_])|([a-zA-Z0-9_]+)/${1:+_}${2:/upcase}/g}_${RELATIVE_FILEPATH/([^a-zA-Z0-9_])|([a-zA-Z0-9_]+)/${1:+_}${2:/upcase}/g}__",
+            "",
+            "/* INCLUDES *********************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "",
+            "#include \"Common/Config/All.h\"",
+            "",
+            "/* HEADERS **********************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "ZE_HEADER",
+            "",
+            "/* MACROS ***********************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "",
+            "/* DEFINITIONS ******************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "",
+            "/* EXPORTED VARIABLES ***********************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "",
+            "/* SHARED VARIABLES *************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "",
+            "/* SHARED FUNCTIONS *************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "",
+            "/* FOOTERS **********************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "ZE_FOOTER",
+            "",
+            "/* GUARD/END ********************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "#endif /* __${WORKSPACE_NAME/([^a-zA-Z0-9_])|([a-zA-Z0-9_]+)/${1:+_}${2:/upcase}/g}_${RELATIVE_FILEPATH/([^a-zA-Z0-9_])|([a-zA-Z0-9_]+)/${1:+_}${2:/upcase}/g}__ */",
+            "",
+            "/* EOF **************************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            ""
+        ]
+    },
+    "C SharedIPS Header File Skeleton": {
+        "include": ["**/*.h", "**/*.hpp"],
+        "prefix": "lazy-c-shared-header",
+        "description": "Insert standard C/C++ header file skeleton with directory guard",
+        "body": [
+            "/********************************************************************************************************************************",
+            " * @file $TM_FILENAME",
+            " * @ingroup ${WORKSPACE_NAME/([^a-zA-Z0-9_])|([a-zA-Z0-9_]+)/${1:+_}$2/g}",
+            " * @brief ${1:Header file for [[${TM_FILENAME_BASE}]]}",
+            " ********************************************************************************************************************************/",
+            "",
+            "/* GUARD/BEGIN ******************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "#ifndef __${WORKSPACE_NAME/([^a-zA-Z0-9_])|([a-zA-Z0-9_]+)/${1:+_}${2:/upcase}/g}_${RELATIVE_FILEPATH/([^a-zA-Z0-9_])|([a-zA-Z0-9_]+)/${1:+_}${2:/upcase}/g}__",
+            "#define __${WORKSPACE_NAME/([^a-zA-Z0-9_])|([a-zA-Z0-9_]+)/${1:+_}${2:/upcase}/g}_${RELATIVE_FILEPATH/([^a-zA-Z0-9_])|([a-zA-Z0-9_]+)/${1:+_}${2:/upcase}/g}__",
+            "",
+            "/* INCLUDES *********************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "",
+            "#include \"Common/Config/All.h\"",
+            "",
+            "/* GUARD/END ********************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            "#endif /* __${WORKSPACE_NAME/([^a-zA-Z0-9_])|([a-zA-Z0-9_]+)/${1:+_}${2:/upcase}/g}_${RELATIVE_FILEPATH/([^a-zA-Z0-9_])|([a-zA-Z0-9_]+)/${1:+_}${2:/upcase}/g}__ */",
+            "",
+            "/* EOF **************************************************************************************************************************",
+            " ********************************************************************************************************************************/",
+            ""
+        ]
+    },
+    /* ========================================================================= */
+    /* Group 1: With @return (lazy-dox-*-param)                                  */
+    /* ========================================================================= */
+    "Doxygen Header (0 param, with return)": {
+        "scope": "c,cpp",
+        "prefix": "lazy-dox-0-param",
+        "description": "Doxygen block: 0 param with return",
+        "body": [
+            "/** @brief ${1:introduce about your function}",
+            " *  @return ${2:return description} */",
+            "$0"
+        ]
+    },
+    "Doxygen Header (1 param, with return)": {
+        "scope": "c,cpp",
+        "prefix": "lazy-dox-1-param",
+        "description": "Doxygen block: 1 param with return",
+        "body": [
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @return ${4:return description} */",
+            "$0"
+        ]
+    },
+    "Doxygen Header (2 params, with return)": {
+        "scope": "c,cpp",
+        "prefix": "lazy-dox-2-param",
+        "description": "Doxygen block: 2 params with return",
+        "body": [
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @return ${6:return description} */",
+            "$0"
+        ]
+    },
+    "Doxygen Header (3 params, with return)": {
+        "scope": "c,cpp",
+        "prefix": "lazy-dox-3-param",
+        "description": "Doxygen block: 3 params with return",
+        "body": [
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @param ${6:param3} ${7:param description}",
+            " *  @return ${8:return description} */",
+            "$0"
+        ]
+    },
+    "Doxygen Header (4 params, with return)": {
+        "scope": "c,cpp",
+        "prefix": "lazy-dox-4-param",
+        "description": "Doxygen block: 4 params with return",
+        "body": [
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @param ${6:param3} ${7:param description}",
+            " *  @param ${8:param4} ${9:param description}",
+            " *  @return ${10:return description} */",
+            "$0"
+        ]
+    },
+    "Doxygen Header (5 params, with return)": {
+        "scope": "c,cpp",
+        "prefix": "lazy-dox-5-param",
+        "description": "Doxygen block: 5 params with return",
+        "body": [
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @param ${6:param3} ${7:param description}",
+            " *  @param ${8:param4} ${9:param description}",
+            " *  @param ${10:param5} ${11:param description}",
+            " *  @return ${12:return description} */",
+            "$0"
+        ]
+    },
+    "Doxygen Header (6 params, with return)": {
+        "scope": "c,cpp",
+        "prefix": "lazy-dox-6-param",
+        "description": "Doxygen block: 6 params with return",
+        "body": [
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @param ${6:param3} ${7:param description}",
+            " *  @param ${8:param4} ${9:param description}",
+            " *  @param ${10:param5} ${11:param description}",
+            " *  @param ${12:param6} ${13:param description}",
+            " *  @return ${14:return description} */",
+            "$0"
+        ]
+    },
+
+    /* ========================================================================= */
+    /* Group 2: Without @return (lazy-dox-no-ret-*-param)                        */
+    /* ========================================================================= */
+    "Doxygen Header (0 param, no return)": {
+        "scope": "c,cpp",
+        "prefix": "lazy-dox-no-ret-0-param",
+        "description": "Doxygen block: 0 param without return",
+        "body": [
+            "/** @brief ${1:introduce about your function} */",
+            "$0"
+        ]
+    },
+    "Doxygen Header (1 param, no return)": {
+        "scope": "c,cpp",
+        "prefix": "lazy-dox-no-ret-1-param",
+        "description": "Doxygen block: 1 param without return",
+        "body": [
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description} */",
+            "$0"
+        ]
+    },
+    "Doxygen Header (2 params, no return)": {
+        "scope": "c,cpp",
+        "prefix": "lazy-dox-no-ret-2-param",
+        "description": "Doxygen block: 2 params without return",
+        "body": [
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description} */",
+            "$0"
+        ]
+    },
+    "Doxygen Header (3 params, no return)": {
+        "scope": "c,cpp",
+        "prefix": "lazy-dox-no-ret-3-param",
+        "description": "Doxygen block: 3 params without return",
+        "body": [
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @param ${6:param3} ${7:param description} */",
+            "$0"
+        ]
+    },
+    "Doxygen Header (4 params, no return)": {
+        "scope": "c,cpp",
+        "prefix": "lazy-dox-no-ret-4-param",
+        "description": "Doxygen block: 4 params without return",
+        "body": [
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @param ${6:param3} ${7:param description}",
+            " *  @param ${8:param4} ${9:param description} */",
+            "$0"
+        ]
+    },
+    "Doxygen Header (5 params, no return)": {
+        "scope": "c,cpp",
+        "prefix": "lazy-dox-no-ret-5-param",
+        "description": "Doxygen block: 5 params without return",
+        "body": [
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @param ${6:param3} ${7:param description}",
+            " *  @param ${8:param4} ${9:param description}",
+            " *  @param ${10:param5} ${11:param description} */",
+            "$0"
+        ]
+    },
+    "Doxygen Header (6 params, no return)": {
+        "scope": "c,cpp",
+        "prefix": "lazy-dox-no-ret-6-param",
+        "description": "Doxygen block: 6 params without return",
+        "body": [
+            "/** @brief ${1:introduce about your function}",
+            " *  @param ${2:param1} ${3:param description}",
+            " *  @param ${4:param2} ${5:param description}",
+            " *  @param ${6:param3} ${7:param description}",
+            " *  @param ${8:param4} ${9:param description}",
+            " *  @param ${10:param5} ${11:param description}",
+            " *  @param ${12:param6} ${13:param description} */",
+            "$0"
+        ]
+    }
+}

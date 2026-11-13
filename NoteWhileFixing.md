@@ -13,6 +13,9 @@ This document records technical issues diagnosed across the project, root causes
 | **003** | Documentation | ASCII table inside `@verbatim` merged with tag line | Regex parser treated `@verbatim` as a generic Doxygen header tag. | Isolate verbatim blocks with strict passthrough logic in doc parsing scripts. |
 | **004** | CI / Docker DNS | `Could not resolve 'security.ubuntu.com'` in container | Docker inherits unreachable loopback resolver (`127.0.0.53`) from host. | Add `options: --dns 8.8.8.8 --dns 1.1.1.1` and fallback nameservers in container steps. |
 | **005** | CI / APT Network | `azure.archive.ubuntu.com` stalled / hung for 3+ minutes | Default APT TCP timeout is 120s with retries on throttled Azure mirror. | Added `Acquire::http::Timeout=5`, `timeout 30s` guard, mirror replacement, and `timeout-minutes`. |
+| **006** | Static Analysis / Windows | `OSError: [WinError 10093]` in `clangd_check.py` & invalid URI | `select.select` only works on sockets on Windows; `file://C:\...` is malformed URI. | Use reader thread + `queue.Queue` and `pathlib.Path.as_uri()` for cross-platform LSP. |
+| **007** | Static Analysis / Windows | `compiler_check.py` WinError 2 file not found | `shlex.split` removes backslashes on Windows; mangles escaped compiler flags. | Use native command string with regex replacement on Windows; normalize paths with lowercase. |
+| **008** | Formatting | Header guard & top-level `#include` indented by `BeforeHash` | `clang-format` fails to detect header guards preceded by comment banners, indenting file-level directives. | Keep `.clang-format` `IndentPPDirectives: None`; delegate scope-aware preprocessor indent to `format_rules.py`. |
 
 ---
 
@@ -147,3 +150,60 @@ This document records technical issues diagnosed across the project, root causes
   4. Added explicit job-level `timeout-minutes: 5` (and 10/15 where appropriate) across all jobs in `.github/workflows/ci.yml`.
 - **Key Lesson & Prevention Rule**:
   - Never allow unbounded network operations in CI scripts. Always configure short connect timeouts, command-level `timeout` wrappers, and job-level `timeout-minutes`.
+
+---
+
+### [ENTRY-006] Windows `select.select()` Pipe Incompatibility & Malformed File URIs in `clangd_check.py`
+- **Date**: 2026-11-13
+- **Component**: `.github/scripts/clangd_check.py`
+- **Symptom**:
+  ```text
+  OSError: [WinError 10093] Either the application has not called WSAStartup, or WSAStartup failed
+  ```
+  Additionally, Clangd failed to resolve project headers with `'stdbool.h' file not found`.
+- **Root Cause**:
+  1. In Python on Windows, `select.select()` is implemented on Winsock and only accepts socket file descriptors; invoking it on pipe streams (`proc.stdout`) raises `OSError [WinError 10093]`.
+  2. URI interpolation `f"file://{full_path}"` on Windows yields `file://C:\...`, which is an invalid URI with `C:` parsed as the network authority instead of a root local drive path, causing Clangd to fail compilation database lookups.
+- **Fix Applied**:
+  1. Replaced `select.select` with a daemon background thread (`stdout_reader`) pushing decoded JSON-RPC responses to a thread-safe `queue.Queue()`.
+  2. Used RFC-compliant `pathlib.Path(p).as_uri()` for `rootUri` and document URIs (`file:///C:/...`).
+- **Key Lesson & Prevention Rule**:
+  - Never use `select.select()` on subprocess stdout/stderr pipes in scripts intended to run cross-platform (Windows & Linux). Use threading and `queue.Queue` with timeout polling.
+
+---
+
+### [ENTRY-007] `shlex.split` Stripping Path Backslashes on Windows in `compiler_check.py`
+- **Date**: 2026-11-13
+- **Component**: `.github/scripts/compiler_check.py`
+- **Symptom**:
+  ```text
+  FileNotFoundError: [WinError 2] The system cannot find the file specified
+  ```
+- **Root Cause**:
+  - In `compile_commands.json` generated on Windows, compilation commands contain backslash-delimited compiler paths (`C:\Espressif\tools\...\gcc.exe`).
+  - By default, Python's `shlex.split(cmd_str)` operates in POSIX mode, where backslashes are treated as escape characters and stripped from Windows file paths (e.g. `C:\Espressif...` becomes `C:Espressif...`).
+- **Fix Applied**:
+  - On Windows (`os.name == 'nt'`), preserve the raw command string and replace `-o <file>` with `-o NUL -Werror=unused-function -Werror=unused-variable` via regex directly, delegating command-line parsing to Windows `CreateProcess` via `subprocess.run(new_cmd)`.
+  - Normalized all file keys with `os.path.normpath(os.path.abspath(f)).lower()` to handle case-insensitivity and slash discrepancies between CMake entries and CLI paths.
+- **Key Lesson & Prevention Rule**:
+  - Never parse Windows command strings with POSIX `shlex.split()`. On Windows, invoke subprocesses with the modified command string directly or use `posix=(os.name != 'nt')`.
+
+---
+
+### [ENTRY-008] Clang-Format `BeforeHash` Indenting Top-Level Header Guards & `#include`
+- **Date**: 2026-11-13
+- **Component**: `.clang-format` & `.github/scripts/format_rules.py`
+- **Symptom**:
+  - Top-level preprocessor directives in header files (guard `#define`, `#include <stdint.h>`, standalone `#define`) were erroneously indented by 4 spaces (`    #define __GUARD__`, `    #include`).
+  - Preprocessor directives inside functions (e.g. `#if PARAM_CHECK` inside `void foo()`) were forced to column 0 by clang-format instead of aligning with the enclosing C code scope.
+- **Root Cause**:
+  1. `clang-format`'s include guard recognition heuristic only detects header guards when `#ifndef` is at the very beginning of the file. In ZonalECU-FWv2, header files have top Doxygen comment blocks (`/* @file ... */`) and section banners (`/* GUARD/BEGIN ... */`) before `#ifndef`. Consequently, `clang-format` treats `#ifndef __HEADER_H__` as a normal nested block and indents every subsequent preprocessor directive in the file by 4 spaces.
+  2. `clang-format` always resets `#` to column 0 inside functions, ignoring enclosing C block indentation.
+- **Fix Applied**:
+  1. Set `IndentPPDirectives: None` in `.clang-format`.
+  2. Implemented `format_preprocessor_indentation()` in `format_rules.py`:
+     - Accurately detects header guards regardless of preceding comments, keeping `#ifndef __..._H__`, `#define __..._H__`, `#include`, and top-level `#define` at column 0.
+     - Indents conditional blocks (`#ifndef ZE_ASSERT_EXPR`) so inner macros receive 4 spaces per nesting level.
+     - Detects C scope brace depth and aligns `#if`/`#endif` with the surrounding function statements.
+- **Key Lesson & Prevention Rule**:
+  - Do not use `IndentPPDirectives: BeforeHash` when headers contain pre-guard comment banners. Keep clang-format preprocessor indentation disabled (`None`) and let the dedicated AST/regex engine in `format_rules.py` apply scope-aware preprocessor indentation.
