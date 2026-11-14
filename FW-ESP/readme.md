@@ -70,6 +70,14 @@ FW-ESP/
      #include "Macros.h"
      #include "Atomic.h"
      ```
+3. **Permission & Pointer Annotation Macros (`Macros.h`)**:
+   * Permission and pointer annotation macros are available in 4 equivalent style sets:
+     1. **Uppercase**: `RO`, `WO`, `RW`, `IN`, `OUT`, `INOUT`, `PTR_RO`, `PTR_WO`, `PTR_RW`
+     2. **Lowercase**: `ro`, `wo`, `rw`, `in`, `out`, `inout`, `ptr_ro`, `ptr_wo`, `ptr_rw`
+     3. **Leading `__` Uppercase**: `__RO`, `__WO`, `__RW`, `__IN`, `__OUT`, `__INOUT`, `__PTR_RO`, `__PTR_WO`, `__PTR_RW`
+     4. **Leading `__` Lowercase**: `__ro`, `__wo`, `__rw`, `__in`, `__out`, `__inout`, `__ptr_ro`, `__ptr_wo`, `__ptr_rw`
+   * **Single-Style-Per-File Consistency Rule**: Developers may choose any of the 4 styles freely based on personal/subsystem preference, but **MUST use strictly ONE single style per source/header file** (never mix different casing or prefix styles within the same file).
+
 
 ---
 

@@ -678,6 +678,135 @@ def align_all_enums(text: str) -> str:
     return "\n".join(out)
 
 
+STRUCT_QUALIFIERS = {
+    "RO", "WO", "RW", "ro", "wo", "rw", "IN", "OUT", "INOUT", "in", "out", "inout",
+    "__RO", "__WO", "__RW", "__ro", "__wo", "__rw", "__IN", "__OUT", "__INOUT", "__in", "__out", "__inout"
+}
+
+STRUCT_PTR_QUALIFIERS = {
+    "RO", "WO", "RW", "ro", "wo", "rw", "PTR_RO", "PTR_WO", "PTR_RW", "ptr_ro", "ptr_wo", "ptr_rw",
+    "__RO", "__WO", "__RW", "__ro", "__wo", "__rw", "__PTR_RO", "__PTR_WO", "__PTR_RW", "__ptr_ro", "__ptr_wo", "__ptr_rw", "const"
+}
+
+STRUCT_MEMBER_PATTERN = re.compile(
+    r"^(\s*)"
+    r"(?:(\b[a-zA-Z_][a-zA-Z0-9_]*\b)\s+)?"
+    r"((?:struct\s+|enum\s+|union\s+|unsigned\s+|signed\s+)?[a-zA-Z_][a-zA-Z0-9_]*(?:\s*\*)?)"
+    r"(?:\s+(\b[a-zA-Z_][a-zA-Z0-9_]*\b))?"
+    r"\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\[[^\]]*\])?)\s*;"
+    r"(\s*/\*.*?\*/|\s*//.*)?$"
+)
+
+
+def align_struct_block(body_lines: list) -> list:
+    """
+    Format a single struct body:
+    1. Fix glue like '*RO' -> '* RO'
+    2. Align columns: [prefix_qual] [type] [ptr_qual] [name;] [comment]
+    """
+    parsed_lines = []
+    has_member = False
+
+    for line in body_lines:
+        if line.strip().startswith("//") or line.strip().startswith("/*") or not line.strip():
+            parsed_lines.append({"raw": line, "is_member": False})
+            continue
+
+        fixed_line = re.sub(
+            r"\*(RO|WO|RW|ro|wo|rw|ptr_ro|ptr_wo|ptr_rw|PTR_RO|PTR_WO|PTR_RW|__RO|__WO|__RW|__ro|__wo|__rw|__ptr_ro|__ptr_wo|__ptr_rw|const)\b",
+            r"* \1",
+            line
+        )
+
+        m = STRUCT_MEMBER_PATTERN.match(fixed_line)
+        if m and "(" not in m.group(3) and "(" not in m.group(5):
+            indent, qual, typ, ptr_q, name, cmt = m.groups()
+            if qual and qual not in STRUCT_QUALIFIERS:
+                typ = qual + " " + typ
+                qual = ""
+            if ptr_q and ptr_q not in STRUCT_PTR_QUALIFIERS:
+                typ = typ + " " + ptr_q
+                ptr_q = ""
+            parsed_lines.append({
+                "is_member": True,
+                "indent": indent,
+                "qual": qual or "",
+                "type": typ.strip(),
+                "ptr_q": ptr_q or "",
+                "name": name.strip(),
+                "cmt": cmt.strip() if cmt else ""
+            })
+            has_member = True
+        else:
+            parsed_lines.append({"raw": line, "is_member": False})
+
+    if not has_member:
+        return body_lines
+
+    members = [p for p in parsed_lines if p["is_member"]]
+    max_qual_len = max(len(p["qual"]) for p in members) if any(p["qual"] for p in members) else 0
+    max_type_len = max(len(p["type"]) for p in members)
+    max_ptr_q_len = max(len(p["ptr_q"]) for p in members) if any(p["ptr_q"] for p in members) else 0
+
+    out = []
+    for p in parsed_lines:
+        if not p["is_member"]:
+            out.append(p["raw"])
+            continue
+
+        parts = [p["indent"]]
+        if max_qual_len > 0:
+            parts.append(p["qual"].ljust(max_qual_len) + " ")
+
+        type_str = p["type"].ljust(max_type_len)
+        parts.append(type_str + " ")
+
+        if max_ptr_q_len > 0:
+            ptr_q_str = p["ptr_q"].ljust(max_ptr_q_len)
+            parts.append(ptr_q_str + " ")
+
+        parts.append(p["name"] + ";")
+        if p["cmt"]:
+            parts.append(" " + p["cmt"])
+        out.append("".join(parts))
+
+    return out
+
+
+def align_all_structs(text: str) -> str:
+    """
+    Find all struct definitions and align member types, qualifiers, and names.
+    """
+    lines = text.splitlines()
+    out = []
+    i = 0
+    n = len(lines)
+    while i < n:
+        line = lines[i]
+        if re.search(r"\b(struct\s+[A-Za-z0-9_]*\s*\{|typedef\s+struct\b[^{;]*\{)", line):
+            out.append(line)
+            body = []
+            i += 1
+            brace_count = 1
+            while i < n:
+                cur = lines[i]
+                brace_count += cur.count("{") - cur.count("}")
+                if brace_count == 0:
+                    aligned_body = align_struct_block(body)
+                    out.extend(aligned_body)
+                    out.append(cur)
+                    i += 1
+                    break
+                else:
+                    body.append(cur)
+                    i += 1
+        else:
+            out.append(line)
+            i += 1
+    return "\n".join(out)
+
+
+
 def align_macro_definitions_in_section(lines: list, max_line_width: int = BANNER_WIDTH) -> list:
     """
     Align single-line #define macros in a section:
@@ -948,6 +1077,7 @@ def format_file(file_path: str) -> bool:
     #    - Align macro trailing backslashes '\'
     formatted_content = align_all_macros(formatted_content, BANNER_WIDTH)
     formatted_content = align_all_enums(formatted_content)
+    formatted_content = align_all_structs(formatted_content)
     formatted_content = align_all_doxygen_comments(formatted_content)
     formatted_content = align_macro_backslashes(formatted_content, BANNER_WIDTH)
     formatted_content = format_preprocessor_indentation(formatted_content)

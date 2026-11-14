@@ -223,15 +223,15 @@ typedef enum e_someip_result {
  *           always encoded/decoded field by field (SomeIp_Header.c). Never cast a receive buffer to it.
  *  @note    Members keep wire order; the layout has no padding (16 bytes). */
 typedef struct st_someip_header {
-    someip_service_id_t service_id;
-    someip_method_id_t method_id;
-    someip_length_t length; /*!< As on the wire: SOMEIP_HEADER_PART2_SIZE + payload */
-    someip_client_id_t client_id;
-    someip_session_id_t session_id;
-    someip_protocol_version_t protocol_version;
+    someip_service_id_t        service_id;
+    someip_method_id_t         method_id;
+    someip_length_t            length; /*!< As on the wire: SOMEIP_HEADER_PART2_SIZE + payload */
+    someip_client_id_t         client_id;
+    someip_session_id_t        session_id;
+    someip_protocol_version_t  protocol_version;
     someip_interface_version_t interface_version;
-    someip_message_type_t message_type;
-    someip_return_code_t return_code;
+    someip_message_type_t      message_type;
+    someip_return_code_t       return_code;
 } someip_header_t;
 
 /** @brief   One SOME/IP message as a zero-copy view: decoded header + payload inside the receive buffer
@@ -239,13 +239,13 @@ typedef struct st_someip_header {
 typedef struct st_someip_message {
     someip_header_t header;
     uint8_t const *p_payload;
-    uint32_t payload_len; /*!< = header.length - SOMEIP_HEADER_PART2_SIZE */
+    uint32_t        payload_len; /*!< = header.length - SOMEIP_HEADER_PART2_SIZE */
 } someip_message_t;
 
 /** @brief Decoded SOME/IP-TP header */
 typedef struct st_someip_tp_header {
-    uint32_t offset;       /*!< In bytes, always a multiple of 16 */
-    uint8_t more_segments; /*!< 1 = more segments follow, 0 = last segment */
+    uint32_t offset; /*!< In bytes, always a multiple of 16 */
+    uint8_t  more_segments; /*!< 1 = more segments follow, 0 = last segment */
 } someip_tp_header_t;
 
 typedef enum e_someip_transport {
@@ -256,8 +256,8 @@ typedef enum e_someip_transport {
 /** @brief Transport endpoint of a SOME/IP peer */
 typedef struct st_someip_endpoint {
     someip_transport_t transport;
-    uint8_t ipv4[SOMEIP_IPV4_ADDR_SIZE]; /*!< Network order, e.g. {192,168,1,10} */
-    uint16_t port;                       /*!< Host order */
+    uint8_t            ipv4[SOMEIP_IPV4_ADDR_SIZE]; /*!< Network order, e.g. {192,168,1,10} */
+    uint16_t           port; /*!< Host order */
 } someip_endpoint_t;
 
 /* FOOTERS ***********************************************************************************************************************

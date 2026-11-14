@@ -30,7 +30,7 @@ HEADER_CPP
 /** @brief Session counter of one sender */
 typedef struct st_someip_session {
     someip_session_id_t next_id; /*!< Value returned by the next SOMEIP_SessionNext() */
-    uint8_t active;              /*!< 1 = session handling active, 0 = always 0x0000 */
+    uint8_t             active; /*!< 1 = session handling active, 0 = always 0x0000 */
 } someip_session_t;
 
 /* SHARED FUNCTIONS **************************************************************************************************************

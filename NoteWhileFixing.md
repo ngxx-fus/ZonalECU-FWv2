@@ -207,3 +207,23 @@ This document records technical issues diagnosed across the project, root causes
      - Detects C scope brace depth and aligns `#if`/`#endif` with the surrounding function statements.
 - **Key Lesson & Prevention Rule**:
   - Do not use `IndentPPDirectives: BeforeHash` when headers contain pre-guard comment banners. Keep clang-format preprocessor indentation disabled (`None`) and let the dedicated AST/regex engine in `format_rules.py` apply scope-aware preprocessor indentation.
+
+---
+
+### [2026-11-14] Struct Column Alignment Collapse & Pointer Qualifier Gluing (`*RO`)
+- **Component**: `.github/scripts/format_rules.py` & `.clang-format`
+- **Symptom**:
+  - Struct member declarations with custom qualifiers (`RW`, `RO`, `ptr_ro`, etc.) had their column alignments collapsed by formatting.
+  - Pointer declarations with post-asterisk qualifiers (`RW void * RO p_ext;`) were glued into `RW void *RO p_ext;` because `clang-format` treated `RO` as an identifier attached to `*`.
+- **Root Cause**:
+  - `clang-format` has `AlignConsecutiveDeclarations: None` and does not recognize custom permission macros (`RO`, `WO`, `RW`, `ptr_ro`, etc.) as type qualifiers, attaching `*` to the qualifier token and flattening inter-column whitespace.
+  - `format_rules.py` lacked a post-processing pass for struct member definitions.
+- **Fix Applied**:
+  - Implemented `align_struct_block()` and `align_all_structs()` in `format_rules.py`:
+    1. Un-glues any `*<QUALIFIER>` pattern (e.g. `*RO` -> `* RO`).
+    2. Parses struct fields into `[prefix_qual] [type] [ptr_qual] [name;] [comment]` columns.
+    3. Aligns types, qualifiers, and member names to uniform columns across the struct block.
+    4. Integrated `align_all_structs()` into the post-processing pipeline in `format_file()`.
+- **Key Lesson & Prevention Rule**:
+  - C code formatters cannot natively parse domain-specific attribute/permission macros without custom AST or post-processing passes. Keep `align_all_structs()` in `format_rules.py` to guarantee consistent struct layout.
+
