@@ -252,6 +252,7 @@ typedef enum e_eth_speed {
 ### 3.5 Macros & Constants
 - **Scope of `#define` Constants**: Use `#define` only for standalone compile-time configuration switches (used with `#if`), bit-manipulation/utility expressions, or non-integer literals. Any group of related integer constants **SHALL** use `enum` instead (see Section 3.4).
 - **Naming**: All `#define` macros and global `const` constants must use `UPPER_SNAKE_CASE` and start with a module prefix (`ZE_`, `ZECU_`, `ETH_`, etc.) to prevent namespace collisions. Avoid generic unprefixed names like `MAX` or `MIN`.
+- **Type-Qualifier Macro Exceptions & Consistency Rule**: The permission and pointer annotation macros in `Macros.h` are available in 4 equivalent styles: Uppercase (`RO`, `PTR_RO`), Lowercase (`ro`, `ptr_ro`), Leading `__` Uppercase (`__RO`, `__PTR_RO`), and Leading `__` Lowercase (`__ro`, `__ptr_ro`). Developers may choose any style freely, but **MUST use strictly ONE single style per source/header file** (never mix different casing or underscore prefix styles within the same file).
 - **Parenthesization**: Always wrap every macro parameter and the entire macro expression in parentheses:
 
 ```c
@@ -420,6 +421,11 @@ uint32_t delay_ms = (is_fast_mode) ? FAST_DELAY_MS : NORMAL_DELAY_MS;
   - Prefer `#if FEATURE_ENABLED` or `#if defined(FEATURE_ENABLED)` over `#ifdef FEATURE_ENABLED` so passing `-DFEATURE_ENABLED=0` disables the block as expected.
 - **Disabling Code Blocks**:
   - Never leave bare `#if 0` blocks in the codebase. Use a descriptive macro name (`#if ZE_NOT_YET_IMPLEMENTED`, `#if ZE_TEMP_DISABLED`) paired with a comment explaining why and when it was disabled.
+- **Zero-Footprint File Identification (Friendly Reminder: Say No to `__FILE__`! 🚫📁)**:
+  - To protect our 2MB Flash and keep assertion/logging diagnostics ultra-lightweight, **avoid using raw `__FILE__`** (which dumps long absolute paths into `.rodata` and eats up valuable Flash).
+  - All `.c` source files in `main/` and `comp/` are automatically hashed by CMake at configure/build time into a unique 16-bit identifier: **use `ZE_FILE_ID` instead**!
+  - File ID to source path mappings are automatically maintained in [`main/SourceLists.txt`](main/SourceLists.txt). When decoded on a host or diagnostic tool, `ZE_FILE_ID` resolves instantly without costing a single byte of text Flash on the chip.
+
 
 ---
 

@@ -1,0 +1,13 @@
+# ZE File ID Lookup Table (Auto-generated) #######################################################################################
+
+0xc895 : main/ZonalECU-FWv2.c
+0xd891 : comp/App/SOME-IP/Core/SOMEIP_Check.c
+0x01e5 : comp/App/SOME-IP/Core/SOMEIP_Endian.c
+0x53ed : comp/App/SOME-IP/Core/SOMEIP_Header.c
+0x6818 : comp/App/SOME-IP/Core/SOMEIP_Session.c
+0x8c5d : comp/App/SOME-IP/Message/SOMEIP_Message.c
+0x2c7a : comp/App/SOME-IP/Serialization/SOMEIP_Serialization.c
+0x7e0b : comp/Comm/ESP-Assert/Assert.c
+0x8abb : comp/Comm/ESP-Logger/SysLog.c
+0x19e0 : comp/Comm/ETH-W5500/ESP-SPI.c
+0xf7dd : comp/Common/Error/Error.c
