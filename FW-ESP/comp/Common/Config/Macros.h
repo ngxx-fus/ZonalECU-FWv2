@@ -60,124 +60,123 @@
 
 /* Macros for permission (Group 1: Uppercase) **************************************/
 #ifndef RO
-    #define RO                 const   /* Read only data permission */
+    #define RO             const  /* Read only data permission */
 #endif
 #ifndef WO
-    #define WO                         /* Write only data permission */
+    #define WO                    /* Write only data permission */
 #endif
 #ifndef RW
-    #define RW                         /* Read/Write data permission */
+    #define RW                    /* Read/Write data permission */
 #endif
 #ifndef IN
-    #define IN                 const   /* Input parameter */
+    #define IN             const  /* Input parameter */
 #endif
 #ifndef OUT
-    #define OUT                        /* Output parameter, shall be a pointer */
+    #define OUT                   /* Output parameter, shall be a pointer */
 #endif
 #ifndef INOUT
-    #define INOUT                      /* Input/Output parameter, shall be a pointer */
+    #define INOUT                 /* Input/Output parameter, shall be a pointer */
 #endif
 
 #ifndef PTR_RO
-    #define PTR_RO             * const /* Read only pointer address */
+    #define PTR_RO         *const /* Read only pointer address */
 #endif
 #ifndef PTR_WO
-    #define PTR_WO             *       /* Write only pointer address */
+    #define PTR_WO         *      /* Write only pointer address */
 #endif
 #ifndef PTR_RW
-    #define PTR_RW             *       /* Read/Write pointer address */
+    #define PTR_RW         *      /* Read/Write pointer address */
 #endif
 
 /* Macros for permission (Group 2: Lowercase aliases) ******************************/
 #ifndef ro
-    #define ro                 const   /* Read only data permission */
+    #define ro             const  /* Read only data permission */
 #endif
 #ifndef wo
-    #define wo                         /* Write only data permission */
+    #define wo                    /* Write only data permission */
 #endif
 #ifndef rw
-    #define rw                         /* Read/Write data permission */
+    #define rw                    /* Read/Write data permission */
 #endif
 #ifndef in
-    #define in                 const   /* Input parameter */
+    #define in             const  /* Input parameter */
 #endif
 #ifndef out
-    #define out                        /* Output parameter, shall be a pointer */
+    #define out                   /* Output parameter, shall be a pointer */
 #endif
 #ifndef inout
-    #define inout                      /* Input/Output parameter, shall be a pointer */
+    #define inout                 /* Input/Output parameter, shall be a pointer */
 #endif
 
 #ifndef ptr_ro
-    #define ptr_ro             * const /* Read only pointer address */
+    #define ptr_ro         *const /* Read only pointer address */
 #endif
 #ifndef ptr_wo
-    #define ptr_wo             *       /* Write only pointer address */
+    #define ptr_wo         *      /* Write only pointer address */
 #endif
 #ifndef ptr_rw
-    #define ptr_rw             *       /* Read/Write pointer address */
+    #define ptr_rw         *      /* Read/Write pointer address */
 #endif
 
 /* Macros for permission (Group 3: Leading '__' Uppercase) *************************/
 #ifndef __RO
-    #define __RO               const   /* Read only data permission */
+    #define __RO           const  /* Read only data permission */
 #endif
 #ifndef __WO
-    #define __WO                       /* Write only data permission */
+    #define __WO                  /* Write only data permission */
 #endif
 #ifndef __RW
-    #define __RW                       /* Read/Write data permission */
+    #define __RW                  /* Read/Write data permission */
 #endif
 #ifndef __IN
-    #define __IN               const   /* Input parameter */
+    #define __IN           const  /* Input parameter */
 #endif
 #ifndef __OUT
-    #define __OUT                      /* Output parameter, shall be a pointer */
+    #define __OUT                 /* Output parameter, shall be a pointer */
 #endif
 #ifndef __INOUT
-    #define __INOUT                    /* Input/Output parameter, shall be a pointer */
+    #define __INOUT               /* Input/Output parameter, shall be a pointer */
 #endif
 
 #ifndef __PTR_RO
-    #define __PTR_RO           * const /* Read only pointer address */
+    #define __PTR_RO       *const /* Read only pointer address */
 #endif
 #ifndef __PTR_WO
-    #define __PTR_WO           *       /* Write only pointer address */
+    #define __PTR_WO       *      /* Write only pointer address */
 #endif
 #ifndef __PTR_RW
-    #define __PTR_RW           *       /* Read/Write pointer address */
+    #define __PTR_RW       *      /* Read/Write pointer address */
 #endif
 
 /* Macros for permission (Group 4: Leading '__' Lowercase) *************************/
 #ifndef __ro
-    #define __ro               const   /* Read only data permission */
+    #define __ro           const  /* Read only data permission */
 #endif
 #ifndef __wo
-    #define __wo                       /* Write only data permission */
+    #define __wo                  /* Write only data permission */
 #endif
 #ifndef __rw
-    #define __rw                       /* Read/Write data permission */
+    #define __rw                  /* Read/Write data permission */
 #endif
 #ifndef __in
-    #define __in               const   /* Input parameter */
+    #define __in           const  /* Input parameter */
 #endif
 #ifndef __out
-    #define __out                      /* Output parameter, shall be a pointer */
+    #define __out                 /* Output parameter, shall be a pointer */
 #endif
 #ifndef __inout
-    #define __inout                    /* Input/Output parameter, shall be a pointer */
+    #define __inout               /* Input/Output parameter, shall be a pointer */
 #endif
 
 #ifndef __ptr_ro
-    #define __ptr_ro           * const /* Read only pointer address */
+    #define __ptr_ro       *const /* Read only pointer address */
 #endif
 #ifndef __ptr_wo
-    #define __ptr_wo           *       /* Write only pointer address */
+    #define __ptr_wo       *      /* Write only pointer address */
 #endif
 #ifndef __ptr_rw
-    #define __ptr_rw           *       /* Read/Write pointer address */
+    #define __ptr_rw       *      /* Read/Write pointer address */
 #endif
-
 
 /* Readable check macros **********************************************************/
 
@@ -191,10 +190,8 @@
 #define IS_LT(X, Y) ((X) < (Y))
 #define IS_EQ(X, Y) ((X) == (Y))
 
-#define CHART2UINT32(C3, C2, C1, C0)    (((uint32_t)(C3) << 24) | \
-                                        ((uint32_t)(C2) << 16)  | \
-                                        ((uint32_t)(C1) << 8)   | \
-                                        ((uint32_t)(C0) << 0))
+#define CHART2UINT32(C3, C2, C1, C0)                                                                                             \
+    (((uint32_t)(C3) << 24) | ((uint32_t)(C2) << 16) | ((uint32_t)(C1) << 8) | ((uint32_t)(C0) << 0))
 
 /* EXPORTED VARIABLES ************************************************************************************************************
  ********************************************************************************************************************************/

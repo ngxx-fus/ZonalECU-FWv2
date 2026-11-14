@@ -30,15 +30,15 @@ HEADER_CPP
  *  @note    expected_type: SOMEIP_MT_REQUEST = request/response, SOMEIP_MT_REQUEST_NO_RETURN = fire & forget,
  *           SOMEIP_MT_NOTIFICATION = event / field notifier. */
 typedef struct st_someip_method_cfg {
-    someip_method_id_t method_id; /*!< Method (bit 15 = 0) or event (bit 15 = 1) */
+    someip_method_id_t    method_id; /*!< Method (bit 15 = 0) or event (bit 15 = 1) */
     someip_message_type_t expected_type;
 } someip_method_cfg_t;
 
 /** @brief Configuration of one service */
 typedef struct st_someip_service_cfg {
     someip_method_cfg_t const *p_methods;
-    uint16_t method_len; /*!< Number of entries in p_methods */
-    someip_service_id_t service_id;
+    uint16_t                   method_len; /*!< Number of entries in p_methods */
+    someip_service_id_t        service_id;
     someip_interface_version_t interface_version; /*!< Major interface version [PRS_SOMEIP_00053] */
 } someip_service_cfg_t;
 
