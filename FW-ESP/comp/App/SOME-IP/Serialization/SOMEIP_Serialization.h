@@ -45,7 +45,7 @@ enum e_someip_align {
 
 /** @brief Write cursor (serializer) */
 typedef struct st_someip_ser_cursor {
-    uint8_t *p_buf;
+    uint8_t *p_buf;            /*!< Output buffer */
     uint32_t buf_size;         /*!< Capacity of p_buf in bytes */
     uint32_t pos;              /*!< Next byte to write = bytes written so far */
     uint32_t msg_offset;       /*!< p_buf[0] offset in the SOME/IP message [00569] */
@@ -55,12 +55,12 @@ typedef struct st_someip_ser_cursor {
 
 /** @brief Read cursor (deserializer) */
 typedef struct st_someip_deser_cursor {
-    uint8_t const *p_buf; /*!< Received payload */
-    uint32_t buf_size;    /*!< Number of valid bytes in p_buf */
-    uint32_t pos;         /*!< Next byte to read */
-    uint32_t msg_offset;  /*!< p_buf[0] offset in the SOME/IP message [00569] */
-    someip_byte_order_t order;
-    someip_result_t status;
+    uint8_t const *p_buf;      /*!< Received payload */
+    uint32_t buf_size;         /*!< Number of valid bytes in p_buf */
+    uint32_t pos;              /*!< Next byte to read */
+    uint32_t msg_offset;       /*!< p_buf[0] offset in the SOME/IP message [00569] */
+    someip_byte_order_t order; /*!< Byte order of the next parameters [00369] */
+    someip_result_t status;    /*!< First error, SOMEIP_RES_OK while no error */
 } someip_deser_cursor_t;
 
 /* SHARED FUNCTIONS **************************************************************************************************************
