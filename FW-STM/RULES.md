@@ -31,7 +31,7 @@ This document details core architectural rules, hardware targets, build configur
   ```
 - **Indentation (`tabsize = 4`)**: Always indent using **4 spaces** per level (including nested preprocessor macros). Never use raw `\t` tab characters.
 - **Vertical Compactness**: Minimize wasted vertical space. Keep comment block heights low and functions concise to avoid unnecessary scrolling.
-- **Line Width**: No line of code or documentation may exceed **$W = 108$ characters** (up to 110 columns for standard section banners).
+- **Line Width**: No line of code or documentation may exceed **$W = 128..130$ characters** (up to 130 columns for standard section banners).
 - **Layering**: Respect strict architectural layering (Application $→$ Middleware/CAN Protocol $→$ Drivers/HAL $→$ CMSIS/Registers). Layers must communicate only via well-defined interfaces.
 - **Header Guards & Namespaces**:
   - Every header file must protect against multiple inclusion using `__<MODULE>_<NAME>_H__`.

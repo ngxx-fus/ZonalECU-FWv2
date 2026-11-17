@@ -1,7 +1,7 @@
 
 
-/* INCLUDES **************************************************************************************************
- ************************************************************************************************************/
+/* INCLUDES **********************************************************************************************************************
+ ********************************************************************************************************************************/
 
 #include <stddef.h>
 #include <stdint.h>
@@ -12,22 +12,17 @@
 #include "SOMEIP_Serialization.h"
 #include "SOMEIP_Types.h"
 
-/* PRIVATE FUNCTIONS *****************************************************************************************
- ************************************************************************************************************/
+/* PRIVATE FUNCTIONS *************************************************************************************************************
+ ********************************************************************************************************************************/
 
-static someip_handler_cfg_t const *prv_find_handler(IN someip_server_t *p_server,
-                                                    IN someip_service_id_t service_id,
+static someip_handler_cfg_t const *prv_find_handler(IN someip_server_t *p_server, IN someip_service_id_t service_id,
                                                     IN someip_method_id_t method_id);
-static someip_result_t prv_send_message(IN someip_server_t *p_server, IN someip_endpoint_t *p_peer,
-                                        IN someip_header_t *p_hdr);
-static someip_result_t prv_reply_error(IN someip_server_t *p_server, IN someip_endpoint_t *p_peer,
-                                       IN someip_header_t *p_rx, IN someip_method_cfg_t *p_method,
-                                       IN someip_return_code_t return_code);
-static someip_result_t prv_handle_message(IN someip_server_t *p_server, IN someip_endpoint_t *p_peer,
-                                          IN someip_message_t *p_msg);
+static someip_result_t prv_send_message(IN someip_server_t *p_server, IN someip_endpoint_t *p_peer, IN someip_header_t *p_hdr);
+static someip_result_t prv_reply_error(IN someip_server_t *p_server, IN someip_endpoint_t *p_peer, IN someip_header_t *p_rx,
+                                       IN someip_method_cfg_t *p_method, IN someip_return_code_t return_code);
+static someip_result_t prv_handle_message(IN someip_server_t *p_server, IN someip_endpoint_t *p_peer, IN someip_message_t *p_msg);
 
-static someip_handler_cfg_t const *prv_find_handler(IN someip_server_t *p_server,
-                                                    IN someip_service_id_t service_id,
+static someip_handler_cfg_t const *prv_find_handler(IN someip_server_t *p_server, IN someip_service_id_t service_id,
                                                     IN someip_method_id_t method_id) {
     someip_handler_cfg_t const *p_entry = NULL;
     uint16_t idx;
@@ -37,8 +32,7 @@ static someip_handler_cfg_t const *prv_find_handler(IN someip_server_t *p_server
         p_entry = &p_server->cfg.p_handlers[idx];
 
         /* Same method, and a function is registered */
-        if ((service_id == p_entry->service_id) && (method_id == p_entry->method_id) &&
-            (NULL != p_entry->handler)) {
+        if ((service_id == p_entry->service_id) && (method_id == p_entry->method_id) && (NULL != p_entry->handler)) {
             /*Handler found */
             return p_entry;
         }
@@ -48,8 +42,7 @@ static someip_handler_cfg_t const *prv_find_handler(IN someip_server_t *p_server
     return NULL;
 }
 
-static someip_result_t prv_send_message(IN someip_server_t *p_server, IN someip_endpoint_t *p_peer,
-                                        IN someip_header_t *p_hdr) {
+static someip_result_t prv_send_message(IN someip_server_t *p_server, IN someip_endpoint_t *p_peer, IN someip_header_t *p_hdr) {
     someip_result_t res;
     uint32_t msg_len;
 
@@ -74,9 +67,8 @@ static someip_result_t prv_send_message(IN someip_server_t *p_server, IN someip_
     return p_server->cfg.send(p_peer, p_server->cfg.p_tx_buf, msg_len, p_server->cfg.p_ctx);
 }
 
-static someip_result_t prv_reply_error(IN someip_server_t *p_server, IN someip_endpoint_t *p_peer,
-                                       IN someip_header_t *p_rx, IN someip_method_cfg_t *p_method,
-                                       IN someip_return_code_t return_code) {
+static someip_result_t prv_reply_error(IN someip_server_t *p_server, IN someip_endpoint_t *p_peer, IN someip_header_t *p_rx,
+                                       IN someip_method_cfg_t *p_method, IN someip_return_code_t return_code) {
     someip_header_t tx_hdr;
     someip_result_t res;
 
@@ -112,8 +104,7 @@ static someip_result_t prv_handle_message(IN someip_server_t *p_server, IN somei
     uint32_t payload_len;
 
     /* Check the header against the configuration (Figure 4.21) [PRS_SOMEIP_00195] */
-    res = SOMEIP_CheckHeader(&p_msg->header, p_server->cfg.p_services, p_server->cfg.service_len, &rc,
-                             &p_method);
+    res = SOMEIP_CheckHeader(&p_msg->header, p_server->cfg.p_services, p_server->cfg.service_len, &rc, &p_method);
 
     /* Check could not run */
     if (SOMEIP_RES_OK != res) {
@@ -152,8 +143,8 @@ static someip_result_t prv_handle_message(IN someip_server_t *p_server, IN somei
 
     /* Output arguments are written right after the space of the header */
     res = SOMEIP_SerInit(&cursor, &p_server->cfg.p_tx_buf[SOMEIP_HEADER_SIZE],
-                         p_server->cfg.tx_buf_size - (uint32_t)SOMEIP_HEADER_SIZE,
-                         (uint32_t)SOMEIP_OFS_PAYLOAD, SOMEIP_BYTE_ORDER_BIG_ENDIAN);
+                         p_server->cfg.tx_buf_size - (uint32_t)SOMEIP_HEADER_SIZE, (uint32_t)SOMEIP_OFS_PAYLOAD,
+                         SOMEIP_BYTE_ORDER_BIG_ENDIAN);
 
     /* Cursor could not be initialized */
     if (SOMEIP_RES_OK != res) {
@@ -203,8 +194,8 @@ static someip_result_t prv_handle_message(IN someip_server_t *p_server, IN somei
     return prv_send_message(p_server, p_peer, &tx_hdr);
 }
 
-/* FUNCTION IMPLEMENTATIONS **********************************************************************************
- ************************************************************************************************************/
+/* FUNCTION IMPLEMENTATIONS ******************************************************************************************************
+ ********************************************************************************************************************************/
 
 someip_result_t SOMEIP_ServerInit(OUT someip_server_t *p_server, IN someip_server_cfg_t *p_cfg) {
     /* Server, configuration and transport are mandatory */
@@ -232,8 +223,8 @@ someip_result_t SOMEIP_ServerInit(OUT someip_server_t *p_server, IN someip_serve
     return SOMEIP_RES_OK;
 }
 
-someip_result_t SOMEIP_ServerProcess(INOUT someip_server_t *p_server, IN someip_endpoint_t *p_peer,
-                                     IN uint8_t *p_buf, IN uint32_t buf_len) {
+someip_result_t SOMEIP_ServerProcess(INOUT someip_server_t *p_server, IN someip_endpoint_t *p_peer, IN uint8_t *p_buf,
+                                     IN uint32_t buf_len) {
     someip_message_t msg;
     someip_header_t rx;
     someip_result_t res;
@@ -279,5 +270,5 @@ someip_result_t SOMEIP_ServerProcess(INOUT someip_server_t *p_server, IN someip_
     return final_res;
 }
 
-/* EOF *******************************************************************************************************
- ************************************************************************************************************/
+/* EOF ***************************************************************************************************************************
+ ********************************************************************************************************************************/

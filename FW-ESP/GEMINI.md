@@ -38,8 +38,8 @@ This document persists core project architectural rules, hardware targets, build
   - Any directory wrapping or adapting ESP-IDF drivers/subsystems **MUST** start with the prefix `ESP-` (e.g. `ESP-SPI`, `ESP-FreeRTOS`, `ESP-UART`).
 - **Common Module (`comp/Common`)**:
   - `Macros.h`: Contains C/C++ cross-compatibility macros (`HEADER_CPP`, `FOOTER_CPP`) and argument attribute macros (`IN`, `OUT`, `INOUT`, `RO`, `WO`, `RW`).
-  - `Error.h`: Defines `zecu_err_t`, mapped 1:1 to `ESP_ERR_*` and extended with subsystem base ranges (`ZECU_ERR_BASE_*`).
-  - `Atomic.h`: Typedefs for atomic operations.
+  - `Error.h`: Defines `ze_err_t`, mapped 1:1 to `ESP_ERR_*` and extended with subsystem base ranges (`ZE_ERR_BASE_*`).
+  - `Atomic.h`: Typedefs and wrappers for atomic operations (`ze_atom_uint*_t`, `ZE_Atomic*`).
   - `SharedAPIs.h`: Single include header aggregating all common definitions.
 
 ---

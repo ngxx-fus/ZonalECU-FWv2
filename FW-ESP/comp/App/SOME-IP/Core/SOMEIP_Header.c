@@ -1,7 +1,7 @@
 
 
-/* INCLUDES **************************************************************************************************
- ************************************************************************************************************/
+/* INCLUDES **********************************************************************************************************************
+ ********************************************************************************************************************************/
 
 #include <stddef.h>
 #include <stdint.h>
@@ -9,8 +9,8 @@
 #include "SOMEIP_Endian.h"
 #include "SOMEIP_Types.h"
 
-/* FUNCTION IMPLEMENTATIONS **********************************************************************************
- ************************************************************************************************************/
+/* FUNCTION IMPLEMENTATIONS ******************************************************************************************************
+ ********************************************************************************************************************************/
 
 someip_result_t SOMEIP_HeaderDecode(IN uint8_t *p_buf, IN uint32_t buf_len, OUT someip_header_t *p_hdr) {
     /* Check NULL */
@@ -106,8 +106,7 @@ someip_result_t SOMEIP_HeaderEncode(IN someip_header_t *p_hdr, OUT uint8_t *p_bu
     return SOMEIP_RES_OK;
 }
 
-someip_result_t SOMEIP_MessageNext(IN uint8_t *p_buf, IN uint32_t buf_len, INOUT uint32_t *p_pos,
-                                   OUT someip_message_t *p_msg) {
+someip_result_t SOMEIP_MessageNext(IN uint8_t *p_buf, IN uint32_t buf_len, INOUT uint32_t *p_pos, OUT someip_message_t *p_msg) {
     someip_result_t res = SOMEIP_RES_OK;
     uint32_t remaining = 0U;
 
@@ -158,8 +157,7 @@ someip_result_t SOMEIP_MessageNext(IN uint8_t *p_buf, IN uint32_t buf_len, INOUT
     return SOMEIP_RES_OK;
 }
 
-someip_result_t SOMEIP_TpHeaderDecode(IN uint8_t *p_buf, IN uint32_t buf_len,
-                                      OUT someip_tp_header_t *p_tp) {
+someip_result_t SOMEIP_TpHeaderDecode(IN uint8_t *p_buf, IN uint32_t buf_len, OUT someip_tp_header_t *p_tp) {
     uint32_t raw = 0U;
 
     /* Check parameters */
@@ -187,8 +185,7 @@ someip_result_t SOMEIP_TpHeaderDecode(IN uint8_t *p_buf, IN uint32_t buf_len,
     return SOMEIP_RES_OK;
 }
 
-someip_result_t SOMEIP_TpHeaderEncode(IN someip_tp_header_t *p_tp, OUT uint8_t *p_buf,
-                                      IN uint32_t buf_size) {
+someip_result_t SOMEIP_TpHeaderEncode(IN someip_tp_header_t *p_tp, OUT uint8_t *p_buf, IN uint32_t buf_size) {
     uint32_t raw = 0U;
 
     /* Parameter validation */
@@ -219,5 +216,5 @@ someip_result_t SOMEIP_TpHeaderEncode(IN someip_tp_header_t *p_tp, OUT uint8_t *
     return SOMEIP_RES_OK;
 }
 
-/* EOF *******************************************************************************************************
- ************************************************************************************************************/
+/* EOF ***************************************************************************************************************************
+ ********************************************************************************************************************************/

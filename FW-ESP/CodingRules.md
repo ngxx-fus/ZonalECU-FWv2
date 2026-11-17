@@ -16,7 +16,7 @@ This document details core project architectural rules, hardware targets, build 
   - Any directory wrapping or adapting ESP-IDF drivers/subsystems **MUST** start with the prefix `ESP-` (e.g. `ESP-SPI`, `ESP-FreeRTOS`, `ESP-UART`).
 - **Common Module (`comp/Common`)**:
   - `Config/Macros.h`: C/C++ cross-compatibility macros (`HEADER_CPP`, `FOOTER_CPP`) and argument attribute macros (`IN`, `OUT`, `INOUT`, `RO`, `WO`, `RW`).
-  - `Error/Error.h`: Standard error codes (`zecu_err_t`) mapped 1:1 to `ESP_ERR_*` and extended with subsystem base ranges (`ZECU_ERR_BASE_*`).
+  - `Error/Error.h`: Standard error codes (`ze_err_t`) mapped 1:1 to `ESP_ERR_*` and extended with subsystem base ranges (`ZE_ERR_BASE_*`).
   - `Atomic/Atomic.h`: Typedefs for atomic operations.
   - `SharedAPIs.h`: Single umbrella header aggregating all common definitions.
 - **Language Convention**: All source code comments, header file documentation, function descriptions, and CMake scripts must be written strictly in **English**.
@@ -28,7 +28,7 @@ This document details core project architectural rules, hardware targets, build 
 - **Cross-Compatibility**: All public headers must support both C and C++ callers seamlessly using `HEADER_CPP` and `FOOTER_CPP`.
 - **Indentation (`tabsize = 4`)**: Always indent using **4 spaces** per level (including nested preprocessor macros). Never use raw `\t` tab characters.
 - **Vertical Compactness**: Minimize wasted vertical space. Keep comment block heights low and functions concise (ideally within a single screen/page) to avoid unnecessary scrolling.
-- **Line Width**: No line of code or documentation may exceed **$W = 108$ characters** (up to 110 columns for standard section banners).
+- **Line Width**: No line of code or documentation may exceed **$W = 128..130$ characters** (up to 130 columns for standard section banners).
 - **Layering**: Respect strict architectural layering (Application $→$ Middleware/Services $→$ Drivers $→$ ESP-IDF/HAL). Layers must communicate only with adjacent layers via well-defined interfaces. Any performance-critical layer bypass must be explicitly documented.
 - **Header Namespace & Anti-Collision Rule**:
   - For common or shared headers across modules (e.g. `Shared_APIs.h`, `Config.h`, `Types.h`), consumers **MUST** include them using their module namespace prefix:
@@ -116,32 +116,32 @@ Names must clearly express intent, scope, and type role. Structs and types are *
 
 | Category | Convention | Prefix / Suffix | Examples |
 | :--- | :--- | :--- | :--- |
-| **Functions (General / Public)** | `<PREFIX>_<PascalCase>()` | `UPPER_` or `Pascal_` prefix + `PascalCase` | `ETH_Open()`, `ZECU_ErrToStr()`, `Comm_Init()` |
+| **Functions (General / Public)** | `<PREFIX>_<PascalCase>()` | `UPPER_` or `Pascal_` prefix + `PascalCase` | `ETH_Open()`, `ZE_ErrToStr()`, `Comm_Init()` |
 | **Private Functions** | `prv_<snake_case>()` / `prv_<PascalCase>()` | `prv_` or `__` lowercase prefix | `prv_update_time()`, `prv_reset_phy()` |
 | **Local Variables** | `snake_case` | None (or unit suffix) | `retry_cnt`, `timeout_ms`, `frame_idx` |
 | **Pointer Variables** | `p_<snake_case>` | `p_` (or `pp_` for double ptr) | `p_ctrl`, `p_cfg`, `p_buf`, `pp_head` |
 | **Global Variables** | `g_<snake_case>` | `g_` (or `gp_` for global ptr) | `g_eth0_ctrl`, `gp_active_log` |
 | **Static File Variables** | `s_<snake_case>` or `g_` | `s_` / `sp_` (or `g_` / `gp_`) | `s_is_initialized`, `sp_rx_ring` |
-| **Common & Module Types (`typedef`)** | `<module>_<name>_t` | Lowercase `<module>_` + `_t` suffix | `zecu_err_t`, `eth_ctrl_t`, `eth_cfg_t`, `w5500_speed_t` |
-| **Macros & `#define`** | `UPPER_SNAKE_CASE` | `<MODULE>_` prefix | `ZECU_MASK32()`, `ETH_MAX_PKT_BYTES` |
-| **Enum Labels** | `UPPER_SNAKE_CASE` | `<MODULE>_` prefix | `ZECU_OK`, `ETH_STATE_OPEN` |
+| **Common & Module Types (`typedef`)** | `<module>_<name>_t` | Lowercase `<module>_` + `_t` suffix | `ze_err_t`, `eth_ctrl_t`, `eth_cfg_t`, `w5500_speed_t` |
+| **Macros & `#define`** | `UPPER_SNAKE_CASE` | `<MODULE>_` prefix | `ZE_MASK32()`, `ETH_MAX_PKT_BYTES` |
+| **Enum Labels** | `UPPER_SNAKE_CASE` | `<MODULE>_` prefix | `ZE_OK`, `ETH_STATE_OPEN` |
 | **Global Constants** | `UPPER_SNAKE_CASE` | `<MODULE>_` prefix | `ETH_DEFAULT_TIMEOUT_MS` |
 
 ### 3.2 Function Names (`PascalCase`)
 - **PascalCase Function Naming (Mandatory)**: Functions **SHALL** use `PascalCase` for the function body name, preceded by the module/visibility prefix:
-  - **Public API Functions**: Use an **UPPERCASE** subsystem/driver prefix (`ZE_`, `ZECU_`, `SOMEIP_`, `ETH_`, `SPI_`, `CAN_`, `W5500_`) or a **PascalCase** module prefix (`Comm_`, `I2c_`, `App_`, `UserApp_`), followed by `_` and a `PascalCase` verb phrase:
+  - **Public API Functions**: Use an **UPPERCASE** subsystem/driver prefix (`ZE_`, `SOMEIP_`, `ETH_`, `SPI_`, `CAN_`, `W5500_`) or a **PascalCase** module prefix (`Comm_`, `I2c_`, `App_`, `UserApp_`), followed by `_` and a `PascalCase` verb phrase:
 
 ```c
-zecu_err_t ETH_Open(INOUT eth_ctrl_t * p_ctrl, IN eth_cfg_t * p_cfg);
-const char * ZECU_ErrToStr(IN zecu_err_t err);
-zecu_err_t Comm_SendPacket(IN comm_ctrl_t * p_ctrl, IN uint8_t * p_data, IN size_t data_len);
+ze_err_t ETH_Open(INOUT eth_ctrl_t * p_ctrl, IN eth_cfg_t * p_cfg);
+const char * ZE_ErrToStr(IN ze_err_t err);
+ze_err_t Comm_SendPacket(IN comm_ctrl_t * p_ctrl, IN uint8_t * p_data, IN size_t data_len);
 ```
 
   - **Private (File-Scope `static`) Functions**: Use a **lowercase** prefix (`prv_` or `__`) separated by `_` (either `prv_<snake_case>()` or `prv_<PascalCase>()`):
 
 ```c
 static void prv_update_time(void);
-static zecu_err_t prv_validate_config(IN eth_cfg_t * p_cfg);
+static ze_err_t prv_validate_config(IN eth_cfg_t * p_cfg);
 ```
 
 - **Action-Oriented**: Every function performs an action, so its name must state *what* it does using a verb phrase (e.g., `ETH_CheckForErrors()` instead of `ETH_ErrorCheck()`, `App_DumpDataToFile()` instead of `App_DataFile()`).
@@ -154,7 +154,7 @@ static zecu_err_t prv_validate_config(IN eth_cfg_t * p_cfg);
 - **Stack / Local Variables**: Use `snake_case` (all lowercase with `_` word separators) so variable scope is immediately distinguishable from functions and macros:
 
 ```c
-zecu_err_t err       = ZECU_OK;
+ze_err_t err       = ZE_OK;
 uint32_t   retry_cnt = 0U;
 ```
 
@@ -203,8 +203,8 @@ size_t   payload_bytes;
 typedef uint32_t         AtomicUint32_t;
 typedef struct EthCfg    EthCfg_t;
 /* DO: <module>_<name>_t in lowercase snake_case */
-typedef _Atomic uint32_t zecu_atomic_u32_t;
-typedef enum e_zecu_err  zecu_err_t;
+typedef _Atomic uint32_t ze_atomic_u32_t;
+typedef enum ze_err_e    ze_err_t;
 typedef struct st_eth_cfg eth_cfg_t;
 ```
 
@@ -426,17 +426,17 @@ uint32_t delay_ms = (is_fast_mode) ? FAST_DELAY_MS : NORMAL_DELAY_MS;
 ## 6. Comment & Documentation Standards
 
 ### 6.1 Section Separator Banners
-- **Major Section Separators**: Use 2-line asterisk banners with total column width $W = 108$ characters:
+- **Major Section Separators**: Use 2-line asterisk banners with total column width $W = 130$ characters:
 
 ```c
-/* SHARED FUNCTIONS *****************************************************************************************
- ************************************************************************************************************/
+/* SHARED FUNCTIONS **************************************************************************************************************
+ ********************************************************************************************************************************/
 ```
 
-- **Sub-Section Separators**: When sub-sections are necessary, use a single-line asterisk banner aligned to the exact same column width ($W = 108$ characters):
+- **Sub-Section Separators**: When sub-sections are necessary, use a single-line asterisk banner aligned to the exact same column width ($W = 130$ characters):
 
 ```c
-/* SUB-SECTION NAME *****************************************************************************************/
+/* SUB-SECTION NAME **************************************************************************************************************/
 ```
 
 - **Prohibited Separator Formats (DON'T)**: Never use equal-sign boxed borders or custom divider lines:
@@ -497,21 +497,49 @@ uint32_t timeout_ms = 100U;  /* Must be >= 50 ms per W5500 PLL lock specificatio
 #define  ETH_PORT_MAX (4U)
 ```
 
-### 6.4 In-Code Grouping Comments
-- For grouping enum fields, struct members, or local code blocks, use **plain text-only** comments without any separator characters or decorative lines:
+### 6.4 Type Definitions (`enum`, `struct`, `union`, `class`) & Macro Alignment
+> [!IMPORTANT]
+> **Strict Context Separation (Isolation Principle)**:
+> - Quy tắc định dạng cho **Types (`enum`, `struct`, `union`, `class`)** và **Macros** tại mục này là **hoàn toàn độc lập** với quy tắc tài liệu hóa **Functions & Multi-Param Macros** tại Mục 6.5 & 6.6.
+> - Tuyệt đối không để các quy tắc căn lề Doxygen của hàm/macro làm thay đổi hoặc phá vỡ cấu trúc căn chỉnh dấu `=` và comment nội bộ của enum/struct/macro.
+
+- **Sub-Section Divider Comments Inside Types (`enum`, `struct`, `union`, `class`)**:
+  - For grouping fields into sub-sections or categories, use plain text-only comments: `/* Category Name */`.
+  - **Mandatory Spacing**: Always leave **at least 01 empty line before and after** the divider comment to maintain visual separation between logical groups.
+- **Detailed Multi-Line Block Comments Inside Types**:
+  - Inside an enum, struct, or union, if a member requires in-depth documentation, place a Doxygen block (`/** @brief ... *  @note ... */`) **directly above** that member. Never leave extra blank lines between the Doxygen block and its target member.
+  - Standard type-level or member-level header blocks with only `@brief` and `@note` maintain the standard Column 12 content alignment (`/** @brief ` and ` *  @note  `).
+- **Enum Member Assignment (`=`) Alignment**:
+  - All assignment operators (`=`) within the same `enum` definition **MUST be vertically aligned**.
+  - The `=` column is aligned at `longest_member_name + 1 space`.
+- **Trailing Comments (`/*!< ... */`) Alignment**:
+  - Short member documentation on the same line must use Doxygen trailing format (`/*!< ... */`).
+  - All trailing comments within the block **MUST be vertically aligned** starting at `longest_code_expression + 1 space`.
+- **Multi-Line Macro Continuation Backslash (`\`) Alignment**:
+  - All trailing continuation backslashes (`\`) on `#define` multi-line macros **MUST be aligned to column 130** (standard banner margin).
+- **Macro Definition (`#define`) Value & Trailing Comment Alignment**:
+  - Within each section, single-line `#define` values **MUST be vertically aligned**.
+  - The value column begins at `longest_#define_name + 1 space`.
+  - If a macro name or expansion would exceed the maximum line width ($W = 130$ columns), it breaks onto the next line using a continuation backslash (`\`).
+  - Trailing comments (`/*!< ... */`) on `#define` lines **MUST be vertically aligned** starting at `longest_code_expression + 1 space`.
 
 ```c
-/* Success & Generic Status (ESP_OK, ESP_FAIL) */
-ZECU_OK                             = ESP_OK,                  /*!< 0x000: Success / No error */
-ZECU_SUCCESS                        = ESP_OK,                  /*!< 0x000: Success alias */
-ZECU_FAIL                           = ESP_FAIL,                /*!< 0x1  : Generic failure */
+enum e_someip_return_code {
+    SOMEIP_E_OK                      = 0x00,
+    SOMEIP_E_NOT_OK                  = 0x01, /*!< Unspecified error */
+    SOMEIP_E_WRONG_INTERFACE_VERSION = 0x08,
 
-/* Standard ESP-IDF System Error Codes (Mapped from ESP_ERR_*) */
-ZECU_ERR_NO_MEM                     = ESP_ERR_NO_MEM,          /*!< 0x101: Out of memory */
-ZECU_ERR_INVALID_ARG                = ESP_ERR_INVALID_ARG,     /*!< 0x102: Invalid argument */
+    /* Reserved ranges */
+
+    SOMEIP_E_GENERIC_RESERVED_MIN    = 0x10, /*!< 0x10..0x1F: reserved for generic errors */
+    SOMEIP_E_GENERIC_RESERVED_MAX    = 0x1F,
+};
 ```
 
-### 6.5 Comment Block Height & Doxygen Tagging (Compact Documentation)
+### 6.5 Functions & Multi-Parameter Macros Doxygen Documentation (Compact Documentation)
+> [!IMPORTANT]
+> **Function & Multi-Param Macro Isolation**:
+> Quy tắc tại mục này chỉ áp dụng cho khối tài liệu Doxygen (`/** @... */`) đứng trước **hàm (Functions)** hoặc **macro đa tham số (Multi-Param Function-Like Macros)** có các tag phức tạp như `@details`, `@warning`, `@param`, `@retval`. Không áp dụng định dạng đa cột này vào trong nội bộ phần thân enum, struct hay union.
 - Comments should tell a story and document design decisions (*why* a choice was made, not just *what* the code does).
 - Place function documentation headers in the `.h` file where public functions are declared, and in the `.c` file for private (`static`) functions (unless the private function name and parameters are completely self-explanatory).
 - Keep comment block heights as compact as possible to minimize vertical scrolling:
@@ -521,12 +549,36 @@ ZECU_ERR_INVALID_ARG                = ESP_ERR_INVALID_ARG,     /*!< 0x102: Inval
   - Use `@brief <summary>` on the first line.
   - Follow with `@details <details>`, `@note <note>`, `@warning <warning>`, `@see <ref>`, `@todo [<author> <date>] <task>`, or `@bug [<author> <date>] <issue>` when applicable. Omit any unnecessary tags.
   - Do not use loose, untagged continuation lines directly beneath `@brief`.
+- **Vertical & Horizontal Content Text Column Alignment**:
+  1. **Start Column Prefix**: The prefix `/** ` on Line 1 and ` *  ` on subsequent lines maintains a fixed width of 4 characters (`StartCol = 4`).
+  2. **Header Tag Alignment**: All header tags (`@brief`, `@details`, `@note`, `@warning`, etc.) are padded to `max(header_tags_length) + 1` space so that all section descriptions begin at the exact same vertical column (Column 12 for standard `@brief`/`@note`, Column 14 when `@details` or `@warning` is present).
+  3. **List Items (`-`, `+`, `*`)**: Nested bulleted lists within description text are indented by 2 spaces (` *             - Item`), and their multi-line continuation text is indented by an additional 2 spaces (` *               continued text`) to align directly under the bullet item text.
+  4. **Parameter Names Alignment (`@param`)**: Parameter variable names in `@param` statements are vertically aligned to the longest parameter name.
+  5. **Parameter Descriptions Alignment**: Parameter description texts begin at the same column (1 space after the longest parameter name).
+  6. **Return Values Alignment (`@retval`)**: Return values and their descriptions in `@retval` statements are vertically aligned to the longest return code identifier.
+
+```c
+/** @brief   Build the header of the ERROR message that answers a received request
+ *  @details Copied from p_rx [PRS_SOMEIP_00190]: Message ID, Request ID [00704], Interface Version.
+ *           Set:
+ *             - Protocol Version = p_rx->protocol_version, except for SOMEIP_E_WRONG_PROTOCOL_VERSION where it
+ *               is SOMEIP_PROTOCOL_VERSION (0x01) (Figure 4.21)
+ *             - Message Type = SOMEIP_MT_ERROR (0x81), TP-Flag never set
+ *             - Return Code = rc
+ *             - Length = SOMEIP_HEADER_PART2_SIZE (8): the payload is NOT copied [PRS_SOMEIP_00190]
+ *  @note    p_rx and p_err may point to the same header.
+ *  @param   p_rx  Header of the received request
+ *  @param   rc    Return Code to send, must not be SOMEIP_E_OK
+ *  @param   p_err ERROR header, ready for SOMEIP_HeaderEncode()
+ *  @retval  SOMEIP_RES_OK      *p_err is valid
+ *  @retval  SOMEIP_RES_E_PARAM p_rx or p_err is NULL, or rc is SOMEIP_E_OK */
+```
 
 **DON'T**:
 
 ```c
 /**
- * @brief Standard Zonal ECU Error Code definitions (zecu_err_t)
+ * @brief Standard Zonal ECU Error Code definitions (ze_err_t)
  * Mapped 1:1 with ESP-IDF standard error codes (esp_err_t) and extended for ECU peripherals.
  */
 ```
@@ -534,14 +586,14 @@ ZECU_ERR_INVALID_ARG                = ESP_ERR_INVALID_ARG,     /*!< 0x102: Inval
 *or single-asterisk / untagged continuation line (ignored by Doxygen/Clangd LSP):*
 
 ```c
-/* @brief Standard Zonal ECU Error Code definitions (zecu_err_t)
+/* @brief Standard Zonal ECU Error Code definitions (ze_err_t)
  * Mapped 1:1 with ESP-IDF standard error codes (esp_err_t) and extended for ECU peripherals. */
 ```
 
 **DO**:
 
 ```c
-/** @brief Standard Zonal ECU Error Code definitions (zecu_err_t)
+/** @brief Standard Zonal ECU Error Code definitions (ze_err_t)
  *  @note  Mapped 1:1 with ESP-IDF standard error codes (esp_err_t) and extended for ECU peripherals. */
 ```
 
@@ -549,16 +601,10 @@ ZECU_ERR_INVALID_ARG                = ESP_ERR_INVALID_ARG,     /*!< 0x102: Inval
 - Use compact Doxygen tags with parameter direction qualifiers and `p_` pointer prefixes:
 
 ```c
-/** @brief Returns constant string representation of a zecu_err_t error code
+/** @brief Returns constant string representation of a ze_err_t error code
  *  @param err Error code
  *  @return const char* Static string representation of the error name */
-const char * ZECU_ErrToStr(IN zecu_err_t err);
-
-/** @brief Copies error string name into user-provided buffer
- *  @param err   Error code
- *  @param p_str Destination character buffer (minimum 32 bytes)
- *  @return ZECU_OK on success, ZECU_ERR_INVALID_ARG if p_str is NULL */
-zecu_err_t ZECU_Err2Str(IN zecu_err_t err, OUT char * p_str);
+const char * ZE_ErrToStr(IN ze_err_t err);
 ```
 
 ---
@@ -575,13 +621,13 @@ Defined in `comp/Common/Config/Macros.h`:
 
 ---
 
-## 8. Error Code Conventions (`zecu_err_t`)
+## 8. Error Code Conventions (`ze_err_t`)
 
-- Error codes are typed as `zecu_err_t` (defined in `comp/Common/Error/Error.h`).
+- Error codes are typed as `ze_err_t` (defined in `comp/Common/Error/Error.h`).
 - Standard ESP-IDF errors are mapped 1:1 (`ESP_OK`, `ESP_FAIL`, `ESP_ERR_NO_MEM`, ...).
 - Subsystem base error codes are allocated in `0x100` increments:
-  - `0x1000`: Communication base (`ZECU_ERR_BASE_COMM`).
-  - `0x1100`: W5500 SPI Ethernet base (`ZECU_ERR_BASE_W5500`).
-  - `0x1200`: CAN / CAN-FD base (`ZECU_ERR_BASE_CAN`).
-  - `0x1300`: Storage / NVS base (`ZECU_ERR_BASE_STORAGE`).
-  - `0x1400`: GPIO / ADC / IO base (`ZECU_ERR_BASE_IO`).
+  - `0x1000`: Communication base (`ZE_ERR_BASE_COMM`).
+  - `0x1100`: W5500 SPI Ethernet base (`ZE_ERR_BASE_W5500`).
+  - `0x1200`: CAN / CAN-FD base (`ZE_ERR_BASE_CAN`).
+  - `0x1300`: Storage / NVS base (`ZE_ERR_BASE_STORAGE`).
+  - `0x1400`: GPIO / ADC / IO base (`ZE_ERR_BASE_IO`).

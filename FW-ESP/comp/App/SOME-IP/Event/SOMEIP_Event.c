@@ -1,7 +1,7 @@
 
 
-/* INCLUDES **************************************************************************************************
- ************************************************************************************************************/
+/* INCLUDES **********************************************************************************************************************
+ ********************************************************************************************************************************/
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -13,17 +13,14 @@
 #include "SOMEIP_Session.h"
 #include "SOMEIP_Types.h"
 
-/* PRIVATE FUNCTIONS *****************************************************************************************
- ************************************************************************************************************/
+/* PRIVATE FUNCTIONS *************************************************************************************************************
+ ********************************************************************************************************************************/
 
-static uint16_t prv_find_event(IN someip_publisher_t *p_pub, IN someip_service_id_t service_id,
-                               IN someip_event_id_t event_id);
+static uint16_t prv_find_event(IN someip_publisher_t *p_pub, IN someip_service_id_t service_id, IN someip_event_id_t event_id);
 static bool prv_is_same_peer(IN someip_endpoint_t *p_a, IN someip_endpoint_t *p_b);
-static someip_result_t prv_send_event(INOUT someip_publisher_t *p_pub, IN uint16_t event_idx,
-                                      IN someip_endpoint_t *p_peer);
+static someip_result_t prv_send_event(INOUT someip_publisher_t *p_pub, IN uint16_t event_idx, IN someip_endpoint_t *p_peer);
 
-static uint16_t prv_find_event(IN someip_publisher_t *p_pub, IN someip_service_id_t service_id,
-                               IN someip_event_id_t event_id) {
+static uint16_t prv_find_event(IN someip_publisher_t *p_pub, IN someip_service_id_t service_id, IN someip_event_id_t event_id) {
     someip_event_cfg_t const *p_event = NULL;
     uint16_t idx;
 
@@ -64,8 +61,7 @@ static bool prv_is_same_peer(IN someip_endpoint_t *p_a, IN someip_endpoint_t *p_
     return true;
 }
 
-static someip_result_t prv_send_event(INOUT someip_publisher_t *p_pub, IN uint16_t event_idx,
-                                      IN someip_endpoint_t *p_peer) {
+static someip_result_t prv_send_event(INOUT someip_publisher_t *p_pub, IN uint16_t event_idx, IN someip_endpoint_t *p_peer) {
     someip_event_cfg_t const *p_event = &p_pub->cfg.p_events[event_idx];
     someip_subscriber_t const *p_sub = NULL;
     someip_ser_cursor_t cursor;
@@ -99,8 +95,7 @@ static someip_result_t prv_send_event(INOUT someip_publisher_t *p_pub, IN uint16
     }
 
     /* Payload is written right after the space of the header */
-    res = SOMEIP_SerInit(&cursor, &p_pub->cfg.p_tx_buf[SOMEIP_HEADER_SIZE],
-                         p_pub->cfg.tx_buf_size - (uint32_t)SOMEIP_HEADER_SIZE,
+    res = SOMEIP_SerInit(&cursor, &p_pub->cfg.p_tx_buf[SOMEIP_HEADER_SIZE], p_pub->cfg.tx_buf_size - (uint32_t)SOMEIP_HEADER_SIZE,
                          (uint32_t)SOMEIP_OFS_PAYLOAD, SOMEIP_BYTE_ORDER_BIG_ENDIAN);
 
     /* Cursor could not be initialized */
@@ -136,8 +131,8 @@ static someip_result_t prv_send_event(INOUT someip_publisher_t *p_pub, IN uint16
         return res;
     }
 
-    res = SOMEIP_MessageBuildNotification(&tx_hdr, p_event->service_id, p_event->event_id, session_id,
-                                          p_event->interface_version, payload_len);
+    res = SOMEIP_MessageBuildNotification(&tx_hdr, p_event->service_id, p_event->event_id, session_id, p_event->interface_version,
+                                          payload_len);
 
     /* Header could not be built */
     if (SOMEIP_RES_OK != res) {
@@ -181,8 +176,8 @@ static someip_result_t prv_send_event(INOUT someip_publisher_t *p_pub, IN uint16
     return final_res;
 }
 
-/* FUNCTION IMPLEMENTATIONS **********************************************************************************
- ************************************************************************************************************/
+/* FUNCTION IMPLEMENTATIONS ******************************************************************************************************
+ ********************************************************************************************************************************/
 
 someip_result_t SOMEIP_PublisherInit(OUT someip_publisher_t *p_pub, IN someip_publisher_cfg_t *p_cfg) {
     someip_result_t res;
@@ -328,8 +323,7 @@ someip_result_t SOMEIP_EventUnsubscribe(INOUT someip_publisher_t *p_pub, IN some
         p_sub = &p_pub->cfg.p_subs[idx];
 
         /* Same event and same peer */
-        if ((0U != p_sub->used) && (event_idx == p_sub->event_idx) &&
-            prv_is_same_peer(&p_sub->peer, p_peer)) {
+        if ((0U != p_sub->used) && (event_idx == p_sub->event_idx) && prv_is_same_peer(&p_sub->peer, p_peer)) {
             p_sub->used = 0U;
 
             /* Subscription removed */
@@ -396,5 +390,5 @@ someip_result_t SOMEIP_EventMainFunction(INOUT someip_publisher_t *p_pub, IN uin
     return final_res;
 }
 
-/* EOF *******************************************************************************************************
- ************************************************************************************************************/
+/* EOF ***************************************************************************************************************************
+ ********************************************************************************************************************************/

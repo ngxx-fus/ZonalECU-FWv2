@@ -1,48 +1,25 @@
-# ==============================================================================
 # Clang-Format Configuration for ZonalECU-FWv2
-# Aligned with Renesas RA FSP and Project CodingRules.md
-# ==============================================================================
 ---
 Language: Cpp
 BasedOnStyle: LLVM
-
-# ------------------------------------------------------------------------------
-# 1. Indentation & Spacing (tabsize = 4, No Tabs)
-# ------------------------------------------------------------------------------
 IndentWidth: 4
 TabWidth: 4
 UseTab: Never
 ContinuationIndentWidth: 4
 IndentCaseLabels: true
 IndentPPDirectives: None
-
-# ------------------------------------------------------------------------------
-# 2. Line Width & Wrapping
-# ------------------------------------------------------------------------------
-ColumnLimit: 108
+ColumnLimit: 130
 PenaltyExcessCharacter: 100
 PenaltyBreakBeforeFirstCallParameter: 50
 PenaltyBreakAssignment: 50
 PenaltyBreakComment: 60
-
-# ------------------------------------------------------------------------------
-# 3. Braces & Control Statements (Always use braces, Attach style)
-# ------------------------------------------------------------------------------
 BreakBeforeBraces: Attach
 AllowShortBlocksOnASingleLine: Never
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
-
-# ------------------------------------------------------------------------------
-# 4. Pointer Alignment (Renesas FSP: type * p_name)
-# ------------------------------------------------------------------------------
 PointerAlignment: Right
 DerivePointerAlignment: false
-
-# ------------------------------------------------------------------------------
-# 5. Spaces & Operators
-# ------------------------------------------------------------------------------
 SpaceBeforeParens: ControlStatements
 SpaceAfterCStyleCast: false
 SpaceBeforeAssignmentOperators: true
@@ -50,18 +27,10 @@ SpacesInAngles: false
 SpacesInContainerLiterals: false
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
-
-# ------------------------------------------------------------------------------
-# 6. Comments & Alignment
-# ------------------------------------------------------------------------------
 AlignTrailingComments: true
 AlignConsecutiveMacros: true
+AlignEscapedNewlines: Right
 AlignConsecutiveAssignments: None
 AlignConsecutiveDeclarations: None
 ReflowComments: false
-
-# ------------------------------------------------------------------------------
-# 7. Sorting & Headers
-# ------------------------------------------------------------------------------
 SortIncludes: Never
-...

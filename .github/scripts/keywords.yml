@@ -12,11 +12,11 @@ keywords:
   # ----------------------------------------------------------------------------
   - keyword: "ZE"
     type: 0
-    description: "Zonal ECU short prefix (e.g. ZE_Init, ZE_HEADER, ZE_FOOTER)"
+    description: "Zonal ECU primary prefix (e.g. ZE_Init, ZE_ErrToStr, ZE_AtomicGet, ZE_OK, ZE_HEADER)"
 
   - keyword: "ZECU"
     type: 0
-    description: "Zonal ECU core system prefix (e.g. ZECU_Init, ZECU_ErrToStr)"
+    description: "Zonal ECU legacy prefix (aliased to ZE_)"
 
   - keyword: "SOMEIP"
     type: 0

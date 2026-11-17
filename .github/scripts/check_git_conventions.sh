@@ -36,9 +36,9 @@ echo "--------------------------------------------------"
 
 # ------------------------------------------------------------------------------
 # 2. Check Commit Messages
-# Pattern: <ZE/ZonalECU/ZonalECU-FWv2> | MM/DD/YY HH:MM:SS | <message>
+# Pattern: <ZE/ZonalECU/ZonalECU-FWv2> | MM/DD/YY (or MM-DD-YYYY) HH:MM:SS | <message>
 # ------------------------------------------------------------------------------
-COMMIT_REGEX="^(ZE|ZonalECU|ZonalECU-FWv2) \| [0-9]{2}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} \| .+$"
+COMMIT_REGEX="^(ZE|ZonalECU|ZonalECU-FWv2) \| [0-9]{2}[/-][0-9]{2}[/-][0-9]{2,4} [0-9]{2}:[0-9]{2}:[0-9]{2} \| .+$"
 MERGE_REGEX="^Merge .+$"
 
 # Determine commit range (ignoring merge commits like GitHub's PR merge commits)
