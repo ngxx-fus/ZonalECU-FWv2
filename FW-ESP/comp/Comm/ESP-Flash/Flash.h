@@ -13,7 +13,7 @@
 /* INCLUDES **********************************************************************************************************************
  ********************************************************************************************************************************/
 
-#include "Common/Config/All.h"
+#include "Common/Base/All.h"
 #include "Common/Error/Error.h"
 #include <stdint.h>
 
@@ -25,43 +25,45 @@ ZE_HEADER
 /* MACROS ************************************************************************************************************************
  ********************************************************************************************************************************/
 
-#define ZE_FLASH_OPENED     CHART2UINT32('O', 'P', 'E', 'N')
-#define ZE_FLASH_NOT_OPENED CHART2UINT32('0', 'N', '/', 'A')
-
 /* DEFINITIONS *******************************************************************************************************************
  ********************************************************************************************************************************/
 
 typedef struct ze_flash_info_st {
     ro uint16_t block_size;
+    ro uint16_t page_size;
+    ro uint16_t sector_size;
+    ro uint16_t block_num;
 } ze_flash_info_t;
 
-typedef struct ze_flash_cfg_st {
-    RO uint32_t place_holder;
-} ze_flash_cfg_t;
+typedef void ze_flash_cfg_t;
+typedef void ze_flash_extend_cfg_t;
 
 typedef struct ze_flash_st {
-    RW uint32_t           open;
-    RW ze_flash_info_t RO p_info;
-    RW ze_flash_cfg_t  RO p_cfg;
-    RW void *          RO p_ext;
+    rw uint32_t              rw     open;
+    rw ze_flash_info_t       ro_ptr p_info;
+    rw ze_flash_cfg_t        rw_ptr p_cfg;
+    rw ze_flash_extend_cfg_t rw_ptr p_ext;
 } ze_flash_instance_t;
 
 typedef struct ze_flash_api_st {
-    ze_err_t (*FlashOpen)(INOUT ze_flash_cfg_t *p_instance, IN ze_flash_cfg_t p_cfg);
+    ze_err_t (*FlashOpen)(inout ze_flash_instance_t rw_ptr p_ctrl, in ze_flash_cfg_t ro_ptr p_cfg);
+    ze_err_t (*FlashWrite)(inout ze_flash_instance_t rw_ptr p_ctrl, in void ro_ptr p_data, in uint32_t size);
+    ze_err_t (*FlashRead)(inout ze_flash_instance_t rw_ptr p_ctrl, in void rw_ptr p_data, in uint32_t size);
+    ze_err_t (*FlashClose)(inout ze_flash_instance_t rw_ptr p_ctrl);
 } ze_flash_api_st;
-
-/* EXPORTED VARIABLES ************************************************************************************************************
- ********************************************************************************************************************************/
 
 /* SHARED VARIABLES **************************************************************************************************************
  ********************************************************************************************************************************/
 
+shared ze_flash_instance_t g_ze_flash_ctrl;
+
 /* SHARED FUNCTIONS **************************************************************************************************************
  ********************************************************************************************************************************/
 
-ze_err_t ZE_Flash_Open();
-
-ze_err_t ZE_Flash_BlockRead();
+ze_err_t ZE_Flash_Open (inout ze_flash_instance_t rw_ptr p_ctrl, in ze_flash_cfg_t ro_ptr p_cfg);
+ze_err_t ZE_Flash_Read (inout ze_flash_instance_t rw_ptr p_ctrl, in void ro_ptr p_data, in uint32_t size);
+ze_err_t ZE_Flash_Write(inout ze_flash_instance_t rw_ptr p_ctrl, in void rw_ptr p_data, in uint32_t size);
+ze_err_t ZE_Flash_Close(inout ze_flash_instance_t rw_ptr p_ctrl);
 
 /* FOOTERS ***********************************************************************************************************************
  ********************************************************************************************************************************/

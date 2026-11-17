@@ -12,11 +12,12 @@
 /* PRIVATE FUNCTIONS *************************************************************************************************************
  ********************************************************************************************************************************/
 
-static bool prv_is_type_supported(IN someip_message_type_t msg_type);
+static bool prv_is_type_supported    (IN someip_message_type_t msg_type);
 static bool prv_is_type_as_configured(IN someip_message_type_t msg_type, IN someip_message_type_t expected_type);
-static someip_service_cfg_t const *prv_find_service(IN someip_service_cfg_t *p_services, IN uint16_t service_len,
-                                                    IN someip_service_id_t service_id);
-static someip_method_cfg_t const *prv_find_method(IN someip_service_cfg_t *p_service, IN someip_method_id_t method_id);
+static someip_service_cfg_t const *prv_find_service(IN someip_service_cfg_t * p_services,                                        \
+                                                    IN uint16_t               service_len,                                       \
+                                                    IN someip_service_id_t    service_id);
+static someip_method_cfg_t const  *prv_find_method (IN someip_service_cfg_t *p_service, IN someip_method_id_t method_id);
 
 /* FUNCTION IMPLEMENTATIONS ******************************************************************************************************
  ********************************************************************************************************************************/
@@ -125,8 +126,9 @@ static bool prv_is_type_as_configured(IN someip_message_type_t msg_type, IN some
  *  @param   service_len Number of entries in p_services
  *  @param   service_id  Service ID to look for
  *  @return  Pointer to the entry, or NULL if not found */
-static someip_service_cfg_t const *prv_find_service(IN someip_service_cfg_t *p_services, IN uint16_t service_len,
-                                                    IN someip_service_id_t service_id) {
+static someip_service_cfg_t const *prv_find_service(IN someip_service_cfg_t * p_services,                                        \
+                                                    IN uint16_t               service_len,                                       \
+                                                    IN someip_service_id_t    service_id) {
     uint16_t i = 0U;
 
     for (i = 0U; i < service_len; i++) {
@@ -168,8 +170,11 @@ static someip_method_cfg_t const *prv_find_method(IN someip_service_cfg_t *p_ser
 
 /* Public functions */
 
-someip_result_t SOMEIP_CheckHeader(IN someip_header_t *p_rx, IN someip_service_cfg_t *p_services, IN uint16_t service_len,
-                                   OUT someip_return_code_t *p_rc, OUT someip_method_cfg_t const **pp_method) {
+someip_result_t SOMEIP_CheckHeader(IN  someip_header_t      *     p_rx,                                                          \
+                                   IN  someip_service_cfg_t *     p_services,                                                    \
+                                   IN  uint16_t                   service_len,                                                   \
+                                   OUT someip_return_code_t *     p_rc,                                                          \
+                                   OUT someip_method_cfg_t  const **pp_method) {
     someip_service_cfg_t const *p_svc = NULL;
     someip_method_cfg_t const *p_m = NULL;
 

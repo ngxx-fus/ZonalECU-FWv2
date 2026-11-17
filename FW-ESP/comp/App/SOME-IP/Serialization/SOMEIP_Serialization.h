@@ -77,8 +77,11 @@ typedef struct st_someip_deser_cursor {
  *  @param   order      Initial byte order [PRS_SOMEIP_00369]
  *  @retval  SOMEIP_RES_OK      Cursor ready
  *  @retval  SOMEIP_RES_E_PARAM p_cur or p_buf is NULL */
-someip_result_t SOMEIP_SerInit(OUT someip_ser_cursor_t *p_cur, OUT uint8_t *p_buf, IN uint32_t buf_size, IN uint32_t msg_offset,
-                               IN someip_byte_order_t order);
+someip_result_t SOMEIP_SerInit(OUT someip_ser_cursor_t * p_cur,                                                                  \
+                               OUT uint8_t             * p_buf,                                                                  \
+                               IN  uint32_t              buf_size,                                                               \
+                               IN  uint32_t              msg_offset,                                                             \
+                               IN  someip_byte_order_t   order);
 
 /** @brief   Change the byte order of the next parameters [PRS_SOMEIP_00369]
  *  @param   p_cur Write cursor
@@ -205,8 +208,9 @@ someip_result_t SOMEIP_SerAlign(INOUT someip_ser_cursor_t *p_cur, IN uint16_t al
  *  @param   lf_size 8, 16 or 32 bit
  *  @param   p_mark  Position of the length field, to pass to SOMEIP_SerLengthEnd()
  *  @return  SOMEIP_RES_OK, SOMEIP_RES_E_PARAM or SOMEIP_RES_E_NO_SPACE */
-someip_result_t SOMEIP_SerLengthBegin(INOUT someip_ser_cursor_t *p_cur, IN someip_length_field_size_t lf_size,
-                                      OUT uint32_t *p_mark);
+someip_result_t SOMEIP_SerLengthBegin(INOUT someip_ser_cursor_t        * p_cur,                                                  \
+                                      IN    someip_length_field_size_t   lf_size,                                                \
+                                      OUT   uint32_t                   * p_mark);
 
 /** @brief   Fill the length field reserved by SOMEIP_SerLengthBegin()
  *  @note    The length counts the bytes AFTER the length field, not the length field itself
@@ -226,8 +230,11 @@ someip_result_t SOMEIP_SerLengthEnd(INOUT someip_ser_cursor_t *p_cur, IN someip_
  *  @param   p_str   Characters already encoded in enc, WITHOUT BOM and WITHOUT "\0"
  *  @param   str_len Size of p_str in bytes, even for UTF-16; p_str may be NULL only if str_len is 0
  *  @return  SOMEIP_RES_OK, SOMEIP_RES_E_PARAM or SOMEIP_RES_E_NO_SPACE */
-someip_result_t SOMEIP_SerWriteString(INOUT someip_ser_cursor_t *p_cur, IN someip_string_encoding_t enc,
-                                      IN someip_length_field_size_t lf_size, IN uint8_t *p_str, IN uint32_t str_len);
+someip_result_t SOMEIP_SerWriteString(INOUT someip_ser_cursor_t        * p_cur,                                                  \
+                                      IN    someip_string_encoding_t     enc,                                                    \
+                                      IN    someip_length_field_size_t   lf_size,                                                \
+                                      IN    uint8_t                    * p_str,                                                  \
+                                      IN    uint32_t                     str_len);
 
 /** @brief   Write a fixed length string: [BOM][characters]["\0"][0x00 fill] = exactly fixed_size bytes
  *  @note    fixed_size comes from the type definition and includes BOM and "\0"
@@ -238,8 +245,11 @@ someip_result_t SOMEIP_SerWriteString(INOUT someip_ser_cursor_t *p_cur, IN somei
  *  @param   p_str      Characters WITHOUT BOM and WITHOUT "\0"
  *  @param   str_len    Size of p_str in bytes, even for UTF-16; p_str may be NULL only if str_len is 0
  *  @return  SOMEIP_RES_OK, SOMEIP_RES_E_PARAM (string too long) or SOMEIP_RES_E_NO_SPACE */
-someip_result_t SOMEIP_SerWriteStringFixed(INOUT someip_ser_cursor_t *p_cur, IN someip_string_encoding_t enc,
-                                           IN uint32_t fixed_size, IN uint8_t *p_str, IN uint32_t str_len);
+someip_result_t SOMEIP_SerWriteStringFixed(INOUT someip_ser_cursor_t      * p_cur,                                               \
+                                           IN    someip_string_encoding_t   enc,                                                 \
+                                           IN    uint32_t                   fixed_size,                                          \
+                                           IN    uint8_t                  * p_str,                                               \
+                                           IN    uint32_t                   str_len);
 
 /* Deserializer: cursor */
 
@@ -252,8 +262,11 @@ someip_result_t SOMEIP_SerWriteStringFixed(INOUT someip_ser_cursor_t *p_cur, IN 
  *  @param   msg_offset Offset of p_buf[0] from the start of the SOME/IP message [PRS_SOMEIP_00569]
  *  @param   order      Initial byte order [PRS_SOMEIP_00369]
  *  @return  SOMEIP_RES_OK or SOMEIP_RES_E_PARAM */
-someip_result_t SOMEIP_DeserInit(OUT someip_deser_cursor_t *p_cur, IN uint8_t *p_buf, IN uint32_t buf_size,
-                                 IN uint32_t msg_offset, IN someip_byte_order_t order);
+someip_result_t SOMEIP_DeserInit(OUT someip_deser_cursor_t * p_cur,                                                              \
+                                 IN  uint8_t               * p_buf,                                                              \
+                                 IN  uint32_t                buf_size,                                                           \
+                                 IN  uint32_t                msg_offset,                                                         \
+                                 IN  someip_byte_order_t     order);
 
 /** @brief   Change the byte order of the next parameters [PRS_SOMEIP_00369]
  *  @param   p_cur Read cursor
@@ -373,8 +386,9 @@ someip_result_t SOMEIP_DeserAlign(INOUT someip_deser_cursor_t *p_cur, IN uint16_
  *  @param   lf_size 8, 16 or 32 bit
  *  @param   p_end   Position right after the struct / array
  *  @return  SOMEIP_RES_OK, SOMEIP_RES_E_PARAM or SOMEIP_RES_E_MALFORMED (length points outside the payload) */
-someip_result_t SOMEIP_DeserLengthBegin(INOUT someip_deser_cursor_t *p_cur, IN someip_length_field_size_t lf_size,
-                                        OUT uint32_t *p_end);
+someip_result_t SOMEIP_DeserLengthBegin(INOUT someip_deser_cursor_t      * p_cur,                                                \
+                                        IN    someip_length_field_size_t   lf_size,                                              \
+                                        OUT   uint32_t                   * p_end);
 
 /** @brief   Close a struct / array opened by SOMEIP_DeserLengthBegin()
  *  @details - pos >  end: SOMEIP_RES_E_MALFORMED, members read past the length [PRS_SOMEIP_00900] [00918]
@@ -394,9 +408,12 @@ someip_result_t SOMEIP_DeserLengthEnd(INOUT someip_deser_cursor_t *p_cur, IN uin
  *  @param   out_size  Capacity of p_out = maximum number of character bytes, without BOM and "\0"
  *  @param   p_out_len Number of bytes written to p_out
  *  @return  SOMEIP_RES_OK, SOMEIP_RES_E_PARAM or SOMEIP_RES_E_MALFORMED */
-someip_result_t SOMEIP_DeserReadString(INOUT someip_deser_cursor_t *p_cur, IN someip_string_encoding_t enc,
-                                       IN someip_length_field_size_t lf_size, OUT uint8_t *p_out, IN uint32_t out_size,
-                                       OUT uint32_t *p_out_len);
+someip_result_t SOMEIP_DeserReadString(INOUT someip_deser_cursor_t      * p_cur,                                                 \
+                                       IN    someip_string_encoding_t     enc,                                                   \
+                                       IN    someip_length_field_size_t   lf_size,                                               \
+                                       OUT   uint8_t                    * p_out,                                                 \
+                                       IN    uint32_t                     out_size,                                              \
+                                       OUT   uint32_t                   * p_out_len);
 
 /** @brief   Read a fixed length string of fixed_size bytes into p_out (characters only)
  *  @param   p_cur      Read cursor
@@ -406,9 +423,12 @@ someip_result_t SOMEIP_DeserReadString(INOUT someip_deser_cursor_t *p_cur, IN so
  *  @param   out_size   Capacity of p_out = maximum number of character bytes, without BOM and "\0"
  *  @param   p_out_len  Number of bytes written to p_out
  *  @return  SOMEIP_RES_OK, SOMEIP_RES_E_PARAM (also invalid fixed_size) or SOMEIP_RES_E_MALFORMED */
-someip_result_t SOMEIP_DeserReadStringFixed(INOUT someip_deser_cursor_t *p_cur, IN someip_string_encoding_t enc,
-                                            IN uint32_t fixed_size, OUT uint8_t *p_out, IN uint32_t out_size,
-                                            OUT uint32_t *p_out_len);
+someip_result_t SOMEIP_DeserReadStringFixed(INOUT someip_deser_cursor_t    * p_cur,                                              \
+                                            IN    someip_string_encoding_t   enc,                                                \
+                                            IN    uint32_t                   fixed_size,                                         \
+                                            OUT   uint8_t                  * p_out,                                              \
+                                            IN    uint32_t                   out_size,                                           \
+                                            OUT   uint32_t                 * p_out_len);
 
 /* FOOTERS ***********************************************************************************************************************
  ********************************************************************************************************************************/

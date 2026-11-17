@@ -15,7 +15,7 @@ This document details core project architectural rules, hardware targets, build 
 - **ESP-IDF Wrapper Directory Naming**:
   - Any directory wrapping or adapting ESP-IDF drivers/subsystems **MUST** start with the prefix `ESP-` (e.g. `ESP-SPI`, `ESP-FreeRTOS`, `ESP-UART`).
 - **Common Module (`comp/Common`)**:
-  - `Config/Macros.h`: C/C++ cross-compatibility macros (`HEADER_CPP`, `FOOTER_CPP`) and argument attribute macros (`IN`, `OUT`, `INOUT`, `RO`, `WO`, `RW`).
+  - `Base/All.h`: C/C++ cross-compatibility macros (`HEADER_CPP`, `FOOTER_CPP`) and argument attribute macros (`IN`, `OUT`, `INOUT`, `RO`, `WO`, `RW`).
   - `Error/Error.h`: Standard error codes (`ze_err_t`) mapped 1:1 to `ESP_ERR_*` and extended with subsystem base ranges (`ZE_ERR_BASE_*`).
   - `Atomic/Atomic.h`: Typedefs for atomic operations.
   - `SharedAPIs.h`: Single umbrella header aggregating all common definitions.
@@ -159,7 +159,8 @@ uint32_t   retry_cnt = 0U;
 ```
 
 - **Pointer Variables (`p_`, `pp_`)**:
-  - In strict alignment with the **Renesas RA FSP** convention, all pointer variables and pointer parameters **MUST** be prefixed with `p_` (or `pp_` for pointer-to-pointer).
+  - In strict alignment with the **Renesas RA FSP** convention, all pointer variables, pointer parameters, and struct pointer members **MUST** be prefixed with `p_` (or `pp_` for pointer-to-pointer, `gp_` for global pointer, `sp_` for static pointer).
+  - This rule applies equally to raw pointer declarations (`type_t * p_name`) and macro-based pointer annotations (`type_t ro_ptr p_name`, `type_t rw_ptr p_name`, `RO_PTR`, `__ro_ptr`, etc.).
   - Place the `*` separated by spaces (`type_t * p_name`) or adjacent to the variable name (`type_t *p_name`), and never declare multiple variables on the same line:
 
 ```c
@@ -249,10 +250,38 @@ typedef enum e_eth_speed {
   - For state enums, include an explicit uninitialized, closed, or error state as the first label (e.g., `ETH_STATE_CLOSED = 0`, `ETH_STATE_OPEN`, `ETH_STATE_ERR`).
   - **Size Caveat**: Because `enum` storage size is implementation-defined, never use an `enum` type directly as a field inside packed wire protocols, CAN frames, or NVS binary blobs; store the value in an explicit fixed-width integer field (`uint8_t`, `uint16_t`, `uint32_t`).
 
+### 3.4 Function Prototypes & Multiline Parameter Alignment
+- **Contiguous Block Opening Parenthesis Alignment**:
+  - In header files (`/* SHARED FUNCTIONS */`, `/* PRIVATE FUNCTIONS */`) and API structs with function pointer members (`<module>_api_t`), all function declarations in a contiguous block **SHALL** have their return types and function names aligned so that the opening parenthesis `(` begins at the exact same column.
+- **Single-Line vs. Multiline Rule**:
+  - **Single Line**: When the full declaration length is under the column limit ($< 130$ characters), the function remains on a single line.
+  - **Multiline Wrapping ($\ge 130$ columns)**: When the declaration reaches or exceeds 130 columns, parameters **MUST** wrap across multiple lines:
+    1. Parameter 1 starts on line 1 immediately after `(`.
+    2. Parameters 2 through $N$ wrap onto subsequent lines, indented to start at the exact column after `(`.
+    3. Parameters are vertically aligned across 4 distinct columns:
+       $$\text{[dir\_qual]} \quad \mathbf{[type]} \quad \mathbf{[ptr\_qual]} \quad \mathbf{[param\_name]}$$
+    4. Every line of the parameter list except the last line ends with a continuation backslash (`\`) right-aligned at column 130 (`BANNER_WIDTH`).
+    5. This rule applies uniformly to function prototypes in `.h` files, struct callback members, and function definitions in `.c` files.
+
+```c
+/* Contiguous prototypes with aligned opening '(' */
+ze_err_t ZE_Flash_Open (inout ze_flash_instance_t rw_ptr p_ctrl, in ze_flash_cfg_t ro_ptr p_cfg);
+ze_err_t ZE_Flash_Read (inout ze_flash_instance_t rw_ptr p_ctrl, in void ro_ptr p_data, in uint32_t size);
+ze_err_t ZE_Flash_Write(inout ze_flash_instance_t rw_ptr p_ctrl, in void rw_ptr p_data, in uint32_t size);
+ze_err_t ZE_Flash_Close(inout ze_flash_instance_t rw_ptr p_ctrl);
+
+/* Multiline function declaration with 4-column parameter alignment and '\' at col 130 */
+ze_err_t ZE_Flash_WriteExtendedData(inout ze_flash_instance_t   rw_ptr p_ctrl,                                                   \
+                                    in    ze_flash_extend_cfg_t ro_ptr p_ext_cfg,                                                \
+                                    in    void                  ro_ptr p_input_buffer,                                           \
+                                    in    uint32_t                     buffer_length_bytes,                                      \
+                                    out   uint32_t              rw_ptr p_bytes_written);
+```
+
 ### 3.5 Macros & Constants
 - **Scope of `#define` Constants**: Use `#define` only for standalone compile-time configuration switches (used with `#if`), bit-manipulation/utility expressions, or non-integer literals. Any group of related integer constants **SHALL** use `enum` instead (see Section 3.4).
 - **Naming**: All `#define` macros and global `const` constants must use `UPPER_SNAKE_CASE` and start with a module prefix (`ZE_`, `ZECU_`, `ETH_`, etc.) to prevent namespace collisions. Avoid generic unprefixed names like `MAX` or `MIN`.
-- **Type-Qualifier Macro Exceptions & Consistency Rule**: The permission and pointer annotation macros in `Macros.h` are available in 4 equivalent styles: Uppercase (`RO`, `PTR_RO`), Lowercase (`ro`, `ptr_ro`), Leading `__` Uppercase (`__RO`, `__PTR_RO`), and Leading `__` Lowercase (`__ro`, `__ptr_ro`). Developers may choose any style freely, but **MUST use strictly ONE single style per source/header file** (never mix different casing or underscore prefix styles within the same file).
+- **Type-Qualifier Macro Exceptions & Consistency Rule**: The permission and pointer annotation macros in `Macros.h` are available in 4 equivalent styles: Uppercase (`RO`, `RO_PTR`), Lowercase (`ro`, `ro_ptr`), Leading `__` Uppercase (`__RO`, `__RO_PTR`), and Leading `__` Lowercase (`__ro`, `__ro_ptr`). Developers may choose any style freely, but **MUST use strictly ONE single style per source/header file** (never mix different casing or underscore prefix styles within the same file).
 - **Parenthesization**: Always wrap every macro parameter and the entire macro expression in parentheses:
 
 ```c
@@ -617,7 +646,7 @@ const char * ZE_ErrToStr(IN ze_err_t err);
 
 ## 7. Parameter & Permission Macros
 
-Defined in `comp/Common/Config/Macros.h`:
+Defined in `comp/Common/Base/All.h`:
 - `RO`: `const` (Read-Only permission).
 - `WO`: Write-Only permission.
 - `RW`: Read/Write permission.

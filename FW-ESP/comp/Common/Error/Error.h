@@ -13,7 +13,7 @@
 /* INCLUDES **********************************************************************************************************************
  ********************************************************************************************************************************/
 
-#include "Common/Config/All.h"
+#include "Common/Base/All.h"
 #include "esp_err.h"
 
 /* HEADERS ***********************************************************************************************************************
@@ -30,7 +30,7 @@ typedef enum ze_err_e {
 
     ZE_OK                   = ESP_OK,                     /*!< 0x0  : Success / No error */
     ZE_SUCCESS              = ESP_OK,                     /*!< 0x0  : Success alias */
-    ZE_ERR                  = ESP_FAIL,                   /*!< 0x1  : Generic failure */
+    ZE_ERR_UNEXPECTED       = ESP_FAIL,                   /*!< 0x1  : Generic failure */
     ZE_FAIL                 = ESP_FAIL,                   /*!< 0x1  : Generic failure */
 
     ZE_ERR_NO_MEM           = ESP_ERR_NO_MEM,             /*!< 0x101: Out of memory */
@@ -48,8 +48,10 @@ typedef enum ze_err_e {
     ZE_ERR_NOT_ALLOWED      = ESP_ERR_NOT_ALLOWED,        /*!< 0x10D: Action is not allowed */
 
     ZE_ERR_BASE_COMM        = 0x1000,                     /*!< Base error code for communication modules */
-    ZE_ERR_ALREADY_INIT     = ZE_ERR_BASE_COMM + 1,       /*!< 0x10E: Already initialized */
-    ZE_ERR_INVALID_ACCESS   = ZE_ERR_BASE_COMM + 2,       /*!< 0x10F: Invalid access (wrong permission) */
+    ZE_ERR_ALREADY_OPENED   = ZE_ERR_BASE_COMM + 1,       /*!< Already opened */
+    ZE_ERR_NOT_OPENED       = ZE_ERR_BASE_COMM + 2,       /*!< Already opened */
+    ZE_ERR_ALREADY_INIT     = ZE_ERR_BASE_COMM + 3,       /*!< Already initialized */
+    ZE_ERR_INVALID_ACCESS   = ZE_ERR_BASE_COMM + 4,       /*!< Invalid access (wrong permission) */
 
     ZE_ERR_MULTI_TASK_BASE  = 0x2000,                     /*!< Base error code for multi-task */
     ZE_ERR_CANT_TAKE_LOCK   = ZE_ERR_MULTI_TASK_BASE + 1, /*!< Can't take lock, resource already locked */

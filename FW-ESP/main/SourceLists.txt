@@ -8,6 +8,8 @@
 0x8c5d : comp/App/SOME-IP/Message/SOMEIP_Message.c
 0x2c7a : comp/App/SOME-IP/Serialization/SOMEIP_Serialization.c
 0x7e0b : comp/Comm/ESP-Assert/Assert.c
+0x7e3c : comp/Comm/ESP-Flash/Flash.c
 0x8abb : comp/Comm/ESP-Logger/SysLog.c
+0xc87a : comp/Comm/ESP-Mem/Mem.c
 0x19e0 : comp/Comm/ETH-W5500/ESP-SPI.c
 0xf7dd : comp/Common/Error/Error.c

@@ -142,9 +142,17 @@ def format_section_banners(content: str) -> str:
     return pattern.sub(banner_repl, content)
 
 
-# Pointer parameter declaration pattern: Type * var_name followed by , ) ; =
+# Pointer qualifier macros recognized as pointer declarations
+PTR_QUALIFIERS_REGEX = (
+    r"ro_ptr|rw_ptr|wo_ptr|"
+    r"RO_PTR|RW_PTR|WO_PTR|"
+    r"__ro_ptr|__rw_ptr|__wo_ptr|"
+    r"__RO_PTR|__RW_PTR|__WO_PTR"
+)
+
+# Pointer parameter declaration pattern: Type * var_name or Type ptr_* var_name followed by , ) ; =
 PTR_DECL_PATTERN = re.compile(
-    r"(\b[a-zA-Z0-9_]+(?:\s+const)?)\s*\*\s*([a-zA-Z0-9_]+)\s*(?=[,\);=])"
+    rf"(?:(?<![/(a-zA-Z0-9_])\*(?:\s*(?:const|volatile|\b(?:{PTR_QUALIFIERS_REGEX})\b))?|\b(?:{PTR_QUALIFIERS_REGEX})\b)\s*(?:const\s+|volatile\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=[,\);=])"
 )
 
 # Custom type declaration pattern (handles both single-line and multiline typedefs)
@@ -210,9 +218,21 @@ def apply_naming_transformations(content: str, file_name: str) -> str:
         if stripped.startswith("/*") or stripped.startswith("*") or stripped.startswith("//"):
             continue
 
-        for m in PTR_DECL_PATTERN.finditer(line):
-            var_name = m.group(2)
-            if var_name in ("const", "volatile", "restrict", "NULL", "void"):
+        # Strip inline comments and string literals so comments are never mistaken for code declarations
+        code_only = re.sub(r'"(?:\\.|[^"\\])*"', '""', re.sub(r"//.*$", "", re.sub(r"/\*.*?\*/", "", line)))
+
+        if stripped.startswith("typedef"):
+            for tm in TYPE_DECL_PATTERN.finditer(code_only):
+                type_name = tm.group(1)
+                local_decls[type_name] = file_name
+                suggested_type = normalize_type_identifier(type_name)
+                if suggested_type != type_name and type_name not in type_renames:
+                    type_renames[type_name] = suggested_type
+            continue
+
+        for m in PTR_DECL_PATTERN.finditer(code_only):
+            var_name = m.group(1)
+            if var_name.endswith(("_t", "_e", "_st")) or var_name.isupper() or var_name in ("const", "volatile", "restrict", "NULL", "void") or var_name.startswith("ZE_") or var_name in REGISTRY["reserved"]:
                 continue
             local_decls[var_name] = file_name
             if var_name.startswith(("p_", "pp_", "gp_", "sp_")):
@@ -221,7 +241,7 @@ def apply_naming_transformations(content: str, file_name: str) -> str:
             if suggested != var_name and var_name not in pointer_renames:
                 pointer_renames[var_name] = suggested
 
-        for tm in TYPE_DECL_PATTERN.finditer(line):
+        for tm in TYPE_DECL_PATTERN.finditer(code_only):
             type_name = tm.group(1)
             local_decls[type_name] = file_name
             suggested_type = normalize_type_identifier(type_name)
@@ -248,7 +268,7 @@ def apply_naming_transformations(content: str, file_name: str) -> str:
             if tag in new_line or var_new in new_line:
                 continue
 
-            decl_pattern = re.compile(rf"(\*\s*){re.escape(var_old)}\b")
+            decl_pattern = re.compile(rf"((?:(?<!\()\*(?:\s*(?:const|volatile|\b(?:{PTR_QUALIFIERS_REGEX})\b))?|\b(?:{PTR_QUALIFIERS_REGEX})\b)\s*(?:const\s+|volatile\s+)?){re.escape(var_old)}\b")
             if decl_pattern.search(new_line):
                 new_line = decl_pattern.sub(rf"\1{var_new} {tag}", new_line)
             else:
@@ -684,8 +704,8 @@ STRUCT_QUALIFIERS = {
 }
 
 STRUCT_PTR_QUALIFIERS = {
-    "RO", "WO", "RW", "ro", "wo", "rw", "PTR_RO", "PTR_WO", "PTR_RW", "ptr_ro", "ptr_wo", "ptr_rw",
-    "__RO", "__WO", "__RW", "__ro", "__wo", "__rw", "__PTR_RO", "__PTR_WO", "__PTR_RW", "__ptr_ro", "__ptr_wo", "__ptr_rw", "const"
+    "RO", "WO", "RW", "ro", "wo", "rw", "RO_PTR", "WO_PTR", "RW_PTR", "ro_ptr", "wo_ptr", "rw_ptr",
+    "__RO", "__WO", "__RW", "__ro", "__wo", "__rw", "__RO_PTR", "__WO_PTR", "__RW_PTR", "__ro_ptr", "__wo_ptr", "__rw_ptr", "const"
 }
 
 STRUCT_MEMBER_PATTERN = re.compile(
@@ -713,7 +733,7 @@ def align_struct_block(body_lines: list) -> list:
             continue
 
         fixed_line = re.sub(
-            r"\*(RO|WO|RW|ro|wo|rw|ptr_ro|ptr_wo|ptr_rw|PTR_RO|PTR_WO|PTR_RW|__RO|__WO|__RW|__ro|__wo|__rw|__ptr_ro|__ptr_wo|__ptr_rw|const)\b",
+            r"\*(RO|WO|RW|ro|wo|rw|ro_ptr|wo_ptr|rw_ptr|RO_PTR|WO_PTR|RW_PTR|__RO|__WO|__RW|__ro|__wo|__rw|__ro_ptr|__wo_ptr|__rw_ptr|const)\b",
             r"* \1",
             line
         )
@@ -805,6 +825,378 @@ def align_all_structs(text: str) -> str:
             i += 1
     return "\n".join(out)
 
+
+
+def align_designated_initializer_block(lines: list) -> list:
+    """
+    Format a struct designated initializer block (both single-line and multiline):
+    - Decl line: <indent><decl> = {
+    - Put each .field assignment on its own line indented by 4 spaces.
+    - Align '=' signs to the longest field identifier.
+    - Guarantee trailing commas for clean version control diffs.
+    - Keep comments aligned.
+    - Closing line: <indent>};
+    """
+    full_text = "\n".join(lines)
+    first_brace = full_text.find("{")
+    last_brace = full_text.rfind("}")
+    if first_brace == -1 or last_brace == -1 or last_brace <= first_brace:
+        return lines
+
+    decl = full_text[:first_brace].strip()
+    inner = full_text[first_brace + 1:last_brace]
+    tail = full_text[last_brace:].strip()
+
+    m_indent = re.match(r"^([ \t]*)", lines[0])
+    indent = m_indent.group(1) if m_indent else ""
+    field_indent = indent + "    "
+
+    raw_lines = inner.splitlines()
+    all_items = []
+    current = []
+    depth = 0
+    in_str = False
+    escape = False
+    current_comment = ""
+
+    for line in raw_lines:
+        line_str = line.strip()
+        if not line_str:
+            continue
+        c_idx = line_str.find("//")
+        comment = ""
+        if c_idx != -1:
+            comment = line_str[c_idx:].strip()
+            line_str = line_str[:c_idx].strip()
+
+        for ch in line_str:
+            if escape:
+                current.append(ch)
+                escape = False
+                continue
+            if ch == "\\":
+                escape = True
+                current.append(ch)
+                continue
+            if ch == '"':
+                in_str = not in_str
+                current.append(ch)
+                continue
+            if not in_str:
+                if ch in ("{", "(", "["):
+                    depth += 1
+                elif ch in ("}", ")", "]"):
+                    depth -= 1
+                elif ch == "," and depth == 0:
+                    item_text = "".join(current).strip()
+                    if item_text or comment:
+                        all_items.append((item_text, comment))
+                        comment = ""
+                    current = []
+                    continue
+            current.append(ch)
+        if comment and not current:
+            all_items.append(("", comment))
+        elif comment:
+            current_comment = comment
+
+    item_text = "".join(current).strip()
+    if item_text or current_comment:
+        all_items.append((item_text, current_comment))
+
+    parsed = []
+    for it, cmt in all_items:
+        if not it and cmt:
+            parsed.append(("", "", cmt))
+            continue
+        it = it.strip().rstrip(",")
+        m_field = re.match(r"^(\.[A-Za-z0-9_]+)\s*=\s*(.*)$", it)
+        if m_field:
+            fname, fval = m_field.groups()
+            parsed.append((fname, fval.strip(), cmt))
+        else:
+            parsed.append(("", it, cmt))
+
+    if not parsed:
+        return lines
+
+    max_fname_len = max((len(p[0]) for p in parsed if p[0]), default=0)
+    rebuilt = []
+    for fname, fval, cmt in parsed:
+        if fname:
+            code_part = f"{field_indent}{fname.ljust(max_fname_len)} = {fval},"
+        elif fval:
+            code_part = f"{field_indent}{fval},"
+        else:
+            code_part = ""
+
+        if cmt:
+            if code_part:
+                rebuilt.append((code_part, cmt))
+            else:
+                rebuilt.append((f"{field_indent}{cmt}", ""))
+        else:
+            rebuilt.append((code_part, ""))
+
+    code_with_cmts = [r[0] for r in rebuilt if r[0] and r[1]]
+    comment_col = max((len(c) for c in code_with_cmts), default=0) + 1 if code_with_cmts else 0
+
+    out = [f"{indent}{decl} {{"]
+    for code_part, cmt in rebuilt:
+        if not cmt:
+            out.append(code_part)
+        elif not code_part:
+            out.append(cmt)
+        else:
+            out.append(f"{code_part.ljust(comment_col)}{cmt}")
+    out.append(f"{indent}{tail}")
+    return out
+
+
+def align_all_designated_initializers(text: str) -> str:
+    """
+    Find all designated initializer blocks (variable = { ... };) and format them with aligned '='.
+    Handles both multiline initializers and single-line initializers that clang-format collapsed.
+    """
+    lines = text.splitlines()
+    out = []
+    i = 0
+    n = len(lines)
+    while i < n:
+        line = lines[i]
+        # Match single-line designated initializer
+        if re.search(r"=\s*\{\s*\.[A-Za-z0-9_]+\s*=", line) and line.rstrip().endswith("};"):
+            aligned = align_designated_initializer_block([line])
+            out.extend(aligned)
+            i += 1
+            continue
+
+        # Match start of designated initializer
+        if re.search(r"=\s*\{\s*$", line) or re.search(r"=\s*\{\s*\.[A-Za-z0-9_]+", line):
+            init_lines = [line]
+            brace_count = line.count("{") - line.count("}")
+            i += 1
+            while i < n and brace_count > 0:
+                cur = lines[i]
+                brace_count += cur.count("{") - cur.count("}")
+                init_lines.append(cur)
+                i += 1
+            if any(re.search(r"\.[A-Za-z0-9_]+\s*=", l) for l in init_lines) and init_lines[-1].strip().endswith("};"):
+                aligned = align_designated_initializer_block(init_lines)
+                out.extend(aligned)
+            else:
+                out.extend(init_lines)
+        else:
+            out.append(line)
+            i += 1
+
+    return "\n".join(out)
+
+
+# Function Prototype Alignment Support
+FUNC_PARAM_COLUMNS_REGEX = re.compile(
+    rf"^(?:\b(in|out|inout|ro|wo|rw|shared|IN|OUT|INOUT|RO|WO|RW|SHARED|__in|__out|__inout|__ro|__wo|__rw|__shared|__IN|__OUT|__INOUT|__RO|__WO|__RW|__SHARED)\b\s+)?([A-Za-z0-9_]+(?:\s+const)?)\s+(?:\b({PTR_QUALIFIERS_REGEX})\b\s+)?([A-Za-z_][A-Za-z0-9_]*)$"
+)
+
+FUNC_PROTO_PATTERN = re.compile(
+    r"^([ \t]*)([A-Za-z0-9_\*\s]+?)\s+([A-Za-z_][A-Za-z0-9_]*)\((.*)$"
+)
+
+FUNC_CONTROL_KEYWORDS = {
+    "if", "for", "while", "switch", "catch", "return", "sizeof",
+    "case", "do", "else", "typedef", "struct", "enum", "union"
+}
+
+
+def split_function_parameters(param_str: str) -> list:
+    """Split comma-separated parameters honoring nested parentheses and brackets."""
+    params = []
+    current = []
+    depth = 0
+    in_str = False
+    escape = False
+
+    for char in param_str:
+        if escape:
+            current.append(char)
+            escape = False
+            continue
+        if char == "\\":
+            escape = True
+            current.append(char)
+            continue
+        if char == '"':
+            in_str = not in_str
+            current.append(char)
+            continue
+        if not in_str:
+            if char in ("(", "{", "["):
+                depth += 1
+            elif char in (")", "}", "]"):
+                depth -= 1
+            elif char == "," and depth == 0:
+                p = "".join(current).strip()
+                if p:
+                    params.append(p)
+                current = []
+                continue
+        current.append(char)
+
+    last_p = "".join(current).strip()
+    if last_p:
+        params.append(last_p)
+    return params
+
+
+def format_single_function_declaration(
+    prefix: str,
+    params_str: str,
+    suffix: str,
+    max_col: int = BANNER_WIDTH
+) -> list:
+    """
+    Format a function declaration:
+    If prefix + params_str + suffix fits within max_col, keep as single line.
+    Otherwise, wrap each parameter on its own line aligned in 4 columns:
+    [dir_qual] [type] [ptr_qual] [param_name]
+    and place continuation backslash '\' at column max_col for all lines except the last.
+    """
+    raw_params = split_function_parameters(params_str)
+    if not raw_params or raw_params == ["void"]:
+        single_line = f"{prefix}{params_str}{suffix}"
+        return [single_line]
+
+    single_line = f"{prefix}{', '.join(raw_params)}{suffix}"
+    if len(single_line) < max_col:
+        return [single_line]
+
+    # Multiline wrapping required
+    parsed_params = []
+    for p in raw_params:
+        p_clean = " ".join(p.split())
+        m = FUNC_PARAM_COLUMNS_REGEX.match(p_clean)
+        if m:
+            dir_q, p_type, ptr_q, p_name = m.groups()
+            parsed_params.append((dir_q or "", p_type or "", ptr_q or "", p_name or ""))
+        else:
+            parsed_params.append(("", p_clean, "", ""))
+
+    max_dir = max(len(p[0]) for p in parsed_params)
+    max_type = max(len(p[1]) for p in parsed_params)
+    max_ptr = max(len(p[2]) for p in parsed_params)
+
+    lines = []
+    param_indent = " " * len(prefix)
+    n_params = len(parsed_params)
+
+    for idx, p in enumerate(parsed_params):
+        dir_q, p_type, ptr_q, p_name = p
+        parts = []
+        if max_dir > 0:
+            parts.append(dir_q.ljust(max_dir) if dir_q else " " * max_dir)
+        if max_type > 0:
+            parts.append(p_type.ljust(max_type) if p_type else " " * max_type)
+        if max_ptr > 0:
+            parts.append(ptr_q.ljust(max_ptr) if ptr_q else " " * max_ptr)
+        if p_name:
+            parts.append(p_name)
+
+        param_formatted = " ".join([pt for pt in parts if pt])
+        comma = "," if idx < n_params - 1 else ""
+
+        if idx == 0:
+            code_line = f"{prefix}{param_formatted}{comma}"
+        else:
+            code_line = f"{param_indent}{param_formatted}{comma}"
+
+        if idx == n_params - 1:
+            code_line = f"{code_line}{suffix}"
+            lines.append(code_line)
+        else:
+            # Pad with spaces so '\' is at max_col (1-indexed col 130 -> 129 spaces before \)
+            pad = max(1, (max_col - 1) - len(code_line))
+            lines.append(f"{code_line}{' ' * pad}\\")
+
+    return lines
+
+
+def align_all_function_declarations(text: str, max_col: int = BANNER_WIDTH) -> str:
+    """
+    Align contiguous blocks of function prototypes / declarations in .h and .c files:
+    - Normalizes '(' alignment across contiguous blocks.
+    - If line fits within max_col, keeps on single line.
+    - If >= max_col, wraps parameters into 4 columns with '\' continuation at column max_col.
+    """
+    lines = text.splitlines()
+    out = []
+    i = 0
+    n = len(lines)
+
+    while i < n:
+        line = lines[i]
+        stripped = line.strip()
+
+        if not stripped or stripped.startswith(("/*", "*", "//", "#", "typedef")):
+            out.append(line)
+            i += 1
+            continue
+
+        m = FUNC_PROTO_PATTERN.match(line)
+        if not m:
+            out.append(line)
+            i += 1
+            continue
+
+        indent, ret_type, func_name, remainder = m.groups()
+        if any(k in ret_type.split() for k in FUNC_CONTROL_KEYWORDS) or func_name in FUNC_CONTROL_KEYWORDS or "=" in ret_type or "=" in func_name:
+            out.append(line)
+            i += 1
+            continue
+
+        # Check if single line declaration ending with ';'
+        if ")" not in remainder:
+            out.append(line)
+            i += 1
+            continue
+
+        idx = remainder.rfind(")")
+        params = remainder[:idx]
+        suffix = remainder[idx:].strip()
+
+        block = [(indent, ret_type.strip(), func_name.strip(), params, suffix)]
+        i += 1
+
+        # Check contiguous single-line declarations with same indent ending with ';'
+        if suffix.endswith(";"):
+            while i < n:
+                next_line = lines[i]
+                next_stripped = next_line.strip()
+                if not next_stripped or next_stripped.startswith(("/*", "*", "//", "#", "typedef")):
+                    break
+                m_next = FUNC_PROTO_PATTERN.match(next_line)
+                if not m_next:
+                    break
+                n_indent, n_ret, n_name, n_rem = m_next.groups()
+                if any(k in n_ret.split() for k in FUNC_CONTROL_KEYWORDS) or n_name in FUNC_CONTROL_KEYWORDS or "=" in n_ret or "=" in n_name:
+                    break
+                if n_indent != indent:
+                    break
+                if ")" not in n_rem or not n_rem.strip().endswith(";"):
+                    break
+                idx_next = n_rem.rfind(")")
+                n_params = n_rem[:idx_next]
+                n_suffix = n_rem[idx_next:].strip()
+                block.append((n_indent, n_ret.strip(), n_name.strip(), n_params, n_suffix))
+                i += 1
+
+        max_ret = max(len(b[1]) for b in block)
+        max_name = max(len(b[2]) for b in block)
+        for b in block:
+            b_indent, b_ret, b_name, b_params, b_suffix = b
+            prefix = f"{b_indent}{b_ret.ljust(max_ret)} {b_name.ljust(max_name)}("
+            out.extend(format_single_function_declaration(prefix, b_params, b_suffix, max_col))
+
+    return "\n".join(out)
 
 
 def align_macro_definitions_in_section(lines: list, max_line_width: int = BANNER_WIDTH) -> list:
@@ -1078,6 +1470,8 @@ def format_file(file_path: str) -> bool:
     formatted_content = align_all_macros(formatted_content, BANNER_WIDTH)
     formatted_content = align_all_enums(formatted_content)
     formatted_content = align_all_structs(formatted_content)
+    formatted_content = align_all_designated_initializers(formatted_content)
+    formatted_content = align_all_function_declarations(formatted_content, BANNER_WIDTH)
     formatted_content = align_all_doxygen_comments(formatted_content)
     formatted_content = align_macro_backslashes(formatted_content, BANNER_WIDTH)
     formatted_content = format_preprocessor_indentation(formatted_content)

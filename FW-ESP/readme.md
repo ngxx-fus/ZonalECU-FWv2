@@ -72,11 +72,15 @@ FW-ESP/
      ```
 3. **Permission & Pointer Annotation Macros (`Macros.h`)**:
    * Permission and pointer annotation macros are available in 4 equivalent style sets:
-     1. **Uppercase**: `RO`, `WO`, `RW`, `IN`, `OUT`, `INOUT`, `PTR_RO`, `PTR_WO`, `PTR_RW`
-     2. **Lowercase**: `ro`, `wo`, `rw`, `in`, `out`, `inout`, `ptr_ro`, `ptr_wo`, `ptr_rw`
-     3. **Leading `__` Uppercase**: `__RO`, `__WO`, `__RW`, `__IN`, `__OUT`, `__INOUT`, `__PTR_RO`, `__PTR_WO`, `__PTR_RW`
-     4. **Leading `__` Lowercase**: `__ro`, `__wo`, `__rw`, `__in`, `__out`, `__inout`, `__ptr_ro`, `__ptr_wo`, `__ptr_rw`
+     1. **Uppercase**: `RO`, `WO`, `RW`, `IN`, `OUT`, `INOUT`, `RO_PTR`, `WO_PTR`, `RW_PTR`
+     2. **Lowercase**: `ro`, `wo`, `rw`, `in`, `out`, `inout`, `ro_ptr`, `wo_ptr`, `rw_ptr`
+     3. **Leading `__` Uppercase**: `__RO`, `__WO`, `__RW`, `__IN`, `__OUT`, `__INOUT`, `__RO_PTR`, `__WO_PTR`, `__RW_PTR`
+     4. **Leading `__` Lowercase**: `__ro`, `__wo`, `__rw`, `__in`, `__out`, `__inout`, `__ro_ptr`, `__wo_ptr`, `__rw_ptr`
    * **Single-Style-Per-File Consistency Rule**: Developers may choose any of the 4 styles freely based on personal/subsystem preference, but **MUST use strictly ONE single style per source/header file** (never mix different casing or prefix styles within the same file).
+   * **Pointer Naming Enforcement (`ptr_*` & `p_` Prefix)**: Any variable, parameter, or struct member declared with pointer macros (`ro_ptr`, `rw_ptr`, `wo_ptr`, or their uppercase / `__` counterparts) denotes a pointer and **MUST** follow the pointer naming convention with a `p_` prefix (or `pp_`, `gp_`, `sp_`). The automated formatter `format_rules.py` enforces this rule across both raw asterisks (`*`) and all `ptr_*` macros.
+4. **Function Prototypes & Multiline Alignment**:
+   * Contiguous function prototypes in headers and struct function tables have their opening parenthesis `(` aligned to the same column.
+   * Parameter lists reaching or exceeding 130 columns wrap onto subsequent lines, align across 4 columns (`[dir_qual] [type] [ptr_qual] [param_name]`), and end with continuation backslashes (`\`) right-aligned at column 130 across both `.h` and `.c` files.
 
 
 ---

@@ -213,10 +213,10 @@ This document records technical issues diagnosed across the project, root causes
 ### [2026-11-14] Struct Column Alignment Collapse & Pointer Qualifier Gluing (`*RO`)
 - **Component**: `.github/scripts/format_rules.py` & `.clang-format`
 - **Symptom**:
-  - Struct member declarations with custom qualifiers (`RW`, `RO`, `ptr_ro`, etc.) had their column alignments collapsed by formatting.
+  - Struct member declarations with custom qualifiers (`RW`, `RO`, `ro_ptr`, etc.) had their column alignments collapsed by formatting.
   - Pointer declarations with post-asterisk qualifiers (`RW void * RO p_ext;`) were glued into `RW void *RO p_ext;` because `clang-format` treated `RO` as an identifier attached to `*`.
 - **Root Cause**:
-  - `clang-format` has `AlignConsecutiveDeclarations: None` and does not recognize custom permission macros (`RO`, `WO`, `RW`, `ptr_ro`, etc.) as type qualifiers, attaching `*` to the qualifier token and flattening inter-column whitespace.
+  - `clang-format` has `AlignConsecutiveDeclarations: None` and does not recognize custom permission macros (`RO`, `WO`, `RW`, `ro_ptr`, etc.) as type qualifiers, attaching `*` to the qualifier token and flattening inter-column whitespace.
   - `format_rules.py` lacked a post-processing pass for struct member definitions.
 - **Fix Applied**:
   - Implemented `align_struct_block()` and `align_all_structs()` in `format_rules.py`:
@@ -226,4 +226,56 @@ This document records technical issues diagnosed across the project, root causes
     4. Integrated `align_all_structs()` into the post-processing pipeline in `format_file()`.
 - **Key Lesson & Prevention Rule**:
   - C code formatters cannot natively parse domain-specific attribute/permission macros without custom AST or post-processing passes. Keep `align_all_structs()` in `format_rules.py` to guarantee consistent struct layout.
+
+---
+
+### [2026-11-14] Pointer Auto-Renaming Missed Macro-Based Pointer Declarations (`ptr_*`)
+- **Component**: `.github/scripts/format_rules.py`, `FW-ESP/readme.md`, `FW-ESP/CodingRules.md`
+- **Symptom**:
+  - Variables, parameters, and struct members declared using macro-based pointer annotations (such as `ze_flash_cfg_t ro_ptr cfg;` or `in void ro_ptr data`) were not recognized as pointers and failed to receive the mandatory `p_` prefix.
+- **Root Cause**:
+  - `PTR_DECL_PATTERN` and `decl_pattern` in `format_rules.py` strictly searched for literal asterisks (`*`), ignoring domain-specific pointer permission macros defined in `Macros.h`.
+- **Fix Applied**:
+  - Defined `PTR_QUALIFIERS_REGEX` covering all 12 pointer macro variants: `ro_ptr`, `rw_ptr`, `wo_ptr`, `RO_PTR`, `RW_PTR`, `WO_PTR`, `__ro_ptr`, `__rw_ptr`, `__wo_ptr`, `__RO_PTR`, `__RW_PTR`, `__WO_PTR`.
+  - Expanded `PTR_DECL_PATTERN` and `decl_pattern` to detect identifiers preceded by either `*` or any `ptr_*` macro.
+  - Added negative lookbehind `(?<!\()` to ensure function pointer declarations (e.g. `(*FlashOpen)`) are not misidentified as data pointer variables.
+  - Documented explicit pointer naming enforcement for `ptr_*` macros in `FW-ESP/readme.md` and `FW-ESP/CodingRules.md`.
+- **Key Lesson & Prevention Rule**:
+  - When abstracting native C syntax (such as pointer dereference/declaration `*`) into custom architectural macros, all linters, formatting tools, and naming scanners across the repository must be updated synchronously to treat those macros as direct semantic equivalents of raw pointers.
+
+---
+
+### [2026-11-14] Function Prototype Alignment & Multiline Parameter Backslash Layout
+- **Component**: `.github/scripts/format_rules.py`, `FW-ESP/CodingRules.md`, `FW-ESP/readme.md`
+- **Symptom**:
+  - Function prototypes in header files (`/* SHARED FUNCTIONS */`), callback pointers in API structs, and function definitions in `.c` files lacked vertical alignment for opening parentheses and suffered from inconsistent multiline parameter layout.
+- **Root Cause**:
+  - `clang-format` flattens or arbitrarily indents function parameter lists and does not recognize project-specific 4-column parameter conventions (`[dir_qual] [type] [ptr_qual] [param_name]`) or continuation backslash (`\`) margins.
+- **Fix Applied**:
+  - Implemented `align_all_function_declarations()` in `format_rules.py`:
+    1. Detects contiguous blocks of function declarations and aligns return types and names so opening parentheses `(` line up vertically.
+    2. Enforces the single-line rule for declarations under 130 columns ($< 130$).
+    3. For declarations reaching or exceeding 130 columns ($\ge 130$), automatically splits parameters onto new lines, formats them into 4 aligned columns, and appends right-aligned continuation backslashes (`\`) at column 130 (`BANNER_WIDTH`).
+    4. Formally documented this convention as Section 3.4 in `FW-ESP/CodingRules.md` and added summary in `FW-ESP/readme.md`.
+- **Key Lesson & Prevention Rule**:
+  - High-density embedded API tables and prototype declarations benefit significantly from deterministic column alignment. Coupling clang-format AST formatting with a custom Python post-processing pass ensures strict adherence to project layout conventions without sacrificing standard formatting benefits.
+
+---
+
+### [2026-11-14] Struct Designated Initializer Alignment & Single-Line Unpacking
+- **Component**: `.github/scripts/format_rules.py`, `FW-ESP/comp/Comm/ESP-Flash/Flash.c`
+- **Symptom**:
+  - Struct instances initialized using designated initializers (e.g. `ze_flash_instance_t g_ze_flash_ctrl = { ... };` or `prv_ze_flash_info`) were either collapsed by `clang-format` into arbitrary single-line/multi-line blocks without alignment of `=` signs, or left with irregular member indentation and missing trailing commas.
+- **Root Cause**:
+  - Standard `clang-format` configuration (`ColumnLimit: 130`) automatically packs small designated initializer structs onto single lines (`{.field = val, ...}`). Furthermore, clang-format has no native rule to vertically align `=` across designated initializer fields (`.field = value`).
+- **Fix Applied**:
+  - Implemented `align_designated_initializer_block()` and `align_all_designated_initializers()` in `format_rules.py`:
+    1. Detects both collapsed single-line initializers and multiline struct initializer blocks.
+    2. Extracts all fields enclosed within `{ ... }` honoring nested braces, brackets, and string literals.
+    3. Normalizes structure: `<indent><decl> = {`, 4-space indented fields (`<indent>    .<field> = <value>,`), and closing `<indent>};`.
+    4. Calculates maximum field name length across the block and vertically pads field identifiers so all `=` signs align at the exact same column.
+    5. Guarantees trailing commas on all member initializers for clean git diffs and aligns inline trailing comments.
+    6. Verified on `FW-ESP/comp/Comm/ESP-Flash/Flash.c` and validated with clean ESP-IDF v6.1 builds.
+- **Key Lesson & Prevention Rule**:
+  - Embedded systems rely heavily on clear static configuration structs and instance definitions. Enforcing designated initializer alignment in `format_rules.py` guarantees uniform readability and clean version control diffs regardless of how clang-format attempts to pack lines.
 

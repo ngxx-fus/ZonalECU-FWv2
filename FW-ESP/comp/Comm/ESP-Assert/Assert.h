@@ -40,7 +40,7 @@ typedef enum ze_assert_callback_event_e {
     ZE_ASSERT_EVENT_MINOR    = 0x2, /* Constraint is not critical, just a minor */
 } ze_assert_callback_event_t;
 
-typedef void *p_ze_assert_context_t /* RENAMED: ze_assert_context_t -> p_ze_assert_context_t | FILE: Assert.h */;
+typedef void *ze_assert_context_t;
 
 typedef struct ze_assert_callback_st {
     ze_assert_callback_event_t event;
@@ -56,12 +56,12 @@ typedef void (*ze_assert_callback_t)(ze_assert_callback_arg_t *p_context);
  ********************************************************************************************************************************/
 
 /* Shared variable */
-p_ze_assert_context_t /* RENAMED: ze_assert_context_t -> p_ze_assert_context_t | FILE: Assert.h */ gp_ze_assert_context;
+ze_assert_context_t gp_ze_assert_context;
 
 /* SHARED FUNCTIONS **************************************************************************************************************
  ********************************************************************************************************************************/
 
-ze_err_t ZE_Assert_Init();
+ze_err_t ZE_Assert_Init       ();
 ze_err_t ZE_Assert_CallbackSet(ze_assert_callback_t p_callback);
 
 /* FOOTERS ***********************************************************************************************************************

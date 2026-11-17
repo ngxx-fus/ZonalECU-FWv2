@@ -13,6 +13,8 @@
 /* INCLUDES **********************************************************************************************************************
  ********************************************************************************************************************************/
 
+#include "__prv_common__.h"
+
 /* HEADERS ***********************************************************************************************************************
  ********************************************************************************************************************************/
 
@@ -58,7 +60,12 @@
     #define ZE_FOOTER      FOOTER_CPP
 #endif
 
-/* Macros for permission (Group 1: Uppercase) **************************************/
+#ifndef ZE_UNUSED
+    #define ZE_UNUSED(x)    ((void)(x))
+#endif
+
+/* Macros for permission (Group 1: Uppercase) ***********************************************************************************/
+
 #ifndef RO
     #define RO             const  /* Read only data permission */
 #endif
@@ -78,17 +85,21 @@
     #define INOUT                 /* Input/Output parameter, shall be a pointer */
 #endif
 
-#ifndef PTR_RO
-    #define PTR_RO         *const /* Read only pointer address */
+#ifndef RO_PTR
+    #define RO_PTR         *const /* Read only pointer address */
 #endif
-#ifndef PTR_WO
-    #define PTR_WO         *      /* Write only pointer address */
+#ifndef WO_PTR
+    #define WO_PTR         *      /* Write only pointer address */
 #endif
-#ifndef PTR_RW
-    #define PTR_RW         *      /* Read/Write pointer address */
+#ifndef RW_PTR
+    #define RW_PTR         *      /* Read/Write pointer address */
 #endif
 
-/* Macros for permission (Group 2: Lowercase aliases) ******************************/
+#ifndef SHARED
+    #define SHARED         extern
+#endif
+
+/* Macros for permission (Group 2: Lowercase aliases) ***************************************************************************/
 #ifndef ro
     #define ro             const  /* Read only data permission */
 #endif
@@ -108,17 +119,26 @@
     #define inout                 /* Input/Output parameter, shall be a pointer */
 #endif
 
-#ifndef ptr_ro
-    #define ptr_ro         *const /* Read only pointer address */
+/** Example: 
+ *      ro TYPE rw_ptr VAR
+ *  - "rw_ptr VAR"    : Able to point to another memory region.
+ *  - "ro TYPE"       : Write operation is PROHIBITED for the pointed region. */
+
+#ifndef ro_ptr
+    #define ro_ptr         *const /* Read only pointer address */
 #endif
-#ifndef ptr_wo
-    #define ptr_wo         *      /* Write only pointer address */
+#ifndef wo_ptr
+    #define wo_ptr         *      /* Write only pointer address */
 #endif
-#ifndef ptr_rw
-    #define ptr_rw         *      /* Read/Write pointer address */
+#ifndef rw_ptr
+    #define rw_ptr         *      /* Read/Write pointer address */
 #endif
 
-/* Macros for permission (Group 3: Leading '__' Uppercase) *************************/
+#ifndef shared
+    #define shared         extern
+#endif
+
+/* Macros for permission (Group 3: Leading '__' Uppercase) **********************************************************************/
 #ifndef __RO
     #define __RO           const  /* Read only data permission */
 #endif
@@ -138,17 +158,21 @@
     #define __INOUT               /* Input/Output parameter, shall be a pointer */
 #endif
 
-#ifndef __PTR_RO
-    #define __PTR_RO       *const /* Read only pointer address */
+#ifndef __RO_PTR
+    #define __RO_PTR       *const /* Read only pointer address */
 #endif
-#ifndef __PTR_WO
-    #define __PTR_WO       *      /* Write only pointer address */
+#ifndef __WO_PTR
+    #define __WO_PTR       *      /* Write only pointer address */
 #endif
-#ifndef __PTR_RW
-    #define __PTR_RW       *      /* Read/Write pointer address */
+#ifndef __RW_PTR
+    #define __RW_PTR       *      /* Read/Write pointer address */
 #endif
 
-/* Macros for permission (Group 4: Leading '__' Lowercase) *************************/
+#ifndef __SHARED
+    #define __SHARED       extern
+#endif
+
+/* Macros for permission (Group 4: Leading '__' Lowercase) **********************************************************************/
 #ifndef __ro
     #define __ro           const  /* Read only data permission */
 #endif
@@ -168,17 +192,39 @@
     #define __inout               /* Input/Output parameter, shall be a pointer */
 #endif
 
-#ifndef __ptr_ro
-    #define __ptr_ro       *const /* Read only pointer address */
+#ifndef __ro_ptr
+    #define __ro_ptr       *const /* Read only pointer address */
 #endif
-#ifndef __ptr_wo
-    #define __ptr_wo       *      /* Write only pointer address */
+#ifndef __wo_ptr
+    #define __wo_ptr       *      /* Write only pointer address */
 #endif
-#ifndef __ptr_rw
-    #define __ptr_rw       *      /* Read/Write pointer address */
+#ifndef __rw_ptr
+    #define __rw_ptr       *      /* Read/Write pointer address */
 #endif
 
-/* Readable check macros **********************************************************/
+#ifndef __shared
+    #define __shared       extern
+#endif
+
+/* Generic pointer macro (rw) **************************************************************************************************/
+
+#ifndef __ptr
+    #define __ptr          *
+#endif
+
+#ifndef ptr
+    #define ptr            *
+#endif
+
+#ifndef PTR
+    #define PTR            *
+#endif
+
+#ifndef __PTR
+    #define __PTR          *
+#endif
+
+/* Readable check macros *******************************************************************************************************/
 
 #define IS_NULL(X) ((X) == (NULL))
 #define IS_ZERO(X) ((X) == 0)
@@ -193,17 +239,16 @@
 #define CHART2UINT32(C3, C2, C1, C0)                                                                                             \
     (((uint32_t)(C3) << 24) | ((uint32_t)(C2) << 16) | ((uint32_t)(C1) << 8) | ((uint32_t)(C0) << 0))
 
-/* EXPORTED VARIABLES ************************************************************************************************************
- ********************************************************************************************************************************/
+/* Standard units ***************************************************************************************************************/
 
-/* SHARED VARIABLES **************************************************************************************************************
- ********************************************************************************************************************************/
-
-/* SHARED FUNCTIONS **************************************************************************************************************
- ********************************************************************************************************************************/
-
-/* FOOTERS ***********************************************************************************************************************
- ********************************************************************************************************************************/
+#define BIT(x)      (x)
+#define BYTE(x)     (x)
+#define KILO(x)     ((x)<<10U)
+#define MEGA(x)     ((x)<<20U)
+#define KBYTE(x)    KILO(x)
+#define MBYTE(x)    MEGA(x)
+#define KBIT(x)     KILO(x)
+#define MBIT(x)     MEGA(x)
 
 /* GUARD/END *********************************************************************************************************************
  ********************************************************************************************************************************/
