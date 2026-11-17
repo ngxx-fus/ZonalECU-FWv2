@@ -186,15 +186,15 @@ typedef uint8_t someip_return_code_t;       /*!< Values: enum e_someip_return_co
 /** @brief Byte order of payload parameters, configurable per parameter [PRS_SOMEIP_00369] */
 typedef enum e_someip_byte_order {
     SOMEIP_BYTE_ORDER_BIG_ENDIAN    = 0, /*!< Default, same as the header */
-    SOMEIP_BYTE_ORDER_LITTLE_ENDIAN = 1,
+    SOMEIP_BYTE_ORDER_LITTLE_ENDIAN = 1, /*!< Configured per parameter */
 } someip_byte_order_t;
 
 /** @brief   Size of the length field of dynamic array / string, struct, union             [PRS_SOMEIP_00121]
  *  @note    Enumerator value = size in bytes, 0 = no length field. */
 typedef enum e_someip_length_field_size {
-    SOMEIP_LENGTH_FIELD_NONE  = 0,
-    SOMEIP_LENGTH_FIELD_8BIT  = 1,
-    SOMEIP_LENGTH_FIELD_16BIT = 2,
+    SOMEIP_LENGTH_FIELD_NONE  = 0, /*!< No length field */
+    SOMEIP_LENGTH_FIELD_8BIT  = 1, /*!< 1 byte length field */
+    SOMEIP_LENGTH_FIELD_16BIT = 2, /*!< 2 byte length field */
     SOMEIP_LENGTH_FIELD_32BIT = 4, /*!< Default for dynamic arrays and strings */
 } someip_length_field_size_t;
 
@@ -208,14 +208,14 @@ typedef enum e_someip_string_encoding {
 /** @brief   Internal API result
  *  @note    NOT a wire value; the wire Return Code is someip_return_code_t. */
 typedef enum e_someip_result {
-    SOMEIP_RES_OK            = 0,
+    SOMEIP_RES_OK            = 0, /*!< Success */
     SOMEIP_RES_E_PARAM       = 1, /*!< NULL pointer / invalid argument */
     SOMEIP_RES_E_SHORT_INPUT = 2, /*!< Fewer input bytes than required */
     SOMEIP_RES_E_NO_SPACE    = 3, /*!< Output buffer too small */
     SOMEIP_RES_E_MALFORMED   = 4, /*!< Length / structure inconsistent */
     SOMEIP_RES_E_NOT_FOUND   = 5, /*!< Unknown service / method / instance in config */
     SOMEIP_RES_E_TRANSPORT   = 6, /*!< Socket / driver error */
-    SOMEIP_RES_E_TIMEOUT     = 7,
+    SOMEIP_RES_E_TIMEOUT     = 7, /*!< No answer in time */
 } someip_result_t;
 
 /** @brief   Decoded SOME/IP header, fields in HOST byte order
@@ -223,23 +223,23 @@ typedef enum e_someip_result {
  *           always encoded/decoded field by field (SomeIp_Header.c). Never cast a receive buffer to it.
  *  @note    Members keep wire order; the layout has no padding (16 bytes). */
 typedef struct st_someip_header {
-    someip_service_id_t service_id;
-    someip_method_id_t method_id;
-    someip_length_t length; /*!< As on the wire: SOMEIP_HEADER_PART2_SIZE + payload */
-    someip_client_id_t client_id;
-    someip_session_id_t session_id;
-    someip_protocol_version_t protocol_version;
-    someip_interface_version_t interface_version;
-    someip_message_type_t message_type;
-    someip_return_code_t return_code;
+    someip_service_id_t service_id;               /*!< Service ID */
+    someip_method_id_t method_id;                 /*!< Method ID or Event ID */
+    someip_length_t length;                       /*!< As on the wire: SOMEIP_HEADER_PART2_SIZE + payload */
+    someip_client_id_t client_id;                 /*!< Client ID, 0 in a notification */
+    someip_session_id_t session_id;               /*!< Session ID, 0 = session handling off */
+    someip_protocol_version_t protocol_version;   /*!< Always SOMEIP_PROTOCOL_VERSION */
+    someip_interface_version_t interface_version; /*!< Major version of the service */
+    someip_message_type_t message_type;           /*!< Values: enum e_someip_message_type */
+    someip_return_code_t return_code;             /*!< Values: enum e_someip_return_code */
 } someip_header_t;
 
 /** @brief   One SOME/IP message as a zero-copy view: decoded header + payload inside the receive buffer
  *  @warning Valid only while the receive buffer is alive. */
 typedef struct st_someip_message {
-    someip_header_t header;
-    uint8_t const *p_payload;
-    uint32_t payload_len; /*!< = header.length - SOMEIP_HEADER_PART2_SIZE */
+    someip_header_t header;   /*!< Decoded header */
+    uint8_t const *p_payload; /*!< First payload byte inside the receive buffer */
+    uint32_t payload_len;     /*!< = header.length - SOMEIP_HEADER_PART2_SIZE */
 } someip_message_t;
 
 /** @brief Decoded SOME/IP-TP header */
@@ -255,7 +255,7 @@ typedef enum e_someip_transport {
 
 /** @brief Transport endpoint of a SOME/IP peer */
 typedef struct st_someip_endpoint {
-    someip_transport_t transport;
+    someip_transport_t transport;        /*!< UDP or TCP */
     uint8_t ipv4[SOMEIP_IPV4_ADDR_SIZE]; /*!< Network order, e.g. {192,168,1,10} */
     uint16_t port;                       /*!< Host order */
 } someip_endpoint_t;
