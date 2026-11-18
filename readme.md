@@ -14,7 +14,7 @@ Enterprise-grade firmware architecture for Automotive Zonal Electronic Control U
                                    v
              +-------------------------------------------+
              |                  FW-ESP                   |
-             |       (ESP32 Gateway & Core Services)     |
+             |       (ESP32-S3 Gateway & Core Services)  |
              |   - SOME/IP & Service Discovery (SD)      |
              |   - FreeRTOS Tasks & Lifecycle Management |
              |   - Ethernet (W5500 SPI) & Network Stacks |
@@ -91,7 +91,7 @@ ZonalECU-FWv2/
 
 | Subsystem | Target Processor | Primary Role | Toolchain |
 | :--- | :--- | :--- | :--- |
-| [**FW-ESP**](file:///home/fus/Documents/ZonalECU-FWv2/FW-ESP/readme.md) | ESP32-WROOM-32 (Xtensa Dual-Core 240MHz) | Gateway, SOME/IP Protocol, Ethernet W5500, Core Services | ESP-IDF v6.1 (`xtensa-esp32-elf-gcc`) |
+| [**FW-ESP**](file:///home/fus/Documents/ZonalECU-FWv2/FW-ESP/readme.md) | ESP32-S3 (Xtensa Dual-Core LX7 240MHz) | Gateway, SOME/IP Protocol, Ethernet W5500, Core Services | ESP-IDF v6.1 (`xtensa-esp32s3-elf-gcc`) |
 | [**FW-STM**](file:///home/fus/Documents/ZonalECU-FWv2/FW-STM/readme.md) | STM32F103C8T6 (ARM Cortex-M3 72MHz) | Real-time IO, Actuator control, Classic CAN bus node | ARM GNU Toolchain (`arm-none-eabi-gcc`) |
 | [**FW-Common**](file:///home/fus/Documents/ZonalECU-FWv2/FW-Common/readme.md) | Multi-target | Shared diagrams, shared headers, master Doxygen documentation | Doxygen, Graphviz, Draw.io |
 

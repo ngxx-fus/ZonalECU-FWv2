@@ -1,6 +1,6 @@
 # FW-ESP: Zonal ECU Gateway & Core Firmware
 
-Firmware subsystem targeting the ESP32 (Xtensa Dual-Core 240MHz). Acts as the primary network gateway, host for AUTOSAR SOME/IP communication, Ethernet W5500 interface, and core application supervisor.
+Firmware subsystem targeting the ESP32-S3 (Xtensa Dual-Core LX7 240MHz). Acts as the primary network gateway, host for AUTOSAR SOME/IP communication, Ethernet W5500 interface, and core application supervisor.
 
 ---
 
@@ -94,7 +94,7 @@ FW-ESP/
 From repository root or inside `FW-ESP/`:
 ```bash
 cd FW-ESP
-idf.py set-target esp32
+idf.py set-target esp32s3
 idf.py build
 ```
 

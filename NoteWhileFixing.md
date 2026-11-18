@@ -26,6 +26,7 @@ This document records technical issues diagnosed across the project, root causes
 | **016** | Storage / Architecture | Bare-metal flash storage without partition dependencies | High-level `esp_partition` clashed with static section placement requirements. | Place 64KB blocks into dedicated `.rodata.*` linker section and manipulate via ROM SPI flash. |
 | **017** | RTOS / Concurrency | Spinlock busy-wait causing Task Watchdog starvation | `esp_rom_delay_us` busy-loop does not yield to IDLE task on priority >= 1 tasks. | Implement hybrid spin-delay mechanism yielding to RTOS ticks on longer waits. |
 | **018** | Static Analysis / Macro | Duplicate 'const' specifier with `in` / `ro` macros | Macro `in` / `ro` expands to `const`; writing `in const void ...` causes duplicate `const` compiler warning. | Omit bare `const` when using `in` or `ro` attribute macros; `in` already declares const input parameter. |
+| **019** | Tooling / Flashing | `Path '/dev/ttyUSB0' is not readable` in `idf.py` | Void Linux service `agetty-ttyUSB0` continuously reclaims port as login console with mode `0620 root:tty`. | Disable `agetty-ttyUSB0` service (`rm /var/service/agetty-ttyUSB0`) to free port for esptool/idf.py. |
 
 ---
 
@@ -485,6 +486,35 @@ This document records technical issues diagnosed across the project, root causes
   - Simplified parameter declarations to `in void ro_ptr p_src`, removing the redundant explicit `const`.
 - **Key Lesson & Prevention Rule**:
   - When using Renesas RA / ZECU parameter direction macros (`in`, `ro`, `IN`, `RO`), never prepend or append raw `const` to the type; the direction macro itself already provides the `const` qualifier.
+
+---
+
+### [ENTRY-019] Void Linux `agetty-ttyUSB0` Daemon Hijacking Serial Port (`Path '/dev/ttyUSB0' is not readable`)
+- **Date**: 2026-11-18
+- **Component**: Linux System / Tooling (`idf.py flash monitor`, `/dev/ttyUSB0`)
+- **Symptom**:
+  - Running `idf.py -p /dev/ttyUSB0 flash monitor` fails with:
+    `Invalid value for '-p' / '--port': Path '/dev/ttyUSB0' is not readable.`
+  - Running `sudo chmod 666 /dev/ttyUSB0` temporarily changes permissions, but the port is immediately reset back to `crw--w---- 1 root tty` (mode 0620), causing `click.Path(readable=True)` in Python to fail validation.
+- **Root Cause**:
+  - Void Linux runit service manager had an active service `/var/service/agetty-ttyUSB0` running `agetty -L -8 ttyUSB0 115200 vt100` (PID 7850) to provide a serial login terminal.
+  - Every time `/dev/ttyUSB0` is opened or resets, `agetty` reclaims exclusive ownership, resets permissions to `0620` (group `tty` write-only, no read permission), and listens on UART RX, interfering with ESP-IDF `esptool.py`.
+- **Fix Applied**:
+  1. Remove the service link from `/var/service/`:
+     ```bash
+     sudo rm -f /var/service/agetty-ttyUSB0
+     ```
+  2. Terminate the active running `agetty` process on ttyUSB0:
+     ```bash
+     sudo pkill -f "agetty.*ttyUSB0"
+     ```
+  3. Re-apply read/write permissions:
+     ```bash
+     sudo chmod 666 /dev/ttyUSB0
+     ```
+- **Key Lesson & Prevention Rule**:
+  - On Linux distributions with minimal init systems (such as Void Linux with runit), ensure no `agetty` or serial login console services are enabled on `/dev/ttyUSB*` ports intended for microcontroller flashing and serial monitoring.
+
 
 
 

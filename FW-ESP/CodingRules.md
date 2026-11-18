@@ -5,7 +5,7 @@ This document details core project architectural rules, hardware targets, build 
 ---
 
 ## 1. Project Architecture & Hardware Target
-- **Target Chip**: ESP32 (Xtensa architecture, dual-core running at 240 MHz with `-O2` performance optimization).
+- **Target Chip**: ESP32-S3 (Xtensa LX7 architecture, dual-core running at 240 MHz with `-O2` performance optimization).
 - **Wireless Interfaces**: Completely disabled (No Wi-Fi, No Bluetooth) to minimize power consumption and dedicate bus/CPU bandwidth to ECU tasks.
 - **Binary Footprint**: Assertions silent (`CONFIG_COMPILER_OPTIMIZATION_ASSERTIONS_SILENT=y`), check macros silent, default log level `WARN` to save flash and IRAM.
 - **Modular Component Structure (Leaf Components)**:

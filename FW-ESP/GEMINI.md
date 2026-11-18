@@ -18,7 +18,7 @@ This document persists core project architectural rules, hardware targets, build
 ---
 
 ## 2. Hardware & Build Configuration
-- **Target Chip**: ESP32 (Xtensa architecture).
+- **Target Chip**: ESP32-S3 (Xtensa LX7 architecture).
 - **CPU Specifications**: Dual-Core (`CONFIG_FREERTOS_NUMBER_OF_CORES=2`), running at **240 MHz** (`CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y`).
 - **Wireless Interfaces**: Completely **disabled** (No Wi-Fi, No Bluetooth) to minimize power consumption, reduce binary size, and dedicate maximum bus/CPU bandwidth to ECU tasks.
 - **Compiler Optimization**: High performance `-O2` (`CONFIG_COMPILER_OPTIMIZATION_PERF=y`).

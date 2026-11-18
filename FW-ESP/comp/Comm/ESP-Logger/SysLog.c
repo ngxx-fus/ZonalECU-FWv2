@@ -42,9 +42,11 @@
 /* PRIVATE VARIABLES *************************************************************************************************************
  ********************************************************************************************************************************/
 
-static ze_mutex_t s_sys_log_mutex;
-static bool s_sys_log_inited = false;
-static char s_sys_log_buf[ZE_LOG_BUFFER_SIZE];
+#if (defined(ZE_LOG_EN) && (ZE_LOG_EN == 1U))
+    static ze_mutex_t s_sys_log_mutex;
+    static bool s_sys_log_inited = false;
+    static char s_sys_log_buf[ZE_LOG_BUFFER_SIZE];
+#endif
 
 /* PRIVATE FUNCTIONS *************************************************************************************************************
  ********************************************************************************************************************************/
@@ -55,52 +57,65 @@ static char s_sys_log_buf[ZE_LOG_BUFFER_SIZE];
 /* PUBLIC FUNCTIONS **************************************************************************************************************
  ********************************************************************************************************************************/
 
-/** @brief Initialize system logger driver */
-ze_err_t ZE_SysLog_Init(void) {
-    ze_err_t err = ZE_Mutex_LockTake(&s_sys_log_mutex, UINT32_MAX);
-    if (ZE_SUCCESS != err) {
-        return err;
-    }
-
-    if (s_sys_log_inited) {
-        (void)ZE_Mutex_LockGive(&s_sys_log_mutex);
-        return ZE_ERR_ALREADY_INIT;
-    }
-
-   esp_rom_output_set_as_console(0U);
-    s_sys_log_inited = true;
-    (void)ZE_Mutex_LockGive(&s_sys_log_mutex);
-
-    return ZE_SUCCESS;
-}
-
-/** @brief Print formatted log message to system console */
-ze_err_t ZE_SysLog_Printf(const char *p_fmt, ...) {
-    if (NULL == p_fmt) {
-        return ZE_ERR_INVALID_ARG;
-    }
-
-    ze_err_t err = ZE_Mutex_LockTake(&s_sys_log_mutex, UINT32_MAX);
-    if (ZE_SUCCESS != err) {
-        return err;
-    }
-
-    va_list args;
-   va_start(args, p_fmt);
-    int len = vsnprintf(s_sys_log_buf, sizeof(s_sys_log_buf), p_fmt, args);
-   va_end(args);
-
-    if (len > 0) {
-        uint32_t print_len = ((uint32_t)len < sizeof(s_sys_log_buf)) ? (uint32_t)len : (sizeof(s_sys_log_buf) - 1U);
-        for (uint32_t i = 0U; i < print_len; i++) {
-           esp_rom_uart_putc(s_sys_log_buf[i]);
+#if (defined(ZE_LOG_EN) && (ZE_LOG_EN == 1U))
+    /** @brief Initialize system logger driver */
+    ze_err_t ZE_SysLog_Init(void) {
+        ze_err_t err = ZE_Mutex_LockTake(&s_sys_log_mutex, UINT32_MAX);
+        if (ZE_SUCCESS != err) {
+            return err;
         }
-       esp_rom_uart_flush_tx(0U);
+
+        if (s_sys_log_inited) {
+            (void)ZE_Mutex_LockGive(&s_sys_log_mutex);
+            return ZE_ERR_ALREADY_INIT;
+        }
+
+       esp_rom_output_set_as_console(0U);
+        s_sys_log_inited = true;
+        (void)ZE_Mutex_LockGive(&s_sys_log_mutex);
+
+        return ZE_SUCCESS;
     }
 
-    (void)ZE_Mutex_LockGive(&s_sys_log_mutex);
-    return ZE_SUCCESS;
-}
+    /** @brief Print formatted log message to system console */
+    ze_err_t ZE_SysLog_Printf(const char *p_fmt, ...) {
+        if (NULL == p_fmt) {
+            return ZE_ERR_INVALID_ARG;
+        }
+
+        ze_err_t err = ZE_Mutex_LockTake(&s_sys_log_mutex, UINT32_MAX);
+        if (ZE_SUCCESS != err) {
+            return err;
+        }
+
+        va_list args;
+       va_start(args, p_fmt);
+        int len = vsnprintf(s_sys_log_buf, sizeof(s_sys_log_buf), p_fmt, args);
+       va_end(args);
+
+        if (len > 0) {
+            uint32_t print_len = ((uint32_t)len < sizeof(s_sys_log_buf)) ? (uint32_t)len : (sizeof(s_sys_log_buf) - 1U);
+            for (uint32_t i = 0U; i < print_len; i++) {
+               esp_rom_uart_putc(s_sys_log_buf[i]);
+            }
+           esp_rom_uart_flush_tx(0U);
+        }
+
+        (void)ZE_Mutex_LockGive(&s_sys_log_mutex);
+        return ZE_SUCCESS;
+    }
+#else
+    /** @brief Initialize system logger driver (stub when disabled) */
+    ze_err_t ZE_SysLog_Init(void) {
+        return ZE_SUCCESS;
+    }
+
+    /** @brief Print formatted log message to system console (stub when disabled) */
+    ze_err_t ZE_SysLog_Printf(const char *p_fmt, ...) {
+        (void)p_fmt;
+        return ZE_SUCCESS;
+    }
+#endif
 
 /* EOF ***************************************************************************************************************************
  ********************************************************************************************************************************/

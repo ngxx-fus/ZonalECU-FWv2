@@ -27,17 +27,36 @@ ZE_HEADER
     #define TO_STR(x)               #x
 #endif
 
+#ifndef ZE_LOG_EN
+    #define ZE_LOG_EN               (1U)
+#endif
+
 #ifndef ZE_LOG_LEVEL
     #define ZE_LOG_LEVEL            (0U)
 #endif
 
-#ifndef ZE_CORE_LOG
-    #define ZE_CORE_LOG(p_fmt, ...) ZE_SysLog_Printf(p_fmt, ##__VA_ARGS__)
-#endif
+#if (defined(ZE_LOG_EN) && (ZE_LOG_EN == 1U))
 
-#define ZE_LOGI(p_fmt, ...)     ZE_CORE_LOG("[I] " __FILE__ ":" TO_STR(__LINE__) ": " p_fmt "\n", ##__VA_ARGS__)
-#define ZE_LOGE(p_fmt, ...)     ZE_CORE_LOG("[E] " __FILE__ ":" TO_STR(__LINE__) ": " p_fmt "\n", ##__VA_ARGS__)
-#define ZE_LOGW(p_fmt, ...)     ZE_CORE_LOG("[W] " __FILE__ ":" TO_STR(__LINE__) ": " p_fmt "\n", ##__VA_ARGS__)
+    #ifndef ZE_CORE_LOG
+        #define ZE_CORE_LOG(p_fmt, ...) ZE_SysLog_Printf(p_fmt, ##__VA_ARGS__)
+    #endif
+
+    #ifndef __FILE_NAME__
+        #define __FILE_NAME__           (__builtin_strrchr("/" __FILE__, '/') + 1)
+    #endif
+
+    #define ZE_LOGI(p_fmt, ...)     ZE_CORE_LOG("[I] %s: " p_fmt "\n", __FILE_NAME__, ##__VA_ARGS__)
+    #define ZE_LOGE(p_fmt, ...)     ZE_CORE_LOG("[E] %s: " p_fmt "\n", __FILE_NAME__, ##__VA_ARGS__)
+    #define ZE_LOGW(p_fmt, ...)     ZE_CORE_LOG("[W] %s: " p_fmt "\n", __FILE_NAME__, ##__VA_ARGS__)
+
+#else
+
+    #define ZE_CORE_LOG(p_fmt, ...) ((void)0)
+    #define ZE_LOGI(p_fmt, ...)     ((void)0)
+    #define ZE_LOGE(p_fmt, ...)     ((void)0)
+    #define ZE_LOGW(p_fmt, ...)     ((void)0)
+
+#endif /* ZE_LOG_EN == 1U */
 
 /* SHARED FUNCTIONS **************************************************************************************************************
  ********************************************************************************************************************************/
