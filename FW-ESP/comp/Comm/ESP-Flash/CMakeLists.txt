@@ -1,6 +1,6 @@
 # ==============================================================================
-# Component: Common
-# Contains shared definitions: Error codes, Macros, Atomic types, Shared APIs
+# Component: ESP-Flash
+# Contains flash storage abstraction, sector/block caching, and partitioning
 # ==============================================================================
 
 # 1. Collect all C source files in this component
@@ -33,5 +33,5 @@ endif()
 idf_component_register(
     SRCS            ${component_srcs}
     INCLUDE_DIRS    ${component_include_dirs}
-    REQUIRES        Common esp_system log nvs_flash esp_driver_gpio spi_flash
+    REQUIRES        Common esp_system log nvs_flash esp_driver_gpio spi_flash esp_rom ESP-Mem
 )

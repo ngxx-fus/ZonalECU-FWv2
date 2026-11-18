@@ -67,11 +67,8 @@ typedef struct st_someip_service_cfg {
  *                       SOMEIP_CheckShouldReplyError() [PRS_SOMEIP_00537]
  *  @retval  SOMEIP_RES_OK      *p_rc and *pp_method are valid
  *  @retval  SOMEIP_RES_E_PARAM p_rx, p_rc or pp_method is NULL, or p_services is NULL with service_len > 0 */
-someip_result_t SOMEIP_CheckHeader(IN  someip_header_t      *     p_rx,                                                          \
-                                   IN  someip_service_cfg_t *     p_services,                                                    \
-                                   IN  uint16_t                   service_len,                                                   \
-                                   OUT someip_return_code_t *     p_rc,                                                          \
-                                   OUT someip_method_cfg_t  const **pp_method);
+someip_result_t SOMEIP_CheckHeader(IN someip_header_t *p_rx, IN someip_service_cfg_t *p_services, IN uint16_t service_len,
+                                   OUT someip_return_code_t *p_rc, OUT someip_method_cfg_t const **pp_method);
 
 /** @brief   Decide whether an ERROR message may be sent back for a message that failed a check
  *  @details Only a REQUEST (0x00, or 0x20 with TP-Flag) is answered with an ERROR message:

@@ -14,6 +14,7 @@
 import os
 import re
 import sys
+import shutil
 import difflib
 import subprocess
 
@@ -161,7 +162,10 @@ TYPE_DECL_PATTERN = re.compile(
     re.DOTALL
 )
 
-EXCLUDE_DIRS = {"build", ".template", ".git", "doxygen_html", ".cache"}
+# Exception comment pattern: e.g. /*ZE_EXCEPTION(...)*/ or /* ZE_EXCEPTION(...) */
+ZE_EXCEPTION_PATTERN = re.compile(r"/\*\s*ZE_EXCEPTION\s*\((.*?)\)\s*\*/")
+
+EXCLUDE_DIRS = {"build", ".template", ".git", "doxygen_html", ".cache", "unitytest"}
 
 
 def preindex_declarations(targets: list):
@@ -179,18 +183,24 @@ def preindex_declarations(targets: list):
                         try:
                             with open(file_path, "r", encoding="utf-8") as fh:
                                 content = fh.read()
-                            for m in TYPE_DECL_PATTERN.finditer(content):
-                                type_name = m.group(1)
-                                GLOBAL_DECL_REGISTRY[type_name] = f
+                            for line in content.splitlines():
+                                if ZE_EXCEPTION_PATTERN.search(line):
+                                    continue
+                                for m in TYPE_DECL_PATTERN.finditer(line):
+                                    type_name = m.group(1)
+                                    GLOBAL_DECL_REGISTRY[type_name] = f
                         except Exception:
                             pass
         elif os.path.isfile(target) and target.endswith(".h"):
             try:
                 with open(target, "r", encoding="utf-8") as fh:
                     content = fh.read()
-                for m in TYPE_DECL_PATTERN.finditer(content):
-                    type_name = m.group(1)
-                    GLOBAL_DECL_REGISTRY[type_name] = os.path.basename(target)
+                for line in content.splitlines():
+                    if ZE_EXCEPTION_PATTERN.search(line):
+                        continue
+                    for m in TYPE_DECL_PATTERN.finditer(line):
+                        type_name = m.group(1)
+                        GLOBAL_DECL_REGISTRY[type_name] = os.path.basename(target)
             except Exception:
                 pass
 
@@ -214,6 +224,8 @@ def apply_naming_transformations(content: str, file_name: str) -> str:
         if t_norm != t_glob and t_glob not in type_renames:
             type_renames[t_glob] = t_norm
     for line in lines:
+        if ZE_EXCEPTION_PATTERN.search(line):
+            continue
         stripped = line.strip()
         if stripped.startswith("/*") or stripped.startswith("*") or stripped.startswith("//"):
             continue
@@ -253,6 +265,9 @@ def apply_naming_transformations(content: str, file_name: str) -> str:
 
     formatted_lines = []
     for line in lines:
+        if ZE_EXCEPTION_PATTERN.search(line):
+            formatted_lines.append(line)
+            continue
         stripped = line.strip()
         if stripped.startswith("/*") or stripped.startswith("*") or stripped.startswith("//"):
             formatted_lines.append(line)
@@ -293,18 +308,49 @@ def apply_naming_transformations(content: str, file_name: str) -> str:
     return "\n".join(formatted_lines)
 
 
+def find_clang_format() -> str:
+    """
+    Locate the clang-format executable across platforms:
+    - Checks system PATH via shutil.which.
+    - On Windows, checks standard LLVM and ESP-IDF tool paths.
+    """
+    found = shutil.which("clang-format")
+    if found:
+        return found
+
+    if sys.platform == "win32":
+        candidates = [
+            r"C:\Program Files\LLVM\bin\clang-format.exe",
+            r"C:\Program Files (x86)\LLVM\bin\clang-format.exe",
+        ]
+        # Check ESP-IDF tools directory for esp-clang
+        espressif_tools = r"C:\Espressif\tools"
+        if os.path.isdir(espressif_tools):
+            for root, _, files in os.walk(espressif_tools):
+                if "clang-format.exe" in files:
+                    candidates.append(os.path.join(root, "clang-format.exe"))
+                    break
+
+        for c in candidates:
+            if os.path.isfile(c):
+                return c
+
+    return "clang-format"
+
+
 def run_clang_format(file_path: str) -> bool:
     """
     Invoke clang-format to apply 4-space indentation and line breaks.
     """
+    clang_fmt = find_clang_format()
     try:
-        subprocess.run(["clang-format", "-i", file_path], check=True)
+        subprocess.run([clang_fmt, "-i", file_path], check=True)
         return True
     except subprocess.CalledProcessError as e:
-        print(f"Error running clang-format on {file_path}: {e}", file=sys.stderr)
+        print(f"Error running {clang_fmt} on {file_path}: {e}", file=sys.stderr)
         return False
     except FileNotFoundError:
-        print("Warning: clang-format executable not found. Skipping AST formatting.", file=sys.stderr)
+        print(f"Warning: {clang_fmt} executable not found. Skipping AST formatting.", file=sys.stderr)
         return False
 
 
@@ -713,7 +759,7 @@ STRUCT_MEMBER_PATTERN = re.compile(
     r"(?:(\b[a-zA-Z_][a-zA-Z0-9_]*\b)\s+)?"
     r"((?:struct\s+|enum\s+|union\s+|unsigned\s+|signed\s+)?[a-zA-Z_][a-zA-Z0-9_]*(?:\s*\*)?)"
     r"(?:\s+(\b[a-zA-Z_][a-zA-Z0-9_]*\b))?"
-    r"\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\[[^\]]*\])?)\s*;"
+    r"\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s*(\[[^\]]*\]))?\s*;"
     r"(\s*/\*.*?\*/|\s*//.*)?$"
 )
 
@@ -723,6 +769,7 @@ def align_struct_block(body_lines: list) -> list:
     Format a single struct body:
     1. Fix glue like '*RO' -> '* RO'
     2. Align columns: [prefix_qual] [type] [ptr_qual] [name;] [comment]
+    3. If any member has array dimension [INDEX], align the '[' bracket column.
     """
     parsed_lines = []
     has_member = False
@@ -740,7 +787,7 @@ def align_struct_block(body_lines: list) -> list:
 
         m = STRUCT_MEMBER_PATTERN.match(fixed_line)
         if m and "(" not in m.group(3) and "(" not in m.group(5):
-            indent, qual, typ, ptr_q, name, cmt = m.groups()
+            indent, qual, typ, ptr_q, name, arr, cmt = m.groups()
             if qual and qual not in STRUCT_QUALIFIERS:
                 typ = qual + " " + typ
                 qual = ""
@@ -754,6 +801,7 @@ def align_struct_block(body_lines: list) -> list:
                 "type": typ.strip(),
                 "ptr_q": ptr_q or "",
                 "name": name.strip(),
+                "arr": arr.strip() if arr else "",
                 "cmt": cmt.strip() if cmt else ""
             })
             has_member = True
@@ -767,6 +815,9 @@ def align_struct_block(body_lines: list) -> list:
     max_qual_len = max(len(p["qual"]) for p in members) if any(p["qual"] for p in members) else 0
     max_type_len = max(len(p["type"]) for p in members)
     max_ptr_q_len = max(len(p["ptr_q"]) for p in members) if any(p["ptr_q"] for p in members) else 0
+
+    has_arr = any(p["arr"] for p in members)
+    max_name_len = max(len(p["name"]) for p in members if p["arr"]) if has_arr else 0
 
     out = []
     for p in parsed_lines:
@@ -785,7 +836,12 @@ def align_struct_block(body_lines: list) -> list:
             ptr_q_str = p["ptr_q"].ljust(max_ptr_q_len)
             parts.append(ptr_q_str + " ")
 
-        parts.append(p["name"] + ";")
+        if p["arr"]:
+            name_str = p["name"].ljust(max_name_len) + " " + p["arr"] + ";"
+        else:
+            name_str = p["name"] + ";"
+
+        parts.append(name_str)
         if p["cmt"]:
             parts.append(" " + p["cmt"])
         out.append("".join(parts))
@@ -795,7 +851,7 @@ def align_struct_block(body_lines: list) -> list:
 
 def align_all_structs(text: str) -> str:
     """
-    Find all struct definitions and align member types, qualifiers, and names.
+    Find all struct/union definitions and align member types, qualifiers, and names.
     """
     lines = text.splitlines()
     out = []
@@ -803,7 +859,7 @@ def align_all_structs(text: str) -> str:
     n = len(lines)
     while i < n:
         line = lines[i]
-        if re.search(r"\b(struct\s+[A-Za-z0-9_]*\s*\{|typedef\s+struct\b[^{;]*\{)", line):
+        if re.search(r"\b((?:struct|union)\s+[A-Za-z0-9_]*\s*\{|typedef\s+(?:struct|union)\b[^{;]*\{)", line):
             out.append(line)
             body = []
             i += 1
@@ -825,6 +881,182 @@ def align_all_structs(text: str) -> str:
             i += 1
     return "\n".join(out)
 
+
+def align_typedef_block(lines: list) -> list:
+    """
+    Format a contiguous block of single-line typedef declarations:
+    - 4-column pattern: typedef [qualifier/macro] [type/args] [name;]
+      e.g. typedef ze_atomic (uint32_t) ze_atomic_uint32_t;
+           typedef _Atomic   uint32_t   ze_atomic_uint32_t;
+    - 3-column pattern: typedef [type] [name;] (with optional pointer '*')
+      e.g. typedef uint16_t someip_service_id_t;
+           typedef uint64_t * uint64ptr_t;
+    - Aligns inline trailing comments.
+    """
+    parsed = []
+    has_4_cols = False
+    indent = ""
+    for l in lines:
+        if l.strip():
+            indent = " " * (len(l) - len(l.lstrip()))
+            break
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            parsed.append((0, "", "", "", "", ""))
+            continue
+
+        cmt_match = re.search(r"\s*(/\*.*?\*/|//.*)$", stripped)
+        cmt = cmt_match.group(1).strip() if cmt_match else ""
+        code = stripped[:cmt_match.start()].strip() if cmt_match else stripped
+
+        if not code.startswith("typedef") or not code.endswith(";"):
+            return lines
+
+        inner = code[7:-1].strip()
+
+        # Check 4-col pattern: Macro with args, e.g. ze_atomic(uint32_t) or ze_atomic (uint32_t)
+        m4_macro = re.match(r"^([A-Za-z0-9_]+)\s*(\([^)]*\))\s+([A-Za-z0-9_]+)$", inner)
+        # Check 4-col pattern: Qualifier/Keyword + type, e.g. _Atomic uint32_t or struct foo_s
+        m4_kw = re.match(r"^(_Atomic|struct|enum|union|const|unsigned|signed)\s+([A-Za-z0-9_]+(?:\s*\*|\*\s*)?)\s+([A-Za-z0-9_]+)$", inner)
+        m3_ptr = re.match(r"^([A-Za-z0-9_]+)\s*(\*)\s*([A-Za-z0-9_]+)$", inner)
+        m3 = re.match(r"^(.+?)\s+([A-Za-z0-9_]+)$", inner)
+
+        if m4_macro:
+            has_4_cols = True
+            parsed.append((4, "typedef", m4_macro.group(1), m4_macro.group(2), m4_macro.group(3) + ";", cmt))
+        elif m4_kw:
+            has_4_cols = True
+            parsed.append((4, "typedef", m4_kw.group(1), m4_kw.group(2), m4_kw.group(3) + ";", cmt))
+        elif m3_ptr:
+            parsed.append((3, "typedef", m3_ptr.group(1), "*", m3_ptr.group(3) + ";", cmt))
+        elif m3:
+            parsed.append((3, "typedef", m3.group(1), "", m3.group(2) + ";", cmt))
+        else:
+            return lines
+
+    valid = [p for p in parsed if p[0] != 0]
+    if not valid:
+        return lines
+
+    if has_4_cols and all(p[0] in (0, 4) for p in parsed):
+        w0 = max(len(p[1]) for p in valid)
+        w1 = max(len(p[2]) for p in valid)
+        w2 = max(len(p[3]) for p in valid)
+        out = []
+        max_code_len = 0
+        for p in parsed:
+            if p[0] == 0:
+                out.append(("", ""))
+                continue
+            code_line = f"{indent}{p[1].ljust(w0)} {p[2].ljust(w1)} {p[3].ljust(w2)} {p[4]}"
+            max_code_len = max(max_code_len, len(code_line))
+            out.append((code_line, p[5]))
+        res = []
+        for code_line, cmt in out:
+            if not code_line:
+                res.append("")
+            elif cmt:
+                res.append(f"{code_line.ljust(max_code_len)} {cmt}")
+            else:
+                res.append(code_line)
+        return res
+    else:
+        w0 = max(len(p[1]) for p in valid)
+        has_ptr = any(p[3] == "*" for p in valid)
+        if has_ptr:
+            w1 = max(len(p[2]) for p in valid)
+            out = []
+            max_code_len = 0
+            for p in parsed:
+                if p[0] == 0:
+                    out.append(("", ""))
+                    continue
+                if p[3] == "*":
+                    code_line = f"{indent}{p[1].ljust(w0)} {p[2].ljust(w1)} * {p[4]}"
+                else:
+                    code_line = f"{indent}{p[1].ljust(w0)} {p[2].ljust(w1)}   {p[4]}"
+                max_code_len = max(max_code_len, len(code_line))
+                out.append((code_line, p[5]))
+            res = []
+            for code_line, cmt in out:
+                if not code_line:
+                    res.append("")
+                elif cmt:
+                    res.append(f"{code_line.ljust(max_code_len)} {cmt}")
+                else:
+                    res.append(code_line)
+            return res
+        else:
+            w1 = max(len(p[2]) for p in valid)
+            out = []
+            max_code_len = 0
+            for p in parsed:
+                if p[0] == 0:
+                    out.append(("", ""))
+                    continue
+                code_line = f"{indent}{p[1].ljust(w0)} {p[2].ljust(w1)} {p[4]}"
+                max_code_len = max(max_code_len, len(code_line))
+                out.append((code_line, p[5]))
+            res = []
+            for code_line, cmt in out:
+                if not code_line:
+                    res.append("")
+                elif cmt:
+                    res.append(f"{code_line.ljust(max_code_len)} {cmt}")
+                else:
+                    res.append(code_line)
+            return res
+
+
+def align_all_typedefs(text: str) -> str:
+    """
+    Find contiguous blocks of single-line typedef declarations
+    (allowing single blank lines between typedef groups)
+    and align them in columns (4 columns or 3 columns).
+    """
+    lines = text.splitlines()
+    out = []
+    i = 0
+    n = len(lines)
+
+    while i < n:
+        line = lines[i]
+        stripped = line.strip()
+
+        if stripped.startswith("typedef") and ";" in stripped and not ("{" in stripped or "}" in stripped):
+            typedef_lines = []
+            while i < n:
+                cur = lines[i]
+                cur_str = cur.strip()
+                if cur_str.startswith("typedef") and ";" in cur_str and not ("{" in cur_str or "}" in cur_str):
+                    if ZE_EXCEPTION_PATTERN.search(cur):
+                        break
+                    typedef_lines.append(cur)
+                    i += 1
+                elif not cur_str and typedef_lines:
+                    j = i + 1
+                    while j < n and not lines[j].strip():
+                        j += 1
+                    if j < n and lines[j].strip().startswith("typedef") and ";" in lines[j] and not ("{" in lines[j] or "}" in lines[j]):
+                        typedef_lines.append(cur)
+                        i += 1
+                    else:
+                        break
+                else:
+                    break
+            if len(typedef_lines) >= 1:
+                aligned = align_typedef_block(typedef_lines)
+                out.extend(aligned)
+            else:
+                out.append(line)
+                i += 1
+        else:
+            out.append(line)
+            i += 1
+
+    return "\n".join(out)
 
 
 def align_designated_initializer_block(lines: list) -> list:
@@ -863,11 +1095,11 @@ def align_designated_initializer_block(lines: list) -> list:
         line_str = line.strip()
         if not line_str:
             continue
-        c_idx = line_str.find("//")
+        m_cmt = re.search(r"\s*(/\*.*?\*/|//.*)$", line_str)
         comment = ""
-        if c_idx != -1:
-            comment = line_str[c_idx:].strip()
-            line_str = line_str[:c_idx].strip()
+        if m_cmt:
+            comment = m_cmt.group(1).strip()
+            line_str = line_str[:m_cmt.start()].strip()
 
         for ch in line_str:
             if escape:
@@ -1202,12 +1434,15 @@ def align_all_function_declarations(text: str, max_col: int = BANNER_WIDTH) -> s
 def align_macro_definitions_in_section(lines: list, max_line_width: int = BANNER_WIDTH) -> list:
     """
     Align single-line #define macros in a section:
-    - Target value column is max(len(#define + name)) + 1
-    - If #define + value + comment exceeds max_line_width, break to next line with trailing '\\'
-    - Trailing comments are aligned to max(code_length) + 1
+    - Matches both object-like and function-like / parameterized macros:
+      #define NAME val
+      #define NAME(args...) val
+    - Target value column is max(len(#define + name)) + 1 across the section.
+    - If #define + value + comment exceeds max_line_width, break to next line with trailing '\\'.
+    - Trailing comments are aligned to max(code_length) + 1.
     """
     single_define_pattern = re.compile(
-        r"^(\s*#\s*define\s+)([A-Za-z0-9_]+)(\s+)(.+?)(?:\s*(/\*.*?\*/|//.*))?$"
+        r"^(\s*#\s*define\s+)([A-Za-z0-9_]+(?:\([^)]*\))?)(\s+)(.+?)(?:\s*(/\*.*?\*/|//.*))?$"
     )
     candidates = []
     for idx, line in enumerate(lines):
@@ -1225,6 +1460,7 @@ def align_macro_definitions_in_section(lines: list, max_line_width: int = BANNER
                     val = full_val
             else:
                 val = full_val
+            val = re.sub(r"\*(const|RO|WO|RW|ro|wo|rw)\b", r"* \1", val)
             candidates.append((idx, prefix, name, val, comment_str))
 
     if not candidates:
@@ -1330,7 +1566,7 @@ def align_macro_backslashes(content: str, target_col: int = BANNER_WIDTH) -> str
     return "\n".join(out)
 
 
-def format_preprocessor_indentation(text: str) -> str:
+def format_preprocessor_indentation(text: str, file_name: str = "") -> str:
     """
     Format preprocessor directives with scope-aware indentation:
     - Header guard (#ifndef __..._H__, #define __..._H__, #endif) remains at column 0.
@@ -1341,20 +1577,21 @@ def format_preprocessor_indentation(text: str) -> str:
     lines = text.splitlines()
     out = []
 
-    # 1. Identify header guard if any (within first 35 lines)
+    # 1. Identify header guard if any (only in header files and strictly parameterless empty define)
     guard_macro = None
-    for i in range(min(35, len(lines))):
-        line = lines[i]
-        m = re.match(r"^\s*#\s*(?:ifndef|if\s+!defined)\s+([A-Za-z0-9_]+)", line)
-        if m:
-            macro = m.group(1)
-            for j in range(i + 1, min(i + 15, len(lines))):
-                m_def = re.match(r"^\s*#\s*define\s+([A-Za-z0-9_]+)", lines[j])
-                if m_def and m_def.group(1) == macro:
-                    guard_macro = macro
+    if file_name.endswith((".h", ".hpp", ".H")) or not file_name:
+        for i in range(min(35, len(lines))):
+            line = lines[i]
+            m = re.match(r"^\s*#\s*(?:ifndef|if\s+!defined)\s+([A-Za-z0-9_]+)", line)
+            if m:
+                macro = m.group(1)
+                for j in range(i + 1, min(i + 15, len(lines))):
+                    m_def = re.match(r"^\s*#\s*define\s+([A-Za-z0-9_]+)\s*(?:/\*.*?\*/|//.*)?$", lines[j])
+                    if m_def and m_def.group(1) == macro:
+                        guard_macro = macro
+                        break
+                if guard_macro:
                     break
-            if guard_macro:
-                break
 
     brace_depth = 0
     pp_stack = []  # list of (is_guard, base_indent)
@@ -1398,7 +1635,7 @@ def format_preprocessor_indentation(text: str) -> str:
                     out.append(stripped)
 
             elif cmd == "define":
-                m_def = re.match(r"^#\s*define\s+([A-Za-z0-9_]+)", stripped)
+                m_def = re.match(r"^#\s*define\s+([A-Za-z0-9_]+)\s*(?:/\*.*?\*/|//.*)?$", stripped)
                 if m_def and m_def.group(1) == guard_macro and pp_stack and pp_stack[-1][0]:
                     out.append(stripped)
                 else:
@@ -1416,9 +1653,12 @@ def format_preprocessor_indentation(text: str) -> str:
 
             effective_pp_indent = len([x for x in pp_stack if not x[0]]) * 4
             if stripped:
-                if effective_pp_indent > 0 and brace_depth > 0:
+                if effective_pp_indent > 0:
                     leading_spaces = len(line) - len(line.lstrip())
-                    out.append((" " * (leading_spaces + effective_pp_indent)) + stripped)
+                    if brace_depth > 0:
+                        out.append((" " * (leading_spaces + effective_pp_indent)) + stripped)
+                    else:
+                        out.append((" " * (effective_pp_indent + leading_spaces)) + stripped)
                 else:
                     out.append(line)
             else:
@@ -1452,7 +1692,7 @@ def format_file(file_path: str) -> bool:
     transformed = apply_naming_transformations(transformed, file_name)
 
     # 3. Write transformed content temporarily to disk for clang-format
-    with open(file_path, "w", encoding="utf-8") as f:
+    with open(file_path, "w", encoding="utf-8", newline="\n") as f:
         f.write(transformed)
 
     # 4. Apply clang-format (indentation, line breaks)
@@ -1464,19 +1704,21 @@ def format_file(file_path: str) -> bool:
 
     # 6. Post-processing:
     #    - Align #define macros within sections
+    #    - Align single-line typedefs in columns (4-col / 3-col)
     #    - Align enum member '=' and comments
     #    - Align multi-line Doxygen comments text column
     #    - Align macro trailing backslashes '\'
     formatted_content = align_all_macros(formatted_content, BANNER_WIDTH)
+    formatted_content = align_all_typedefs(formatted_content)
     formatted_content = align_all_enums(formatted_content)
     formatted_content = align_all_structs(formatted_content)
     formatted_content = align_all_designated_initializers(formatted_content)
     formatted_content = align_all_function_declarations(formatted_content, BANNER_WIDTH)
     formatted_content = align_all_doxygen_comments(formatted_content)
     formatted_content = align_macro_backslashes(formatted_content, BANNER_WIDTH)
-    formatted_content = format_preprocessor_indentation(formatted_content)
+    formatted_content = format_preprocessor_indentation(formatted_content, file_name)
 
-    with open(file_path, "w", encoding="utf-8") as f:
+    with open(file_path, "w", encoding="utf-8", newline="\n") as f:
         f.write(formatted_content)
 
     # 7. Print before/after diff report

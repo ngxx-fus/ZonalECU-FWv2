@@ -76,19 +76,19 @@ someip_result_t SOMEIP_HeaderEncode(IN someip_header_t *p_hdr, OUT uint8_t *p_bu
     }
 
     /* Encode Service ID */
-    SOMEIP_WriteU16Be(&p_buf[SOMEIP_OFS_SERVICE_ID], p_hdr->service_id);
+   SOMEIP_WriteU16Be(&p_buf[SOMEIP_OFS_SERVICE_ID], p_hdr->service_id);
 
     /* Encode Method ID */
-    SOMEIP_WriteU16Be(&p_buf[SOMEIP_OFS_METHOD_ID], p_hdr->method_id);
+   SOMEIP_WriteU16Be(&p_buf[SOMEIP_OFS_METHOD_ID], p_hdr->method_id);
 
     /* Encode Length */
-    SOMEIP_WriteU32Be(&p_buf[SOMEIP_OFS_LENGTH], p_hdr->length);
+   SOMEIP_WriteU32Be(&p_buf[SOMEIP_OFS_LENGTH], p_hdr->length);
 
     /* Encode Client ID */
-    SOMEIP_WriteU16Be(&p_buf[SOMEIP_OFS_CLIENT_ID], p_hdr->client_id);
+   SOMEIP_WriteU16Be(&p_buf[SOMEIP_OFS_CLIENT_ID], p_hdr->client_id);
 
     /* Encode Session ID */
-    SOMEIP_WriteU16Be(&p_buf[SOMEIP_OFS_SESSION_ID], p_hdr->session_id);
+   SOMEIP_WriteU16Be(&p_buf[SOMEIP_OFS_SESSION_ID], p_hdr->session_id);
 
     /* Encode Protocol Version */
     p_buf[SOMEIP_OFS_PROTOCOL_VERSION] = p_hdr->protocol_version;
@@ -210,7 +210,7 @@ someip_result_t SOMEIP_TpHeaderEncode(IN someip_tp_header_t *p_tp, OUT uint8_t *
     raw = p_tp->offset | ((0U != p_tp->more_segments) ? SOMEIP_TP_MORE_SEGMENTS_MASK : 0U);
 
     /* Write as Big Endian */
-    SOMEIP_WriteU32Be(p_buf, raw);
+   SOMEIP_WriteU32Be(p_buf, raw);
 
     /* TP header encoded */
     return SOMEIP_RES_OK;

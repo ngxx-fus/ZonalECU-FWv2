@@ -7,31 +7,34 @@
 /* INCLUDES **********************************************************************************************************************
  ********************************************************************************************************************************/
 
-#include "SysLog.h"
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+
+#include "esp_rom_serial_output.h"
+
 #include "Common/All.h"
-#include "Common/Atomic/Atomic.h"
-#include "Common/Bitwise/Bitwise.h"
-#include "Common/Error/Error.h"
+#include "SysLog.h"
 
 /* MACROS ************************************************************************************************************************
  ********************************************************************************************************************************/
 
-#define SYS_LOG_TIMEOUT (0x2000U)
-#ifndef CPU_YIELD
-#define CPU_YIELD() /* Place holder */
+#ifndef ZE_LOG_BUFFER_SIZE
+    #define ZE_LOG_BUFFER_SIZE       (256U)
 #endif
-#ifndef CPU_RESET_WDT
-    #define CPU_WDT_RESET() /* Place holder */
+
+#ifndef esp_rom_uart_putc
+    #define esp_rom_uart_putc(c)     esp_rom_output_putc(c)
+#endif
+#ifndef esp_rom_uart_flush_tx
+    #define esp_rom_uart_flush_tx(u) esp_rom_output_flush_tx(u)
 #endif
 
 /* DEFINITIONS *******************************************************************************************************************
  ********************************************************************************************************************************/
 
-typedef enum e_sys_log_flag {
-    SYS_LOG_NOT_FLAGGED     = 0x0, /* None of flag is set */
-    SYS_LOG_RESOURCE_LOCKED = 0x1, /* CORE_LOG is locked (in-use) */
-    SYS_LOG_RESOURCE_INIT   = 0x2, /* Resource has been initialized */
-} sys_log_flag_t;
+#define ZE_LOG_BUFFER_SIZE (256U)
 
 /* EXPORTED VARIABLES ************************************************************************************************************
  ********************************************************************************************************************************/
@@ -39,44 +42,12 @@ typedef enum e_sys_log_flag {
 /* PRIVATE VARIABLES *************************************************************************************************************
  ********************************************************************************************************************************/
 
-static ZE_ATOMIC_NEW(uint32_t, prv_sys_log_flag);
+static ze_mutex_t s_sys_log_mutex;
+static bool s_sys_log_inited = false;
+static char s_sys_log_buf[ZE_LOG_BUFFER_SIZE];
 
 /* PRIVATE FUNCTIONS *************************************************************************************************************
  ********************************************************************************************************************************/
-
-ze_err_t prv_sys_log_resource_take() {
-    uint32_t prv_last_val;
-    volatile uint32_t timeout = SYS_LOG_TIMEOUT;
-    ze_atomic_uint32_t *p_flag = &prv_sys_log_flag;
-    while (timeout--) {
-        prv_last_val = ZE_ATOMIC_OR(p_flag, UINT32_BIT(SYS_LOG_RESOURCE_LOCKED));
-        if (UINT32_IS_SET(prv_last_val, SYS_LOG_RESOURCE_LOCKED)) {
-
-            /* Resource already locked by another threads! */
-            CPU_YIELD();
-            CPU_WDT_RESET();
-            continue;
-        }
-
-        /* Resource locked by this turn! */
-        break;
-    }
-
-    if (timeout == UINT32_MAX) {
-        return ZE_ERR_CANT_TAKE_LOCK;
-    }
-
-    return ZE_SUCCESS;
-}
-
-ze_err_t prv_sys_log_resource_give() {
-    ze_atomic_uint32_t *p_flag = &prv_sys_log_flag;
-    uint32_t prv_last_val = ZE_ATOMIC_AND(p_flag, BW_INV(UINT32_BIT(SYS_LOG_RESOURCE_LOCKED)));
-    if (UINT32_IS_CLR(prv_last_val, SYS_LOG_RESOURCE_LOCKED)) {
-        return ZE_ERR_RESOURCE_FREE;
-    }
-    return ZE_SUCCESS;
-}
 
 /* PUBLIC VARIABLES **************************************************************************************************************
  ********************************************************************************************************************************/
@@ -84,21 +55,50 @@ ze_err_t prv_sys_log_resource_give() {
 /* PUBLIC FUNCTIONS **************************************************************************************************************
  ********************************************************************************************************************************/
 
-ze_err_t ZE_SysLog_Init() {
-    uint32_t prv_flag = ZE_ATOMIC_GET(&prv_sys_log_flag);
-    if (UINT32_IS_SET(prv_flag, SYS_LOG_RESOURCE_LOCKED)) {
-        return ZE_ERR_RESOURCE_LOCKED;
+/** @brief Initialize system logger driver */
+ze_err_t ZE_SysLog_Init(void) {
+    ze_err_t err = ZE_Mutex_LockTake(&s_sys_log_mutex, UINT32_MAX);
+    if (ZE_SUCCESS != err) {
+        return err;
     }
-    if (UINT32_IS_SET(prv_flag, SYS_LOG_RESOURCE_INIT)) {
+
+    if (s_sys_log_inited) {
+        (void)ZE_Mutex_LockGive(&s_sys_log_mutex);
         return ZE_ERR_ALREADY_INIT;
     }
-    /* Place the code uart here! */
+
+   esp_rom_output_set_as_console(0U);
+    s_sys_log_inited = true;
+    (void)ZE_Mutex_LockGive(&s_sys_log_mutex);
+
     return ZE_SUCCESS;
 }
 
+/** @brief Print formatted log message to system console */
 ze_err_t ZE_SysLog_Printf(const char *p_fmt, ...) {
-    /* Place the code uart here! */
+    if (NULL == p_fmt) {
+        return ZE_ERR_INVALID_ARG;
+    }
 
+    ze_err_t err = ZE_Mutex_LockTake(&s_sys_log_mutex, UINT32_MAX);
+    if (ZE_SUCCESS != err) {
+        return err;
+    }
+
+    va_list args;
+   va_start(args, p_fmt);
+    int len = vsnprintf(s_sys_log_buf, sizeof(s_sys_log_buf), p_fmt, args);
+   va_end(args);
+
+    if (len > 0) {
+        uint32_t print_len = ((uint32_t)len < sizeof(s_sys_log_buf)) ? (uint32_t)len : (sizeof(s_sys_log_buf) - 1U);
+        for (uint32_t i = 0U; i < print_len; i++) {
+           esp_rom_uart_putc(s_sys_log_buf[i]);
+        }
+       esp_rom_uart_flush_tx(0U);
+    }
+
+    (void)ZE_Mutex_LockGive(&s_sys_log_mutex);
     return ZE_SUCCESS;
 }
 

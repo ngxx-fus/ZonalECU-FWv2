@@ -40,7 +40,7 @@ typedef enum ze_assert_callback_event_e {
     ZE_ASSERT_EVENT_MINOR    = 0x2, /* Constraint is not critical, just a minor */
 } ze_assert_callback_event_t;
 
-typedef void *ze_assert_context_t;
+typedef void * ze_assert_context_t;
 
 typedef struct ze_assert_callback_st {
     ze_assert_callback_event_t event;

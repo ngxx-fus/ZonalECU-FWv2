@@ -49,8 +49,8 @@ void SOMEIP_WriteU32Be(OUT uint8_t *p_buf, IN uint32_t value) {
 }
 
 void SOMEIP_WriteU64Be(OUT uint8_t *p_buf, IN uint64_t value) {
-    SOMEIP_WriteU32Be(&p_buf[0], (uint32_t)(value >> SOMEIP_SHIFT_HIGH_U32));
-    SOMEIP_WriteU32Be(&p_buf[SOMEIP_U32_SIZE], (uint32_t)(value));
+   SOMEIP_WriteU32Be(&p_buf[0], (uint32_t)(value >> SOMEIP_SHIFT_HIGH_U32));
+   SOMEIP_WriteU32Be(&p_buf[SOMEIP_U32_SIZE], (uint32_t)(value));
 }
 
 /* Little-endian */
@@ -85,8 +85,8 @@ void SOMEIP_WriteU32Le(OUT uint8_t *p_buf, IN uint32_t value) {
 }
 
 void SOMEIP_WriteU64Le(OUT uint8_t *p_buf, IN uint64_t value) {
-    SOMEIP_WriteU32Le(&p_buf[0], (uint32_t)(value));
-    SOMEIP_WriteU32Le(&p_buf[SOMEIP_U32_SIZE], (uint32_t)(value >> SOMEIP_SHIFT_HIGH_U32));
+   SOMEIP_WriteU32Le(&p_buf[0], (uint32_t)(value));
+   SOMEIP_WriteU32Le(&p_buf[SOMEIP_U32_SIZE], (uint32_t)(value >> SOMEIP_SHIFT_HIGH_U32));
 }
 
 /* Runtime byte order */
@@ -109,36 +109,36 @@ uint64_t SOMEIP_ReadU64(IN uint8_t *p_buf, IN someip_byte_order_t order) {
 void SOMEIP_WriteU16(OUT uint8_t *p_buf, IN uint16_t value, IN someip_byte_order_t order) {
     /* Parameter configured as little-endian */
     if (SOMEIP_BYTE_ORDER_LITTLE_ENDIAN == order) {
-        SOMEIP_WriteU16Le(p_buf, value);
+       SOMEIP_WriteU16Le(p_buf, value);
     }
 
     /* Default: big-endian, same as the header */
     else {
-        SOMEIP_WriteU16Be(p_buf, value);
+       SOMEIP_WriteU16Be(p_buf, value);
     }
 }
 
 void SOMEIP_WriteU32(OUT uint8_t *p_buf, IN uint32_t value, IN someip_byte_order_t order) {
     /* Parameter configured as little-endian */
     if (SOMEIP_BYTE_ORDER_LITTLE_ENDIAN == order) {
-        SOMEIP_WriteU32Le(p_buf, value);
+       SOMEIP_WriteU32Le(p_buf, value);
     }
 
     /* Default: big-endian, same as the header */
     else {
-        SOMEIP_WriteU32Be(p_buf, value);
+       SOMEIP_WriteU32Be(p_buf, value);
     }
 }
 
 void SOMEIP_WriteU64(OUT uint8_t *p_buf, IN uint64_t value, IN someip_byte_order_t order) {
     /* Parameter configured as little-endian */
     if (SOMEIP_BYTE_ORDER_LITTLE_ENDIAN == order) {
-        SOMEIP_WriteU64Le(p_buf, value);
+       SOMEIP_WriteU64Le(p_buf, value);
     }
 
     /* Default: big-endian, same as the header */
     else {
-        SOMEIP_WriteU64Be(p_buf, value);
+       SOMEIP_WriteU64Be(p_buf, value);
     }
 }
 

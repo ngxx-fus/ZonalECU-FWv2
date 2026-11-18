@@ -35,13 +35,10 @@ HEADER_CPP
  *  @param   payload_len       Size of the serialized arguments in bytes
  *  @retval  SOMEIP_RES_OK      *p_hdr is valid
  *  @retval  SOMEIP_RES_E_PARAM p_hdr is NULL, session_id is 0, or payload_len does not fit in Length */
-someip_result_t SOMEIP_MessageBuildRequest(OUT someip_header_t            * p_hdr,                                               \
-                                           IN  someip_service_id_t          service_id,                                          \
-                                           IN  someip_method_id_t           method_id,                                           \
-                                           IN  someip_client_id_t           client_id,                                           \
-                                           IN  someip_session_id_t          session_id,                                          \
-                                           IN  someip_interface_version_t   interface_version,                                   \
-                                           IN  uint32_t                     payload_len);
+someip_result_t SOMEIP_MessageBuildRequest(OUT someip_header_t *p_hdr, IN someip_service_id_t service_id,
+                                           IN someip_method_id_t method_id, IN someip_client_id_t client_id,
+                                           IN someip_session_id_t session_id, IN someip_interface_version_t interface_version,
+                                           IN uint32_t payload_len);
 
 /** @brief   Fill the header of a REQUEST_NO_RETURN (0x01), fire & forget [PRS_SOMEIP_00924]
  *  @param   p_hdr             Header to fill
@@ -53,13 +50,10 @@ someip_result_t SOMEIP_MessageBuildRequest(OUT someip_header_t            * p_hd
  *  @param   payload_len       Size of the serialized arguments in bytes
  *  @retval  SOMEIP_RES_OK      *p_hdr is valid
  *  @retval  SOMEIP_RES_E_PARAM p_hdr is NULL, or payload_len does not fit in Length */
-someip_result_t SOMEIP_MessageBuildRequestNoReturn(OUT someip_header_t            * p_hdr,                                       \
-                                                   IN  someip_service_id_t          service_id,                                  \
-                                                   IN  someip_method_id_t           method_id,                                   \
-                                                   IN  someip_client_id_t           client_id,                                   \
-                                                   IN  someip_session_id_t          session_id,                                  \
-                                                   IN  someip_interface_version_t   interface_version,                           \
-                                                   IN  uint32_t                     payload_len);
+someip_result_t SOMEIP_MessageBuildRequestNoReturn(OUT someip_header_t *p_hdr, IN someip_service_id_t service_id,
+                                                   IN someip_method_id_t method_id, IN someip_client_id_t client_id,
+                                                   IN someip_session_id_t session_id,
+                                                   IN someip_interface_version_t interface_version, IN uint32_t payload_len);
 
 /** @brief   Fill the header of a NOTIFICATION (0x02), Client ID is always 0 [PRS_SOMEIP_00925]
  *  @param   p_hdr             Header to fill
@@ -71,12 +65,9 @@ someip_result_t SOMEIP_MessageBuildRequestNoReturn(OUT someip_header_t          
  *  @param   payload_len       Size of the serialized event in bytes [PRS_SOMEIP_00926]
  *  @retval  SOMEIP_RES_OK      *p_hdr is valid
  *  @retval  SOMEIP_RES_E_PARAM p_hdr is NULL, or payload_len does not fit in Length */
-someip_result_t SOMEIP_MessageBuildNotification(OUT someip_header_t            * p_hdr,                                          \
-                                                IN  someip_service_id_t          service_id,                                     \
-                                                IN  someip_event_id_t            event_id,                                       \
-                                                IN  someip_session_id_t          session_id,                                     \
-                                                IN  someip_interface_version_t   interface_version,                              \
-                                                IN  uint32_t                     payload_len);
+someip_result_t SOMEIP_MessageBuildNotification(OUT someip_header_t *p_hdr, IN someip_service_id_t service_id,
+                                                IN someip_event_id_t event_id, IN someip_session_id_t session_id,
+                                                IN someip_interface_version_t interface_version, IN uint32_t payload_len);
 
 /** @brief   Fill the header of a RESPONSE (0x80) that answers a received REQUEST [PRS_SOMEIP_00922]
  *  @note    An application error keeps Message Type 0x80 (note of [PRS_SOMEIP_00901]).
@@ -88,10 +79,8 @@ someip_result_t SOMEIP_MessageBuildNotification(OUT someip_header_t            *
  *  @retval  SOMEIP_RES_OK      *p_hdr is valid
  *  @retval  SOMEIP_RES_E_PARAM A pointer is NULL, p_request is not a REQUEST, return_code cannot be sent, or
  *                              payload_len does not fit in Length */
-someip_result_t SOMEIP_MessageBuildResponse(OUT someip_header_t      * p_hdr,                                                    \
-                                            IN  someip_header_t      * p_request,                                                \
-                                            IN  someip_return_code_t   return_code,                                              \
-                                            IN  uint32_t               payload_len);
+someip_result_t SOMEIP_MessageBuildResponse(OUT someip_header_t *p_hdr, IN someip_header_t *p_request,
+                                            IN someip_return_code_t return_code, IN uint32_t payload_len);
 
 /** @brief   Fill the header of an ERROR (0x81) with payload, answers a received REQUEST [PRS_SOMEIP_00903]
  *  @note    Use SOMEIP_CheckShouldReplyError() first: not every message may be answered with an ERROR.
@@ -104,10 +93,8 @@ someip_result_t SOMEIP_MessageBuildResponse(OUT someip_header_t      * p_hdr,   
  *  @retval  SOMEIP_RES_OK      *p_hdr is valid
  *  @retval  SOMEIP_RES_E_PARAM A pointer is NULL, p_request is not a REQUEST, return_code cannot be sent, or
  *                              payload_len does not fit in Length */
-someip_result_t SOMEIP_MessageBuildError(OUT someip_header_t      * p_hdr,                                                       \
-                                         IN  someip_header_t      * p_request,                                                   \
-                                         IN  someip_return_code_t   return_code,                                                 \
-                                         IN  uint32_t               payload_len);
+someip_result_t SOMEIP_MessageBuildError(OUT someip_header_t *p_hdr, IN someip_header_t *p_request,
+                                         IN someip_return_code_t return_code, IN uint32_t payload_len);
 
 /* FOOTERS ***********************************************************************************************************************
  ********************************************************************************************************************************/

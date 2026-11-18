@@ -43,8 +43,8 @@ static someip_result_t prv_deser_require        (INOUT someip_deser_cursor_t *p_
 static uint32_t        prv_padding_size         (IN uint32_t abs_pos, IN uint16_t align_bits);
 static bool            prv_is_align_valid       (IN uint16_t align_bits);
 static bool            prv_is_length_field_valid(IN someip_length_field_size_t lf_size);
-static uint8_t const   *prv_get_bom             (IN someip_string_encoding_t enc, OUT uint32_t *p_bom_size);
-static uint32_t        prv_get_terminator_size  (IN someip_string_encoding_t enc);
+static uint8_t const *prv_get_bom(IN someip_string_encoding_t enc, OUT uint32_t *p_bom_size);
+static uint32_t prv_get_terminator_size(IN someip_string_encoding_t enc);
 
 /* FUNCTION IMPLEMENTATIONS ******************************************************************************************************
  ********************************************************************************************************************************/
@@ -265,11 +265,8 @@ static uint32_t prv_get_terminator_size(IN someip_string_encoding_t enc) {
 
 /* Serializer: cursor */
 
-someip_result_t SOMEIP_SerInit(OUT someip_ser_cursor_t * p_cur,                                                                  \
-                               OUT uint8_t             * p_buf,                                                                  \
-                               IN  uint32_t              buf_size,                                                               \
-                               IN  uint32_t              msg_offset,                                                             \
-                               IN  someip_byte_order_t   order) {
+someip_result_t SOMEIP_SerInit(OUT someip_ser_cursor_t *p_cur, OUT uint8_t *p_buf, IN uint32_t buf_size, IN uint32_t msg_offset,
+                               IN someip_byte_order_t order) {
     /* Validate parameters */
     if ((NULL == p_cur) || (NULL == p_buf)) {
         /* Invalid parameter */
@@ -401,7 +398,7 @@ someip_result_t SOMEIP_SerWriteU16(INOUT someip_ser_cursor_t *p_cur, IN uint16_t
     }
 
     /* uint16 in configured byte order [PRS_SOMEIP_00369] */
-    SOMEIP_WriteU16(&p_cur->p_buf[p_cur->pos], value, p_cur->order);
+   SOMEIP_WriteU16(&p_cur->p_buf[p_cur->pos], value, p_cur->order);
     p_cur->pos += SOMEIP_U16_SIZE;
 
     /* Written */
@@ -427,7 +424,7 @@ someip_result_t SOMEIP_SerWriteU32(INOUT someip_ser_cursor_t *p_cur, IN uint32_t
     }
 
     /* uint32 in configured byte order [PRS_SOMEIP_00369] */
-    SOMEIP_WriteU32(&p_cur->p_buf[p_cur->pos], value, p_cur->order);
+   SOMEIP_WriteU32(&p_cur->p_buf[p_cur->pos], value, p_cur->order);
     p_cur->pos += SOMEIP_U32_SIZE;
 
     /* Written */
@@ -453,7 +450,7 @@ someip_result_t SOMEIP_SerWriteU64(INOUT someip_ser_cursor_t *p_cur, IN uint64_t
     }
 
     /* uint64 in configured byte order [PRS_SOMEIP_00369] */
-    SOMEIP_WriteU64(&p_cur->p_buf[p_cur->pos], value, p_cur->order);
+   SOMEIP_WriteU64(&p_cur->p_buf[p_cur->pos], value, p_cur->order);
     p_cur->pos += SOMEIP_U64_SIZE;
 
     /* Written */
@@ -589,9 +586,8 @@ someip_result_t SOMEIP_SerAlign(INOUT someip_ser_cursor_t *p_cur, IN uint16_t al
     return SOMEIP_RES_OK;
 }
 
-someip_result_t SOMEIP_SerLengthBegin(INOUT someip_ser_cursor_t        * p_cur,                                                  \
-                                      IN    someip_length_field_size_t   lf_size,                                                \
-                                      OUT   uint32_t                   * p_mark) {
+someip_result_t SOMEIP_SerLengthBegin(INOUT someip_ser_cursor_t *p_cur, IN someip_length_field_size_t lf_size,
+                                      OUT uint32_t *p_mark) {
     someip_result_t res = SOMEIP_RES_OK;
 
     /* Validate parameters */
@@ -693,14 +689,14 @@ someip_result_t SOMEIP_SerLengthEnd(INOUT someip_ser_cursor_t *p_cur, IN someip_
                 return p_cur->status;
             }
 
-            SOMEIP_WriteU16(&p_cur->p_buf[mark], (uint16_t)len, p_cur->order);
+           SOMEIP_WriteU16(&p_cur->p_buf[mark], (uint16_t)len, p_cur->order);
 
             /* 16 bit length written */
             break;
 
         case SOMEIP_LENGTH_FIELD_32BIT:
             /* pos is uint32_t: the length always fits */
-            SOMEIP_WriteU32(&p_cur->p_buf[mark], len, p_cur->order);
+           SOMEIP_WriteU32(&p_cur->p_buf[mark], len, p_cur->order);
 
             /* 32 bit length written */
             break;
@@ -719,11 +715,8 @@ someip_result_t SOMEIP_SerLengthEnd(INOUT someip_ser_cursor_t *p_cur, IN someip_
 
 /* Serializer: strings (chapter 4.1.4.4) */
 
-someip_result_t SOMEIP_SerWriteString(INOUT someip_ser_cursor_t        * p_cur,                                                  \
-                                      IN    someip_string_encoding_t     enc,                                                    \
-                                      IN    someip_length_field_size_t   lf_size,                                                \
-                                      IN    uint8_t                    * p_str,                                                  \
-                                      IN    uint32_t                     str_len) {
+someip_result_t SOMEIP_SerWriteString(INOUT someip_ser_cursor_t *p_cur, IN someip_string_encoding_t enc,
+                                      IN someip_length_field_size_t lf_size, IN uint8_t *p_str, IN uint32_t str_len) {
     uint8_t const terminator[SOMEIP_STR_TERM_UTF16_SIZE] = {0U};
     uint8_t const *p_bom = NULL;
     uint32_t bom_size = 0U;
@@ -794,11 +787,8 @@ someip_result_t SOMEIP_SerWriteString(INOUT someip_ser_cursor_t        * p_cur, 
     return SOMEIP_RES_OK;
 }
 
-someip_result_t SOMEIP_SerWriteStringFixed(INOUT someip_ser_cursor_t      * p_cur,                                               \
-                                           IN    someip_string_encoding_t   enc,                                                 \
-                                           IN    uint32_t                   fixed_size,                                          \
-                                           IN    uint8_t                  * p_str,                                               \
-                                           IN    uint32_t                   str_len) {
+someip_result_t SOMEIP_SerWriteStringFixed(INOUT someip_ser_cursor_t *p_cur, IN someip_string_encoding_t enc,
+                                           IN uint32_t fixed_size, IN uint8_t *p_str, IN uint32_t str_len) {
     uint8_t *p_dst = NULL;
     uint8_t const *p_bom = NULL;
     uint32_t bom_size = 0U;
@@ -883,11 +873,8 @@ someip_result_t SOMEIP_SerWriteStringFixed(INOUT someip_ser_cursor_t      * p_cu
 
 /* Deserializer: cursor */
 
-someip_result_t SOMEIP_DeserInit(OUT someip_deser_cursor_t * p_cur,                                                              \
-                                 IN  uint8_t               * p_buf,                                                              \
-                                 IN  uint32_t                buf_size,                                                           \
-                                 IN  uint32_t                msg_offset,                                                         \
-                                 IN  someip_byte_order_t     order) {
+someip_result_t SOMEIP_DeserInit(OUT someip_deser_cursor_t *p_cur, IN uint8_t *p_buf, IN uint32_t buf_size,
+                                 IN uint32_t msg_offset, IN someip_byte_order_t order) {
     /* Validate parameters: p_buf may be NULL only for an empty payload */
     if ((NULL == p_cur) || ((NULL == p_buf) && (0U != buf_size))) {
         /* Invalid parameter */
@@ -1354,9 +1341,8 @@ someip_result_t SOMEIP_DeserAlign(INOUT someip_deser_cursor_t *p_cur, IN uint16_
 
 /* Deserializer: length field [PRS_SOMEIP_00370] [PRS_SOMEIP_00371] [PRS_SOMEIP_00900] */
 
-someip_result_t SOMEIP_DeserLengthBegin(INOUT someip_deser_cursor_t      * p_cur,                                                \
-                                        IN    someip_length_field_size_t   lf_size,                                              \
-                                        OUT   uint32_t                   * p_end) {
+someip_result_t SOMEIP_DeserLengthBegin(INOUT someip_deser_cursor_t *p_cur, IN someip_length_field_size_t lf_size,
+                                        OUT uint32_t *p_end) {
     uint8_t len_8 = 0U;
     uint16_t len_16 = 0U;
     uint32_t len = 0U;
@@ -1476,12 +1462,9 @@ someip_result_t SOMEIP_DeserLengthEnd(INOUT someip_deser_cursor_t *p_cur, IN uin
 
 /* Deserializer: strings (chapter 4.1.4.4) */
 
-someip_result_t SOMEIP_DeserReadString(INOUT someip_deser_cursor_t      * p_cur,                                                 \
-                                       IN    someip_string_encoding_t     enc,                                                   \
-                                       IN    someip_length_field_size_t   lf_size,                                               \
-                                       OUT   uint8_t                    * p_out,                                                 \
-                                       IN    uint32_t                     out_size,                                              \
-                                       OUT   uint32_t                   * p_out_len) {
+someip_result_t SOMEIP_DeserReadString(INOUT someip_deser_cursor_t *p_cur, IN someip_string_encoding_t enc,
+                                       IN someip_length_field_size_t lf_size, OUT uint8_t *p_out, IN uint32_t out_size,
+                                       OUT uint32_t *p_out_len) {
     uint8_t const terminator[SOMEIP_STR_TERM_UTF16_SIZE] = {0U};
     uint8_t const *p_bom = NULL;
     uint8_t const *p_src = NULL;
@@ -1594,12 +1577,9 @@ someip_result_t SOMEIP_DeserReadString(INOUT someip_deser_cursor_t      * p_cur,
     return SOMEIP_DeserLengthEnd(p_cur, end);
 }
 
-someip_result_t SOMEIP_DeserReadStringFixed(INOUT someip_deser_cursor_t    * p_cur,                                              \
-                                            IN    someip_string_encoding_t   enc,                                                \
-                                            IN    uint32_t                   fixed_size,                                         \
-                                            OUT   uint8_t                  * p_out,                                              \
-                                            IN    uint32_t                   out_size,                                           \
-                                            OUT   uint32_t                 * p_out_len) {
+someip_result_t SOMEIP_DeserReadStringFixed(INOUT someip_deser_cursor_t *p_cur, IN someip_string_encoding_t enc,
+                                            IN uint32_t fixed_size, OUT uint8_t *p_out, IN uint32_t out_size,
+                                            OUT uint32_t *p_out_len) {
     uint8_t const terminator[SOMEIP_STR_TERM_UTF16_SIZE] = {0U};
     uint8_t const *p_bom = NULL;
     uint8_t const *p_src = NULL;

@@ -12,13 +12,10 @@
 /* FUNCTION IMPLEMENTATIONS ******************************************************************************************************
  ********************************************************************************************************************************/
 
-someip_result_t SOMEIP_MessageBuildRequest(OUT someip_header_t            * p_hdr,                                               \
-                                           IN  someip_service_id_t          service_id,                                          \
-                                           IN  someip_method_id_t           method_id,                                           \
-                                           IN  someip_client_id_t           client_id,                                           \
-                                           IN  someip_session_id_t          session_id,                                          \
-                                           IN  someip_interface_version_t   interface_version,                                   \
-                                           IN  uint32_t                     payload_len) {
+someip_result_t SOMEIP_MessageBuildRequest(OUT someip_header_t *p_hdr, IN someip_service_id_t service_id,
+                                           IN someip_method_id_t method_id, IN someip_client_id_t client_id,
+                                           IN someip_session_id_t session_id, IN someip_interface_version_t interface_version,
+                                           IN uint32_t payload_len) {
     /* Validate parameters */
     if (NULL == p_hdr) {
         /* Invalid parameter */
@@ -60,13 +57,10 @@ someip_result_t SOMEIP_MessageBuildRequest(OUT someip_header_t            * p_hd
     return SOMEIP_RES_OK;
 }
 
-someip_result_t SOMEIP_MessageBuildRequestNoReturn(OUT someip_header_t            * p_hdr,                                       \
-                                                   IN  someip_service_id_t          service_id,                                  \
-                                                   IN  someip_method_id_t           method_id,                                   \
-                                                   IN  someip_client_id_t           client_id,                                   \
-                                                   IN  someip_session_id_t          session_id,                                  \
-                                                   IN  someip_interface_version_t   interface_version,                           \
-                                                   IN  uint32_t                     payload_len) {
+someip_result_t SOMEIP_MessageBuildRequestNoReturn(OUT someip_header_t *p_hdr, IN someip_service_id_t service_id,
+                                                   IN someip_method_id_t method_id, IN someip_client_id_t client_id,
+                                                   IN someip_session_id_t session_id,
+                                                   IN someip_interface_version_t interface_version, IN uint32_t payload_len) {
     /* Validate parameters */
     if (NULL == p_hdr) {
         /* Invalid parameter */
@@ -102,12 +96,9 @@ someip_result_t SOMEIP_MessageBuildRequestNoReturn(OUT someip_header_t          
     return SOMEIP_RES_OK;
 }
 
-someip_result_t SOMEIP_MessageBuildNotification(OUT someip_header_t            * p_hdr,                                          \
-                                                IN  someip_service_id_t          service_id,                                     \
-                                                IN  someip_event_id_t            event_id,                                       \
-                                                IN  someip_session_id_t          session_id,                                     \
-                                                IN  someip_interface_version_t   interface_version,                              \
-                                                IN  uint32_t                     payload_len) {
+someip_result_t SOMEIP_MessageBuildNotification(OUT someip_header_t *p_hdr, IN someip_service_id_t service_id,
+                                                IN someip_event_id_t event_id, IN someip_session_id_t session_id,
+                                                IN someip_interface_version_t interface_version, IN uint32_t payload_len) {
     /* Validate parameters */
     if (NULL == p_hdr) {
         /* Invalid parameter */
@@ -144,10 +135,8 @@ someip_result_t SOMEIP_MessageBuildNotification(OUT someip_header_t            *
     return SOMEIP_RES_OK;
 }
 
-someip_result_t SOMEIP_MessageBuildResponse(OUT someip_header_t      * p_hdr,                                                    \
-                                            IN  someip_header_t      * p_request,                                                \
-                                            IN  someip_return_code_t   return_code,                                              \
-                                            IN  uint32_t               payload_len) {
+someip_result_t SOMEIP_MessageBuildResponse(OUT someip_header_t *p_hdr, IN someip_header_t *p_request,
+                                            IN someip_return_code_t return_code, IN uint32_t payload_len) {
     someip_message_type_t base = 0U;
 
     /* Validate parameters */
@@ -203,10 +192,8 @@ someip_result_t SOMEIP_MessageBuildResponse(OUT someip_header_t      * p_hdr,   
     return SOMEIP_RES_OK;
 }
 
-someip_result_t SOMEIP_MessageBuildError(OUT someip_header_t      * p_hdr,                                                       \
-                                         IN  someip_header_t      * p_request,                                                   \
-                                         IN  someip_return_code_t   return_code,                                                 \
-                                         IN  uint32_t               payload_len) {
+someip_result_t SOMEIP_MessageBuildError(OUT someip_header_t *p_hdr, IN someip_header_t *p_request,
+                                         IN someip_return_code_t return_code, IN uint32_t payload_len) {
     someip_message_type_t base = 0U;
     someip_result_t result = SOMEIP_RES_OK;
 

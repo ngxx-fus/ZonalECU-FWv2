@@ -54,10 +54,7 @@ typedef enum ze_err_e {
     ZE_ERR_INVALID_ACCESS   = ZE_ERR_BASE_COMM + 4,       /*!< Invalid access (wrong permission) */
 
     ZE_ERR_MULTI_TASK_BASE  = 0x2000,                     /*!< Base error code for multi-task */
-    ZE_ERR_CANT_TAKE_LOCK   = ZE_ERR_MULTI_TASK_BASE + 1, /*!< Can't take lock, resource already locked */
-    ZE_ERR_CANT_GIVE_LOCK   = ZE_ERR_MULTI_TASK_BASE + 2, /*!< Can't give lock, resource has not locked */
     ZE_ERR_RESOURCE_LOCKED  = ZE_ERR_MULTI_TASK_BASE + 3, /*!< Resource already locked */
-    ZE_ERR_RESOURCE_FREE    = ZE_ERR_MULTI_TASK_BASE + 4, /*!< Resource has not locked yet */
 
     ZE_ERR_BASE_W5500       = 0x3000,                     /*!< Base error code for W5500 SPI Ethernet */
     ZE_ERR_BASE_CAN         = 0x4000,                     /*!< Base error code for CAN / CAN-FD bus */

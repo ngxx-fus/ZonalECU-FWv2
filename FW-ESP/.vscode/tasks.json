@@ -1,0 +1,124 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "ZECU: Format Active File",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "../.github/scripts/format_rules.py",
+                "${file}"
+            ],
+            "linux": {
+                "command": "python3",
+                "args": [
+                    "../.github/scripts/format_rules.py",
+                    "${file}"
+                ]
+            },
+            "osx": {
+                "command": "python3",
+                "args": [
+                    "../.github/scripts/format_rules.py",
+                    "${file}"
+                ]
+            },
+            "windows": {
+                "command": "python",
+                "args": [
+                    "..\\.github\\scripts\\format_rules.py",
+                    "${file}"
+                ]
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "focus": false
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "ZECU: Run Working Tree Pre-Commit (Job 0 & 1)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "../FW-Common/scripts/working_tree_update.sh"
+            ],
+            "linux": {
+                "command": "bash",
+                "args": [
+                    "../FW-Common/scripts/working_tree_update.sh"
+                ]
+            },
+            "osx": {
+                "command": "bash",
+                "args": [
+                    "../FW-Common/scripts/working_tree_update.sh"
+                ]
+            },
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    "..\\FW-Common\\scripts\\working_tree_update.ps1"
+                ]
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "focus": true
+            }
+        },
+        {
+            "label": "ZECU: Format Entire Project",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "../.github/scripts/format_rules.py",
+                "../FW-Common",
+                ".",
+                "../FW-STM"
+            ],
+            "linux": {
+                "command": "python3",
+                "args": [
+                    "../.github/scripts/format_rules.py",
+                    "../FW-Common",
+                    ".",
+                    "../FW-STM"
+                ]
+            },
+            "osx": {
+                "command": "python3",
+                "args": [
+                    "../.github/scripts/format_rules.py",
+                    "../FW-Common",
+                    ".",
+                    "../FW-STM"
+                ]
+            },
+            "windows": {
+                "command": "python",
+                "args": [
+                    "..\\.github\\scripts\\format_rules.py",
+                    "..\\FW-Common",
+                    ".",
+                    "..\\FW-STM"
+                ]
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "focus": false
+            }
+        }
+    ]
+}

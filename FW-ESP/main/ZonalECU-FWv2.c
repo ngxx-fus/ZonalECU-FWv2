@@ -29,14 +29,14 @@ void app_main(void) {
     uint32_t blink_cnt = 0U;
     uint32_t led_level = 0U;
 
-    ZE_LOGI("Zonal ECU Firmware v2 starting...");
-    ZE_LOGI("Sample error check: code %d -> %s", err, ZE_ErrToStr(err));
+   ZE_LOGI("Zonal ECU Firmware v2 starting...");
+   ZE_LOGI("Sample error check: code %d -> %s", err, ZE_ErrToStr(err));
 
     err = gpio_reset_pin(MAIN_LED_GPIO);
 
     /* Stop here if the LED pin cannot be reset */
     if (ZE_OK != err) {
-        ZE_LOGE("gpio_reset_pin failed: %s", ZE_ErrToStr(err));
+       ZE_LOGE("gpio_reset_pin failed: %s", ZE_ErrToStr(err));
 
         /* Nothing else to run without the LED */
         return;
@@ -46,7 +46,7 @@ void app_main(void) {
 
     /* Stop here if the LED pin cannot be configured as output */
     if (ZE_OK != err) {
-        ZE_LOGE("gpio_set_direction failed: %s", ZE_ErrToStr(err));
+       ZE_LOGE("gpio_set_direction failed: %s", ZE_ErrToStr(err));
 
         /* Nothing else to run without the LED */
         return;
@@ -56,9 +56,9 @@ void app_main(void) {
     while (true) {
         led_level = blink_cnt % 2U;
         (void)gpio_set_level(MAIN_LED_GPIO, led_level);
-        ZE_LOGW("LED %s (count=%lu)", (0U != led_level) ? "ON" : "OFF", (unsigned long)blink_cnt);
+       ZE_LOGW("LED %s (count=%lu)", (0U != led_level) ? "ON" : "OFF", (unsigned long)blink_cnt);
         blink_cnt++;
-        vTaskDelay(pdMS_TO_TICKS(MAIN_LED_TOGGLE_MS));
+       vTaskDelay(pdMS_TO_TICKS(MAIN_LED_TOGGLE_MS));
     }
 }
 

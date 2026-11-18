@@ -32,25 +32,26 @@ ZE_HEADER
 #define ZE_ATOMIC_PTR_NEW(type, name)           ze_atomic_##type *(name) = NULL;
 #define ZE_ATOMIC_PTR_NEW_VAL(type, name, addr) ze_atomic_##type *(name) = (addr);
 
-#define ZE_ATOMIC_GET(p_atomic)       atomic_load(p_atomic)
-#define ZE_ATOMIC_SET(p_atomic, val)  atomic_store((p_atomic), (val))
-#define ZE_ATOMIC_CLR(p_atomic)       atomic_store((p_atomic), 0U)
-#define ZE_ATOMIC_AND(p_atomic, mask) atomic_fetch_and((p_atomic), (mask))
-#define ZE_ATOMIC_OR(p_atomic, mask)  atomic_fetch_or((p_atomic), (mask))
-#define ZE_ATOMIC_NOT(p_atomic, mask) atomic_fetch_xor((p_atomic), (mask))
+#define ZE_ATOMIC_GET(p_atomic)                 atomic_load((p_atomic))
+#define ZE_ATOMIC_SET(p_atomic, val)            atomic_store((p_atomic), (val))
+#define ZE_ATOMIC_CLR(p_atomic)                 atomic_store((p_atomic), 0U)
+#define ZE_ATOMIC_AND(p_atomic, mask)           atomic_fetch_and((p_atomic), (mask))
+#define ZE_ATOMIC_OR(p_atomic, mask)            atomic_fetch_or((p_atomic), (mask))
+#define ZE_ATOMIC_NOT(p_atomic, mask)           atomic_fetch_xor((p_atomic), (mask))
+#define ZE_ATOMIC_INCR(p_atomic)                atomic_fetch_add((p_atomic), 1U)
+#define ZE_ATOMIC_DECR(p_atomic)                atomic_fetch_sub((p_atomic), 1U)
+#define ZE_ATOMIC_GET_N_CLR(p_atomic)           atomic_exchange((p_atomic), 0U)
 
-#define ZE_ATOMIC_INCR(p_atomic) atomic_fetch_add((p_atomic), 1U)
-#define ZE_ATOMIC_DECR(p_atomic) atomic_fetch_sub((p_atomic), 1U)
-
-#define ZE_ATOMIC_GET_N_CLR(p_atomic) atomic_exchange((p_atomic), 0U)
+#define ZE_ATOMIC(type)                         _Atomic type
+#define ze_atomic(type)                         _Atomic type /* ZE_EXCEPTION("macro for type") */
 
 /* DEFINITIONS *******************************************************************************************************************
  ********************************************************************************************************************************/
 
-typedef _Atomic uint32_t ze_atomic_uint32_t;
-typedef _Atomic uint16_t ze_atomic_uint16_t;
-typedef _Atomic uint8_t ze_atomic_uint8_t;
-typedef _Atomic bool ze_atomic_bool_t;
+typedef ze_atomic (uint32_t) ze_atomic_uint32_t;
+typedef ze_atomic (uint16_t) ze_atomic_uint16_t;
+typedef ze_atomic (uint8_t)  ze_atomic_uint8_t;
+typedef ze_atomic (bool)     ze_atomic_bool_t;
 
 /* EXPORTED VARIABLES ************************************************************************************************************
  ********************************************************************************************************************************/

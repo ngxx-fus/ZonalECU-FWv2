@@ -168,13 +168,13 @@ enum e_someip_bom {
 
 /* Identifiers */
 typedef uint16_t someip_service_id_t;
-typedef uint16_t someip_method_id_t; /*!< Method (bit 15 = 0) or event (bit 15 = 1) */
-typedef uint16_t someip_event_id_t;  /*!< A method ID with bit 15 = 1 */
+typedef uint16_t someip_method_id_t;     /*!< Method (bit 15 = 0) or event (bit 15 = 1) */
+typedef uint16_t someip_event_id_t;      /*!< A method ID with bit 15 = 1 */
 typedef uint16_t someip_eventgroup_id_t;
 typedef uint16_t someip_client_id_t;
 typedef uint16_t someip_session_id_t;
-typedef uint32_t someip_message_id_t; /*!< Service ID << 16 | Method ID */
-typedef uint32_t someip_request_id_t; /*!< Client ID << 16 | Session ID */
+typedef uint32_t someip_message_id_t;    /*!< Service ID << 16 | Method ID */
+typedef uint32_t someip_request_id_t;    /*!< Client ID << 16 | Session ID */
 typedef uint32_t someip_length_t;
 
 /* Single-byte header fields, fixed width because they are wire values */
@@ -256,7 +256,7 @@ typedef enum e_someip_transport {
 /** @brief Transport endpoint of a SOME/IP peer */
 typedef struct st_someip_endpoint {
     someip_transport_t transport;
-    uint8_t            ipv4[SOMEIP_IPV4_ADDR_SIZE]; /*!< Network order, e.g. {192,168,1,10} */
+    uint8_t            ipv4 [SOMEIP_IPV4_ADDR_SIZE]; /*!< Network order, e.g. {192,168,1,10} */
     uint16_t           port; /*!< Host order */
 } someip_endpoint_t;
 

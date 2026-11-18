@@ -39,7 +39,7 @@ static void ze_assert_isr(void *p_context) {
     ze_assert_callback_arg_t *p_assert_context = (ze_assert_callback_arg_t *)p_context;
 
     if (IS_NOT_NULL(gp_ze_assert_callback)) {
-        gp_ze_assert_callback(p_assert_context);
+       gp_ze_assert_callback(p_assert_context);
     }
 }
 

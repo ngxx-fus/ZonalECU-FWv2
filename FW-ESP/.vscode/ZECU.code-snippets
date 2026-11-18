@@ -131,8 +131,7 @@
         "description": "Doxygen block: 0 param with return",
         "body": [
             "/** @brief ${1:introduce about your function}",
-            " *  @return ${2:return description} */",
-            "$0"
+            " *  @return ${2:return description} */"
         ]
     },
     "Doxygen Header (1 param, with return)": {
@@ -142,8 +141,7 @@
         "body": [
             "/** @brief ${1:introduce about your function}",
             " *  @param ${2:param1} ${3:param description}",
-            " *  @return ${4:return description} */",
-            "$0"
+            " *  @return ${4:return description} */"
         ]
     },
     "Doxygen Header (2 params, with return)": {
@@ -154,8 +152,7 @@
             "/** @brief ${1:introduce about your function}",
             " *  @param ${2:param1} ${3:param description}",
             " *  @param ${4:param2} ${5:param description}",
-            " *  @return ${6:return description} */",
-            "$0"
+            " *  @return ${6:return description} */"
         ]
     },
     "Doxygen Header (3 params, with return)": {
@@ -167,8 +164,7 @@
             " *  @param ${2:param1} ${3:param description}",
             " *  @param ${4:param2} ${5:param description}",
             " *  @param ${6:param3} ${7:param description}",
-            " *  @return ${8:return description} */",
-            "$0"
+            " *  @return ${8:return description} */"
         ]
     },
     "Doxygen Header (4 params, with return)": {
@@ -181,8 +177,7 @@
             " *  @param ${4:param2} ${5:param description}",
             " *  @param ${6:param3} ${7:param description}",
             " *  @param ${8:param4} ${9:param description}",
-            " *  @return ${10:return description} */",
-            "$0"
+            " *  @return ${10:return description} */"
         ]
     },
     "Doxygen Header (5 params, with return)": {
@@ -196,8 +191,7 @@
             " *  @param ${6:param3} ${7:param description}",
             " *  @param ${8:param4} ${9:param description}",
             " *  @param ${10:param5} ${11:param description}",
-            " *  @return ${12:return description} */",
-            "$0"
+            " *  @return ${12:return description} */"
         ]
     },
     "Doxygen Header (6 params, with return)": {
@@ -212,8 +206,7 @@
             " *  @param ${8:param4} ${9:param description}",
             " *  @param ${10:param5} ${11:param description}",
             " *  @param ${12:param6} ${13:param description}",
-            " *  @return ${14:return description} */",
-            "$0"
+            " *  @return ${14:return description} */"
         ]
     },
 
@@ -225,8 +218,7 @@
         "prefix": "lazy-dox-no-ret-0-param",
         "description": "Doxygen block: 0 param without return",
         "body": [
-            "/** @brief ${1:introduce about your function} */",
-            "$0"
+            "/** @brief ${1:introduce about your function} */"
         ]
     },
     "Doxygen Header (1 param, no return)": {
@@ -235,8 +227,7 @@
         "description": "Doxygen block: 1 param without return",
         "body": [
             "/** @brief ${1:introduce about your function}",
-            " *  @param ${2:param1} ${3:param description} */",
-            "$0"
+            " *  @param ${2:param1} ${3:param description} */"
         ]
     },
     "Doxygen Header (2 params, no return)": {
@@ -246,8 +237,7 @@
         "body": [
             "/** @brief ${1:introduce about your function}",
             " *  @param ${2:param1} ${3:param description}",
-            " *  @param ${4:param2} ${5:param description} */",
-            "$0"
+            " *  @param ${4:param2} ${5:param description} */"
         ]
     },
     "Doxygen Header (3 params, no return)": {
@@ -258,8 +248,7 @@
             "/** @brief ${1:introduce about your function}",
             " *  @param ${2:param1} ${3:param description}",
             " *  @param ${4:param2} ${5:param description}",
-            " *  @param ${6:param3} ${7:param description} */",
-            "$0"
+            " *  @param ${6:param3} ${7:param description} */"
         ]
     },
     "Doxygen Header (4 params, no return)": {
@@ -271,8 +260,7 @@
             " *  @param ${2:param1} ${3:param description}",
             " *  @param ${4:param2} ${5:param description}",
             " *  @param ${6:param3} ${7:param description}",
-            " *  @param ${8:param4} ${9:param description} */",
-            "$0"
+            " *  @param ${8:param4} ${9:param description} */"
         ]
     },
     "Doxygen Header (5 params, no return)": {
@@ -285,8 +273,7 @@
             " *  @param ${4:param2} ${5:param description}",
             " *  @param ${6:param3} ${7:param description}",
             " *  @param ${8:param4} ${9:param description}",
-            " *  @param ${10:param5} ${11:param description} */",
-            "$0"
+            " *  @param ${10:param5} ${11:param description} */"
         ]
     },
     "Doxygen Header (6 params, no return)": {
@@ -300,8 +287,7 @@
             " *  @param ${6:param3} ${7:param description}",
             " *  @param ${8:param4} ${9:param description}",
             " *  @param ${10:param5} ${11:param description}",
-            " *  @param ${12:param6} ${13:param description} */",
-            "$0"
+            " *  @param ${12:param6} ${13:param description} */"
         ]
     }
 }
