@@ -515,6 +515,28 @@ This document records technical issues diagnosed across the project, root causes
 - **Key Lesson & Prevention Rule**:
   - On Linux distributions with minimal init systems (such as Void Linux with runit), ensure no `agetty` or serial login console services are enabled on `/dev/ttyUSB*` ports intended for microcontroller flashing and serial monitoring.
 
+---
+
+### [ENTRY-020] ESP-IDF Bootloader Warning: SPI Flash Detected Size Larger than Binary Header (16MB vs 2MB)
+- **Date**: 2026-11-18
+- **Component**: `FW-ESP/sdkconfig.defaults`, ESP32-S3 Flash SPI Subsystem
+- **Symptom**:
+  - Bootloader output warning on serial console during chip initialization:
+    `W (69) spi_flash: Detected size(16384k) larger than the size in the binary image header(2048k). Using the size in the binary image header.`
+- **Root Cause**:
+  - ESP-IDF defaults `CONFIG_ESPTOOLPY_FLASHSIZE` to `2MB` if unspecified in `sdkconfig.defaults`.
+  - The physical hardware module mounted on the board has a 16MB SPI Flash chip (`16384k`). When the bootloader reads the SPI flash JEDEC ID and compares it to the image header, it detects the mismatch and limits flash accessibility to 2MB.
+- **Fix Applied**:
+  - Declared 16MB SPI flash configuration in `FW-ESP/sdkconfig.defaults`:
+    ```ini
+    CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+    CONFIG_ESPTOOLPY_FLASHSIZE="16MB"
+    ```
+  - Ran `idf.py reconfigure` and re-built binary images with correct 16MB flash header flags.
+- **Key Lesson & Prevention Rule**:
+  - Always verify physical flash memory capacity from bootloader runtime logs and align `CONFIG_ESPTOOLPY_FLASHSIZE` in `sdkconfig.defaults` with hardware specifications to prevent bootloader warnings and unlock maximum storage space.
+
+
 
 
 
