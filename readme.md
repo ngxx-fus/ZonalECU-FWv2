@@ -14,7 +14,7 @@ Enterprise-grade firmware architecture for Automotive Zonal Electronic Control U
                                    v
              +-------------------------------------------+
              |                  FW-ESP                   |
-             |       (ESP32 Gateway & Core Services)     |
+             |       (ESP32-S3 Gateway & Core Services)  |
              |   - SOME/IP & Service Discovery (SD)      |
              |   - FreeRTOS Tasks & Lifecycle Management |
              |   - Ethernet (W5500 SPI) & Network Stacks |
@@ -91,7 +91,7 @@ ZonalECU-FWv2/
 
 | Subsystem | Target Processor | Primary Role | Toolchain |
 | :--- | :--- | :--- | :--- |
-| [**FW-ESP**](file:///home/fus/Documents/ZonalECU-FWv2/FW-ESP/readme.md) | ESP32-WROOM-32 (Xtensa Dual-Core 240MHz) | Gateway, SOME/IP Protocol, Ethernet W5500, Core Services | ESP-IDF v6.1 (`xtensa-esp32-elf-gcc`) |
+| [**FW-ESP**](file:///home/fus/Documents/ZonalECU-FWv2/FW-ESP/readme.md) | ESP32-S3 (Xtensa Dual-Core LX7 240MHz) | Gateway, SOME/IP Protocol, Ethernet W5500, Core Services | ESP-IDF v6.1 (`xtensa-esp32s3-elf-gcc`) |
 | [**FW-STM**](file:///home/fus/Documents/ZonalECU-FWv2/FW-STM/readme.md) | STM32F103C8T6 (ARM Cortex-M3 72MHz) | Real-time IO, Actuator control, Classic CAN bus node | ARM GNU Toolchain (`arm-none-eabi-gcc`) |
 | [**FW-Common**](file:///home/fus/Documents/ZonalECU-FWv2/FW-Common/readme.md) | Multi-target | Shared diagrams, shared headers, master Doxygen documentation | Doxygen, Graphviz, Draw.io |
 
@@ -180,19 +180,22 @@ sudo apt-get install -y gcc-arm-none-eabi
 
 Before creating a commit or opening a Pull Request, run the local pre-commit script. It ports **Job 0 (Formatting & Conventions)** and **Job 1 (Clangd Static Analysis & Strict Compiler Checks)** into a single local command that auto-formats your working tree, verifies Git conventions, and checks for static errors.
 
-#### Windows (PowerShell)
+#### Windows (PowerShell / Terminal)
 ```powershell
-# Standard run: auto-formats code, verifies branch/commit format, and runs static analysis:
+# Standard run using built-in Windows PowerShell (no setup needed):
+powershell -ExecutionPolicy Bypass -File .\FW-Common\scripts\working_tree_update.ps1
+
+# Or with PowerShell 7+ (pwsh):
 pwsh -File .\FW-Common\scripts\working_tree_update.ps1
 
 # Strict check-only mode (fails with exit 1 if any unformatted code is detected):
-pwsh -File .\FW-Common\scripts\working_tree_update.ps1 -CheckOnly
+powershell -ExecutionPolicy Bypass -File .\FW-Common\scripts\working_tree_update.ps1 -CheckOnly
 
 # Skip Git branch and commit conventions check:
-pwsh -File .\FW-Common\scripts\working_tree_update.ps1 -SkipGitConventions
+powershell -ExecutionPolicy Bypass -File .\FW-Common\scripts\working_tree_update.ps1 -SkipGitConventions
 
 # Analyze only specific files:
-pwsh -File .\FW-Common\scripts\working_tree_update.ps1 -Files "FW-ESP\main\ZonalECU-FWv2.c"
+powershell -ExecutionPolicy Bypass -File .\FW-Common\scripts\working_tree_update.ps1 -Files "FW-ESP\main\ZonalECU-FWv2.c"
 ```
 
 #### Linux / WSL / macOS (Bash)

@@ -1,6 +1,6 @@
 # FW-ESP: Zonal ECU Gateway & Core Firmware
 
-Firmware subsystem targeting the ESP32 (Xtensa Dual-Core 240MHz). Acts as the primary network gateway, host for AUTOSAR SOME/IP communication, Ethernet W5500 interface, and core application supervisor.
+Firmware subsystem targeting the ESP32-S3 (Xtensa Dual-Core LX7 240MHz). Acts as the primary network gateway, host for AUTOSAR SOME/IP communication, Ethernet W5500 interface, and core application supervisor.
 
 ---
 
@@ -70,6 +70,18 @@ FW-ESP/
      #include "Macros.h"
      #include "Atomic.h"
      ```
+3. **Permission & Pointer Annotation Macros (`Macros.h`)**:
+   * Permission and pointer annotation macros are available in 4 equivalent style sets:
+     1. **Uppercase**: `RO`, `WO`, `RW`, `IN`, `OUT`, `INOUT`, `RO_PTR`, `WO_PTR`, `RW_PTR`
+     2. **Lowercase**: `ro`, `wo`, `rw`, `in`, `out`, `inout`, `ro_ptr`, `wo_ptr`, `rw_ptr`
+     3. **Leading `__` Uppercase**: `__RO`, `__WO`, `__RW`, `__IN`, `__OUT`, `__INOUT`, `__RO_PTR`, `__WO_PTR`, `__RW_PTR`
+     4. **Leading `__` Lowercase**: `__ro`, `__wo`, `__rw`, `__in`, `__out`, `__inout`, `__ro_ptr`, `__wo_ptr`, `__rw_ptr`
+   * **Single-Style-Per-File Consistency Rule**: Developers may choose any of the 4 styles freely based on personal/subsystem preference, but **MUST use strictly ONE single style per source/header file** (never mix different casing or prefix styles within the same file).
+   * **Pointer Naming Enforcement (`ptr_*` & `p_` Prefix)**: Any variable, parameter, or struct member declared with pointer macros (`ro_ptr`, `rw_ptr`, `wo_ptr`, or their uppercase / `__` counterparts) denotes a pointer and **MUST** follow the pointer naming convention with a `p_` prefix (or `pp_`, `gp_`, `sp_`). The automated formatter `format_rules.py` enforces this rule across both raw asterisks (`*`) and all `ptr_*` macros.
+4. **Function Prototypes & Multiline Alignment**:
+   * Contiguous function prototypes in headers and struct function tables have their opening parenthesis `(` aligned to the same column.
+   * Parameter lists reaching or exceeding 130 columns wrap onto subsequent lines, align across 4 columns (`[dir_qual] [type] [ptr_qual] [param_name]`), and end with continuation backslashes (`\`) right-aligned at column 130 across both `.h` and `.c` files.
+
 
 ---
 
@@ -82,7 +94,7 @@ FW-ESP/
 From repository root or inside `FW-ESP/`:
 ```bash
 cd FW-ESP
-idf.py set-target esp32
+idf.py set-target esp32s3
 idf.py build
 ```
 

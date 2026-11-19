@@ -79,7 +79,14 @@ function Resolve-ToolPath {
 # 1. Python
 $PythonExe = (Get-Command python -ErrorAction SilentlyContinue).Source
 if (-not $PythonExe) {
-    $PythonExe = Resolve-ToolPath "python" @("C:\Espressif\tools\python", "$env:LOCALAPPDATA\Programs\Python")
+    $PythonExe = Resolve-ToolPath "python" @(
+        "C:\Espressif\tools\python",
+        "C:\Espressif\python_env",
+        "$env:USERPROFILE\.espressif\python_env",
+        "$env:LOCALAPPDATA\Programs\Python",
+        "C:\Program Files\Python*",
+        "C:\Python*"
+    )
 }
 if (-not $PythonExe) {
     Write-Host "❌ ERROR: Python executable not found in PATH or standard locations." -ForegroundColor Red
@@ -89,25 +96,38 @@ if (-not $PythonExe) {
 # 2. Clang-format
 $ClangFormatExe = Resolve-ToolPath "clang-format" @(
     "C:\Espressif\tools\esp-clang",
-    "C:\Program Files\LLVM"
+    "C:\Program Files\LLVM",
+    "C:\Program Files (x86)\LLVM"
 )
 
 # 3. Clangd
 $ClangdExe = Resolve-ToolPath "clangd" @(
     "C:\Espressif\tools\esp-clangd",
-    "C:\Program Files\LLVM"
+    "C:\Espressif\tools\esp-clang",
+    "C:\Program Files\LLVM",
+    "C:\Program Files (x86)\LLVM"
 )
 
-# 4. Xtensa Cross-Compiler Toolchain
-$XtensaGcc = Resolve-ToolPath "xtensa-esp32-elf-gcc" @(
-    "C:\Espressif\tools\xtensa-esp-elf"
+# 4. Xtensa Cross-Compiler Toolchain (ESP32-S3 & ESP32)
+$XtensaGcc = Resolve-ToolPath "xtensa-esp32s3-elf-gcc" @(
+    "C:\Espressif\tools\xtensa-esp-elf",
+    "C:\Espressif\tools\xtensa-esp32s3-elf"
 )
+if (-not $XtensaGcc) {
+    $XtensaGcc = Resolve-ToolPath "xtensa-esp32-elf-gcc" @(
+        "C:\Espressif\tools\xtensa-esp-elf"
+    )
+}
 
 Write-Host "`n[Toolchain Environment]" -ForegroundColor Yellow
 Write-Host "  Python       : $PythonExe"
 Write-Host "  clang-format : $(if ($ClangFormatExe) { $ClangFormatExe } else { 'Not Found (Formatting will skip AST format)' })"
 Write-Host "  clangd       : $(if ($ClangdExe) { $ClangdExe } else { 'Not Found' })"
 Write-Host "  xtensa-gcc   : $(if ($XtensaGcc) { $XtensaGcc } else { 'Not Found' })"
+
+if ($ClangdExe) {
+    $env:CLANGD_PATH = $ClangdExe
+}
 
 $OverallSuccess = $true
 $Job0Status = "PASSED"
@@ -220,7 +240,7 @@ if (-not $SkipStaticAnalysis) {
         # Discover target C files
         if (-not $Files -or $Files.Count -eq 0) {
             $TargetFiles = Get-ChildItem -Path FW-Common, FW-ESP, FW-STM -Filter "*.c" -Recurse |
-                Where-Object { $_.FullName -notmatch '\\build\\' -and $_.FullName -notmatch '\\\.template\\' } |
+                Where-Object { $_.FullName -notmatch '[/\\]build[/\\]' -and $_.FullName -notmatch '[/\\]\.template[/\\]' } |
                 ForEach-Object {
                     # Convert to relative path from project root
                     $full = $_.FullName

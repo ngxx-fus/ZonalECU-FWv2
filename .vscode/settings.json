@@ -1,6 +1,6 @@
 {
     "clangd.arguments": [
-        "--query-driver=C:/Espressif/tools/xtensa-esp-elf/**/bin/xtensa-esp32-elf-*,/home/fus/.espressif/tools/xtensa-esp-elf/**/bin/xtensa-esp32-elf-*",
+        "--query-driver=C:/Espressif/tools/xtensa-esp-elf/**/bin/xtensa-esp32*-elf-*,/home/fus/.espressif/tools/xtensa-esp-elf/**/bin/xtensa-esp32*-elf-*",
         "--background-index",
         "--clang-tidy"
     ],

@@ -33,5 +33,5 @@ endif()
 idf_component_register(
     SRCS ${component_srcs}
     INCLUDE_DIRS ${component_include_dirs}
-    REQUIRES esp_system log
+    REQUIRES Common esp_rom esp_system log
 )

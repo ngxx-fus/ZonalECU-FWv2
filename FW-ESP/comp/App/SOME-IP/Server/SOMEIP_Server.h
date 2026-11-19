@@ -52,9 +52,9 @@ typedef someip_result_t (*someip_server_send_t)(IN someip_endpoint_t *p_peer, IN
 /** @brief Links one configured method to its handler */
 typedef struct st_someip_handler_cfg {
     someip_method_handler_t handler;
-    someip_service_id_t service_id;
-    someip_method_id_t method_id;
-    uint8_t use_error_message; /*!< Return Code != E_OK: 1 = send ERROR (0x81), 0 = send RESPONSE (0x80) */
+    someip_service_id_t     service_id;
+    someip_method_id_t      method_id;
+    uint8_t                 use_error_message; /*!< Return Code != E_OK: 1 = send ERROR (0x81), 0 = send RESPONSE (0x80) */
 } someip_handler_cfg_t;
 
 /** @brief   Configuration of a server
@@ -65,9 +65,9 @@ typedef struct st_someip_server_cfg {
     uint8_t *p_tx_buf; /*!< Holds the answer: header + payload */
     someip_server_send_t send;
     void *p_ctx;          /*!< Passed to send() and to every handler */
-    uint32_t tx_buf_size; /*!< At least SOMEIP_HEADER_SIZE */
-    uint16_t service_len; /*!< Number of entries in p_services */
-    uint16_t handler_len; /*!< Number of entries in p_handlers */
+    uint32_t             tx_buf_size; /*!< At least SOMEIP_HEADER_SIZE */
+    uint16_t             service_len; /*!< Number of entries in p_services */
+    uint16_t             handler_len; /*!< Number of entries in p_handlers */
 } someip_server_cfg_t;
 
 /** @brief Server instance */

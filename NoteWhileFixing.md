@@ -16,6 +16,17 @@ This document records technical issues diagnosed across the project, root causes
 | **006** | Static Analysis / Windows | `OSError: [WinError 10093]` in `clangd_check.py` & invalid URI | `select.select` only works on sockets on Windows; `file://C:\...` is malformed URI. | Use reader thread + `queue.Queue` and `pathlib.Path.as_uri()` for cross-platform LSP. |
 | **007** | Static Analysis / Windows | `compiler_check.py` WinError 2 file not found | `shlex.split` removes backslashes on Windows; mangles escaped compiler flags. | Use native command string with regex replacement on Windows; normalize paths with lowercase. |
 | **008** | Formatting | Header guard & top-level `#include` indented by `BeforeHash` | `clang-format` fails to detect header guards preceded by comment banners, indenting file-level directives. | Keep `.clang-format` `IndentPPDirectives: None`; delegate scope-aware preprocessor indent to `format_rules.py`. |
+| **009** | Architecture / 64-bit | Hardcoded 32-bit pointer mask truncating addresses on host test | Casting pointer to `uint32_t` strips upper 32 bits on 64-bit host architecture. | Use `uintptr_t` for pointer-integer conversions across host and target. |
+| **010** | Formatting / Static Analysis | Function-like macros skipped & false-positive rule flags | Formatter only parsed object-like macros; rules flagged intentional vendor identifiers. | Update regex patterns and whitelist intentional architectural identifiers. |
+| **011** | Formatting | Preprocessor heuristic flagged conditional macro as header guard | Top of source file conditionals misidentified as header include guard. | Ensure header guard checks strictly apply to `.h` files with matching file guard conventions. |
+| **012** | Formatting / Architecture | Union member alignment omission & local variable shadowing | Formatter missed union scope; atomic macros declared colliding variable names. | Extend union member parsing and namespace macro-internal temporary variables with `__ze_`. |
+| **013** | Formatting | PointerAlignment gluing `*const` in macro definitions | `clang-format` treats `*const` as right-aligned without spaces in macro expansions. | Apply custom post-formatting regex pass to enforce whitespace around `*const`. |
+| **014** | Architecture / Build | Flash partitioning & macro namespace collision (`BIT`) | Generic single-word macros collided with ESP-IDF headers. | Guard generic macros with `#ifndef` and use explicit namespaces. |
+| **015** | Formatting | Pointer typedef column gluing & array bracket alignment | `align_typedef_block` omitted spaces around `*`; union bracket alignment lacked lookahead. | Maintain 4 distinct columns for pointer typedefs and align array subscript brackets. |
+| **016** | Storage / Architecture | Bare-metal flash storage without partition dependencies | High-level `esp_partition` clashed with static section placement requirements. | Place 64KB blocks into dedicated `.rodata.*` linker section and manipulate via ROM SPI flash. |
+| **017** | RTOS / Concurrency | Spinlock busy-wait causing Task Watchdog starvation | `esp_rom_delay_us` busy-loop does not yield to IDLE task on priority >= 1 tasks. | Implement hybrid spin-delay mechanism yielding to RTOS ticks on longer waits. |
+| **018** | Static Analysis / Macro | Duplicate 'const' specifier with `in` / `ro` macros | Macro `in` / `ro` expands to `const`; writing `in const void ...` causes duplicate `const` compiler warning. | Omit bare `const` when using `in` or `ro` attribute macros; `in` already declares const input parameter. |
+| **019** | Tooling / Flashing | `Path '/dev/ttyUSB0' is not readable` in `idf.py` | Void Linux service `agetty-ttyUSB0` continuously reclaims port as login console with mode `0620 root:tty`. | Disable `agetty-ttyUSB0` service (`rm /var/service/agetty-ttyUSB0`) to free port for esptool/idf.py. |
 
 ---
 
@@ -207,3 +218,329 @@ This document records technical issues diagnosed across the project, root causes
      - Detects C scope brace depth and aligns `#if`/`#endif` with the surrounding function statements.
 - **Key Lesson & Prevention Rule**:
   - Do not use `IndentPPDirectives: BeforeHash` when headers contain pre-guard comment banners. Keep clang-format preprocessor indentation disabled (`None`) and let the dedicated AST/regex engine in `format_rules.py` apply scope-aware preprocessor indentation.
+
+---
+
+### [2026-11-14] Struct Column Alignment Collapse & Pointer Qualifier Gluing (`*RO`)
+- **Component**: `.github/scripts/format_rules.py` & `.clang-format`
+- **Symptom**:
+  - Struct member declarations with custom qualifiers (`RW`, `RO`, `ro_ptr`, etc.) had their column alignments collapsed by formatting.
+  - Pointer declarations with post-asterisk qualifiers (`RW void * RO p_ext;`) were glued into `RW void *RO p_ext;` because `clang-format` treated `RO` as an identifier attached to `*`.
+- **Root Cause**:
+  - `clang-format` has `AlignConsecutiveDeclarations: None` and does not recognize custom permission macros (`RO`, `WO`, `RW`, `ro_ptr`, etc.) as type qualifiers, attaching `*` to the qualifier token and flattening inter-column whitespace.
+  - `format_rules.py` lacked a post-processing pass for struct member definitions.
+- **Fix Applied**:
+  - Implemented `align_struct_block()` and `align_all_structs()` in `format_rules.py`:
+    1. Un-glues any `*<QUALIFIER>` pattern (e.g. `*RO` -> `* RO`).
+    2. Parses struct fields into `[prefix_qual] [type] [ptr_qual] [name;] [comment]` columns.
+    3. Aligns types, qualifiers, and member names to uniform columns across the struct block.
+    4. Integrated `align_all_structs()` into the post-processing pipeline in `format_file()`.
+- **Key Lesson & Prevention Rule**:
+  - C code formatters cannot natively parse domain-specific attribute/permission macros without custom AST or post-processing passes. Keep `align_all_structs()` in `format_rules.py` to guarantee consistent struct layout.
+
+---
+
+### [2026-11-14] Pointer Auto-Renaming Missed Macro-Based Pointer Declarations (`ptr_*`)
+- **Component**: `.github/scripts/format_rules.py`, `FW-ESP/readme.md`, `FW-ESP/CodingRules.md`
+- **Symptom**:
+  - Variables, parameters, and struct members declared using macro-based pointer annotations (such as `ze_flash_cfg_t ro_ptr cfg;` or `in void ro_ptr data`) were not recognized as pointers and failed to receive the mandatory `p_` prefix.
+- **Root Cause**:
+  - `PTR_DECL_PATTERN` and `decl_pattern` in `format_rules.py` strictly searched for literal asterisks (`*`), ignoring domain-specific pointer permission macros defined in `Macros.h`.
+- **Fix Applied**:
+  - Defined `PTR_QUALIFIERS_REGEX` covering all 12 pointer macro variants: `ro_ptr`, `rw_ptr`, `wo_ptr`, `RO_PTR`, `RW_PTR`, `WO_PTR`, `__ro_ptr`, `__rw_ptr`, `__wo_ptr`, `__RO_PTR`, `__RW_PTR`, `__WO_PTR`.
+  - Expanded `PTR_DECL_PATTERN` and `decl_pattern` to detect identifiers preceded by either `*` or any `ptr_*` macro.
+  - Added negative lookbehind `(?<!\()` to ensure function pointer declarations (e.g. `(*FlashOpen)`) are not misidentified as data pointer variables.
+  - Documented explicit pointer naming enforcement for `ptr_*` macros in `FW-ESP/readme.md` and `FW-ESP/CodingRules.md`.
+- **Key Lesson & Prevention Rule**:
+  - When abstracting native C syntax (such as pointer dereference/declaration `*`) into custom architectural macros, all linters, formatting tools, and naming scanners across the repository must be updated synchronously to treat those macros as direct semantic equivalents of raw pointers.
+
+---
+
+### [2026-11-14] Function Prototype Alignment & Multiline Parameter Backslash Layout
+- **Component**: `.github/scripts/format_rules.py`, `FW-ESP/CodingRules.md`, `FW-ESP/readme.md`
+- **Symptom**:
+  - Function prototypes in header files (`/* SHARED FUNCTIONS */`), callback pointers in API structs, and function definitions in `.c` files lacked vertical alignment for opening parentheses and suffered from inconsistent multiline parameter layout.
+- **Root Cause**:
+  - `clang-format` flattens or arbitrarily indents function parameter lists and does not recognize project-specific 4-column parameter conventions (`[dir_qual] [type] [ptr_qual] [param_name]`) or continuation backslash (`\`) margins.
+- **Fix Applied**:
+  - Implemented `align_all_function_declarations()` in `format_rules.py`:
+    1. Detects contiguous blocks of function declarations and aligns return types and names so opening parentheses `(` line up vertically.
+    2. Enforces the single-line rule for declarations under 130 columns ($< 130$).
+    3. For declarations reaching or exceeding 130 columns ($\ge 130$), automatically splits parameters onto new lines, formats them into 4 aligned columns, and appends right-aligned continuation backslashes (`\`) at column 130 (`BANNER_WIDTH`).
+    4. Formally documented this convention as Section 3.4 in `FW-ESP/CodingRules.md` and added summary in `FW-ESP/readme.md`.
+- **Key Lesson & Prevention Rule**:
+  - High-density embedded API tables and prototype declarations benefit significantly from deterministic column alignment. Coupling clang-format AST formatting with a custom Python post-processing pass ensures strict adherence to project layout conventions without sacrificing standard formatting benefits.
+
+---
+
+### [2026-11-14] Struct Designated Initializer Alignment & Single-Line Unpacking
+- **Component**: `.github/scripts/format_rules.py`, `FW-ESP/comp/Comm/ESP-Flash/Flash.c`
+- **Symptom**:
+  - Struct instances initialized using designated initializers (e.g. `ze_flash_instance_t g_ze_flash_ctrl = { ... };` or `prv_ze_flash_info`) were either collapsed by `clang-format` into arbitrary single-line/multi-line blocks without alignment of `=` signs, or left with irregular member indentation and missing trailing commas.
+- **Root Cause**:
+  - Standard `clang-format` configuration (`ColumnLimit: 130`) automatically packs small designated initializer structs onto single lines (`{.field = val, ...}`). Furthermore, clang-format has no native rule to vertically align `=` across designated initializer fields (`.field = value`).
+- **Fix Applied**:
+  - Implemented `align_designated_initializer_block()` and `align_all_designated_initializers()` in `format_rules.py`:
+    1. Detects both collapsed single-line initializers and multiline struct initializer blocks.
+    2. Extracts all fields enclosed within `{ ... }` honoring nested braces, brackets, and string literals.
+    3. Normalizes structure: `<indent><decl> = {`, 4-space indented fields (`<indent>    .<field> = <value>,`), and closing `<indent>};`.
+    4. Calculates maximum field name length across the block and vertically pads field identifiers so all `=` signs align at the exact same column.
+    5. Guarantees trailing commas on all member initializers for clean git diffs and aligns inline trailing comments.
+    6. Verified on `FW-ESP/comp/Comm/ESP-Flash/Flash.c` and validated with clean ESP-IDF v6.1 builds.
+- **Key Lesson & Prevention Rule**:
+  - Embedded systems rely heavily on clear static configuration structs and instance definitions. Enforcing designated initializer alignment in `format_rules.py` guarantees uniform readability and clean version control diffs regardless of how clang-format attempts to pack lines.
+
+---
+
+### [ENTRY-009] Hardcoded 32-bit Pointer Mask Truncating Addresses on 64-bit Host Test Runner
+- **Date**: 2026-11-17
+- **Component**: `FW-ESP/comp/Comm/ESP-Mem/Mem.c` (`WORD_BASE` macro)
+- **Symptom**:
+  - Executing Unity unit tests on x64 host (`make` in `ESP-Mem/.test`) caused immediate `SIGSEGV (Segmentation fault)` inside `prv_copy_to_aligned_dst` when accessing `p_src_word` or `p_dst_word`.
+- **Root Cause**:
+  - `WORD_BASE(addr)` was defined as `AND(UINTPTR(addr), 0xFFFFFFFC)`.
+  - On a 64-bit host (x86_64), `0xFFFFFFFC` is a 32-bit `unsigned int` constant. When bitwise-ANDed with a 64-bit `uintptr_t` address (`0x55555555e990`), the upper 32 bits were truncated to zero, generating invalid addresses (e.g. `0x00000000...`) that faulted upon dereference.
+- **Fix Applied**:
+  - Redefined `WORD_BASE(addr)` in `Mem.c` to use bitwise inversion of a typed pointer-width integer:
+    ```c
+    #define WORD_BASE(addr) AND(UINTPTR(addr), ~((uintptr_t)3U))
+    ```
+  - This dynamically expands to `0xFFFFFFFC` on 32-bit MCUs (ESP32 / STM32) and `0xFFFFFFFFFFFFFFFC` on 64-bit test hosts, fully preserving full pointer width.
+- **Key Lesson & Prevention Rule**:
+  - Never hardcode 32-bit hex literals (e.g. `0xFFFFFFFC`) for pointer alignment masking. Always use bitwise inversion on `uintptr_t` (e.g. `~((uintptr_t)offset_mask)`) to guarantee seamless host-test portability.
+
+---
+
+### [ENTRY-010] Function-Like Macros Skipped by Formatter & False-Positive Rule Flags on Intentional Identifiers
+- **Date**: 2026-11-17
+- **Component**: `.github/scripts/format_rules.py`, `.github/scripts/clangd_check.py`
+- **Symptom**:
+  - Function-like / parameterized macros with arguments (e.g. `#define ZE_ATOMIC_INCR(p_atomic) ...` or `#define ze_atomic(type) ...`) were not aligned into neat vertical columns by `format_rules.py` when separated or formatted, leaving replacement values jagged.
+  - Intentional custom identifier conventions (e.g. lowercase macro `#define ze_atomic(type) _Atomic type` serving as a type keyword) had no mechanism to bypass naming convention enforcement or static analysis diagnostics.
+- **Root Cause**:
+  - In `align_macro_definitions_in_section`, `single_define_pattern` matched only plain macro identifiers `([A-Za-z0-9_]+)`, completely ignoring function-like macros with argument lists `(...)`.
+  - Tooling lacked an exception annotation convention to suppress automated renaming or static analysis failure on intentional non-standard constructs.
+- **Fix Applied**:
+  - Updated `single_define_pattern` regex in `format_rules.py` to match both object-like and function-like macros:
+    ```python
+    r"^(\s*#\s*define\s+)([A-Za-z0-9_]+(?:\([^)]*\))?)(\s+)(.+?)(?:\s*(/\*.*?\*/|//.*))?$"
+    ```
+  - Implemented the `/*ZE_EXCEPTION(...)*/` mechanism:
+    - `preindex_declarations`: Excludes declarations on lines annotated with `/*ZE_EXCEPTION(...)*/`.
+    - `apply_naming_transformations`: Skips detection and renaming on lines with `/*ZE_EXCEPTION(...)*/`.
+    - `clangd_check.py`: Filters out diagnostics raised on lines marked with `/*ZE_EXCEPTION(...)*/`.
+    - Added `"unitytest"` to `EXCLUDE_DIRS` to isolate external unit testing libraries from formatting checks.
+  - Implemented `align_typedef_block` and `align_all_typedefs` in `format_rules.py` to automatically align contiguous single-line `typedef` blocks into 4 straight columns (`typedef` + modifier/macro + type/args + alias name) or 3 columns (simple types and pointer typedefs) so clang-format does not collapse vertical spacing.
+- **Key Lesson & Prevention Rule**:
+  - Preprocessor formatters must accommodate C function-like macros and variadic macros. Codebase quality tools should always provide a standardized inline exception comment (e.g. `/*ZE_EXCEPTION(...)*/`) to handle domain-specific architectural exceptions gracefully without failing automated CI gates.
+  - Clang-format collapses spaces in typedef declarations (`AlignConsecutiveDeclarations` does not cover macros/modifiers). Dedicated AST/regex post-processing in `format_rules.py` guarantees consistent 4-column alignment for typedefs.
+
+---
+
+### [ENTRY-011] Preprocessor Heuristic Falsely Flagged Conditional Macro as Header Guard in Source File
+- **Date**: 2026-11-17
+- **Component**: `.github/scripts/format_rules.py` (`format_preprocessor_indentation`)
+- **Symptom**:
+  - In `FW-ESP/comp/Comm/ESP-Logger/SysLog.c`, `#define CPU_YIELD() /* Place holder */` nested inside `#ifndef CPU_YIELD` was incorrectly held at column 0 instead of being indented by 4 spaces (`level 1`), while subsequent blocks like `#ifndef CPU_RESET_WDT` had their inner macros correctly indented.
+- **Root Cause**:
+  - `format_preprocessor_indentation` scanned the first 35 lines for an initial `#ifndef MACRO` followed by `#define MACRO` to detect file-level header guards.
+  - Because `SysLog.c` defined `#ifndef CPU_YIELD` followed by `#define CPU_YIELD()` on lines 17-18, the script misidentified `CPU_YIELD` as the file header guard. Header guard guards are deliberately kept at column 0.
+- **Fix Applied**:
+  - Restricted header guard detection exclusively to header files (`file_name.endswith((".h", ".hpp", ".H"))`).
+  - Required that header guard `#define` directives must be strictly parameterless and empty (only whitespace and optional comments: `^#\s*define\s+[A-Za-z0-9_]+\s*(?:/\*.*?\*/|//.*)?$`).
+  - Passed `file_name` to `format_preprocessor_indentation` in `format_file`.
+- **Key Lesson & Prevention Rule**:
+  - Header guards only exist in header files (`.h`), never in implementation source files (`.c`). Preprocessor formatting heuristics must enforce strict file-extension boundaries and syntax checks (no macro arguments or values) to prevent conditional definitions from being mistaken for file guards.
+
+---
+
+### [ENTRY-012] Union Member Alignment Omission in Formatter & Local Variable Shadowing in Atomic Operations
+- **Date**: 2026-11-17
+- **Component**: `.github/scripts/format_rules.py`, `FW-ESP/comp/Comm/ESP-Logger/SysLog.c`, `FW-ESP/comp/Common/Atomic/Atomic.h`
+- **Symptom**:
+  - In `FW-ESP/comp/Common/Base/Types.h`, member fields of `ze_dword_un`, `ze_word_un`, and `ze_hword_un` were collapsed to a single space by clang-format without column alignment.
+  - In `FW-ESP/comp/Comm/ESP-Logger/SysLog.c:91`, static analysis failed with `[clang/atomic_op_needs_atomic]: Address argument to atomic operation must be a pointer to _Atomic type ('uint32_t *' (aka 'unsigned int *') invalid)`.
+- **Root Cause**:
+  1. `align_all_structs` in `format_rules.py` only scanned for `struct` definitions, completely omitting `union` definitions (`typedef union ... {`).
+  2. In `ZE_SysLog_Init()`, `uint32_t prv_flag = ZE_ATOMIC_GET(&prv_flag);` declared a local variable named `prv_flag`. Under C scope rules (ISO C99/C11 §6.2.1), the local identifier's scope begins immediately after its declarator, thereby shadowing the file-scope `static ze_atomic(uint32_t) prv_flag;`. Consequently, `&prv_flag` in the initializer took the address of the uninitialized local `uint32_t` (`uint32_t *`), which is non-atomic and violated `atomic_load` requirements.
+  3. `ZE_ATOMIC_GET(p_atomic)` in `Atomic.h` lacked surrounding parentheses `((p_atomic))` unlike the other atomic helper macros.
+- **Fix Applied**:
+  1. Extended `align_all_structs` regex to match both `struct` and `union` (`(?:struct|union)`), restoring column alignment across all union definitions in `Types.h`.
+  2. Renamed the local variable in `ZE_SysLog_Init()` from `prv_flag` to `cur_flag` to avoid identifier shadowing.
+  3. Added parameter enclosing parentheses `atomic_load((p_atomic))` in `Atomic.h`.
+- **Key Lesson & Prevention Rule**:
+  - Struct alignment utilities must treat `struct` and `union` uniformly since both follow identical field declaration syntax.
+  - Never use the same identifier for a local variable and a file-scope/static variable in an initialization expression (`T x = FUNC(&x)`). The local declaration shadows the outer scope in its own initializer, resulting in unintentional self-referencing.
+
+---
+
+### [ENTRY-013] Clang-Format PointerAlignment Gluing `*const` in Preprocessor Macro Definitions
+- **Date**: 2026-11-17
+- **Component**: `.github/scripts/format_rules.py`, `FW-ESP/comp/Common/Base/Macros.h`
+- **Symptom**:
+  - In `FW-ESP/comp/Common/Base/Macros.h`, pointer permission macros (`RO_PTR`, `ro_ptr`, `__RO_PTR`, `__ro_ptr`) had their replacement tokens glued together as `*const` instead of `* const`. Any manual addition of whitespace was automatically reverted to `*const` on running `format_rules.py`.
+- **Root Cause**:
+  - `.clang-format` configures `PointerAlignment: Right`. During clang-format invocation, pointer asterisks bind to the identifier/keyword immediately to their right when no left-hand type is present in the macro value, producing `*const`.
+  - While `align_struct_block()` had previously implemented a regex un-gluing pass for struct member declarations, `align_macro_definitions_in_section()` did not perform qualifier detachment on macro replacement values.
+- **Fix Applied**:
+  - Added regex un-gluing in `align_macro_definitions_in_section()` in `.github/scripts/format_rules.py`:
+    ```python
+    val = re.sub(r"\*(const|RO|WO|RW|ro|wo|rw)\b", r"* \1", val)
+    ```
+  - Re-formatted `Macros.h`: all 4 macro variants (`RO_PTR`, `ro_ptr`, `__RO_PTR`, `__ro_ptr`) now preserve `* const`, and all inline trailing comments across permission macro blocks are vertically aligned at the same column.
+- **Key Lesson & Prevention Rule**:
+  - `clang-format`'s `PointerAlignment: Right` aggressively glues asterisks to right-hand qualifiers in preprocessor definitions. Post-processing macro alignment routines must actively decouple `*` from qualifiers (`const`, `RO`, `rw`, etc.) to enforce project readability guidelines.
+
+---
+
+### [ENTRY-014] Dedicated 64KB Flash Partitioning, Top-Level Preprocessor Indentation & Macro Collisions
+- **Date**: 2026-11-17
+- **Component**: `.github/scripts/format_rules.py`, `FW-ESP/partitions.csv`, `FW-ESP/comp/Comm/ESP-Flash/`, `FW-ESP/comp/Common/Base/Macros.h`
+- **Symptom**:
+  1. Top-level variable/function declarations within `#if ... #else ... #endif` blocks had their indentation stripped to column 0 by clang-format.
+  2. Multi-line struct initializers with inline `/* ... */` comments were mangled by `align_designated_initializer_block()` because it only parsed `//` comments.
+  3. Building firmware failed due to `#define BIT(x) (x)` redefinition error colliding with ESP-IDF's `<esp_bit_defs.h>`.
+  4. ESP-Flash had no dedicated hardware partition and had syntax errors due to simultaneous initialization of union members in `ze_fblock_t`.
+- **Root Cause**:
+  1. In `format_preprocessor_indentation()`, `effective_pp_indent` was only applied if `brace_depth > 0`, ignoring top-level code.
+  2. `align_designated_initializer_block()` lacked regex detection for C-style `/* ... */` comments.
+  3. `Macros.h` defined generic unit macros (`BIT`, `BYTE`, etc.) unconditionally without `#ifndef`.
+  4. ESP32 SPI flash cannot be written directly as RAM; writable variables must be buffered in RAM/PSRAM, and flash operations must be addressed via a dedicated partition.
+- **Fix Applied**:
+  1. Updated `format_preprocessor_indentation()` to indent top-level code by `effective_pp_indent` when inside conditional directives.
+  2. Enhanced `align_designated_initializer_block()` to extract both `//` and `/* ... */` comments cleanly.
+  3. Protected `BIT`, `BYTE`, `KILO`, `MEGA`, etc. with `#ifndef` guards in `Macros.h`.
+  4. Created custom partition table `FW-ESP/partitions.csv` with a dedicated 64KB raw data partition `storage` at offset `0x110000`, enabled in `sdkconfig`.
+  5. Implemented complete Flash driver in `Flash.h` and `Flash.c` using `esp_partition_find_first`, `esp_partition_read`, `esp_partition_erase_range`, and `esp_partition_write`, with PSRAM/DRAM cache buffering. Successfully compiled and linked firmware binary.
+- **Key Lesson & Prevention Rule**:
+  - Always guard generic single-word macros (e.g. `BIT`) with `#ifndef` to prevent clashes with vendor SDK headers.
+  - Dedicated storage on ESP32 must always be backed by an explicit entry in `partitions.csv` and manipulated through the partition abstraction API.
+
+---
+
+### [ENTRY-015] Formatter Pointer Typedef Column Gluing & Struct/Union Array Bracket Alignment
+- **Date**: 2026-11-17
+- **Component**: `.github/scripts/format_rules.py`, `FW-ESP/comp/Common/Base/Types.h`
+- **Symptom**:
+  1. In `Types.h`, pointer typedefs (`typedef uint64_t *uint64ptr_t;`, etc.) had asterisks `*` glued directly to alias names instead of a dedicated space-padded column (`* uint64ptr_t;`). Blank lines between typedef sub-groups caused column widths to fragment.
+  2. In union member definitions (`ze_hword_un`, `ze_word_un`, `ze_dword_un`), array subscript brackets (`[WORD2HWORD]`, `[DWORD2WORD]`) were unaligned across fields, and any spaces preceding `[` caused `STRUCT_MEMBER_PATTERN` match failures.
+- **Root Cause**:
+  1. `align_typedef_block()` constructed code lines using `*{p[4]}` rather than `* {p[4]}`. `align_all_typedefs()` lacked lookahead to span single blank lines between related typedef groups.
+  2. `STRUCT_MEMBER_PATTERN` used `(?:\[[^\]]*\])?` with no whitespace tolerance before `[`, causing declarations like `half_st  [WORD2HWORD]` to be treated as raw unformatted lines.
+- **Fix Applied**:
+  1. Updated `align_typedef_block()` to maintain 4 distinct columns: `typedef [type] * [name;]` with spaces flanking both sides of `*`.
+  2. Added lookahead logic in `align_all_typedefs()` to preserve unified column alignment across single blank lines between typedef groups.
+  3. Separated identifier and array dimension in `STRUCT_MEMBER_PATTERN` (`([a-zA-Z_][a-zA-Z0-9_]*)(?:\s*(\[[^\]]*\]))?`).
+  4. Extended `align_struct_block()` to vertically align `[` brackets across all array members within structs/unions.
+- **Key Lesson & Prevention Rule**:
+  - Embedded C type definitions and data structure tables require deterministic column alignment for both pointer asterisks and array brackets. Formatting tools must explicitly decouple token parsing from whitespace layout to guarantee clean tabular structure across blocks.
+
+---
+
+### [ENTRY-016] Low-Level Bare-Metal Flash Storage Architecture & 64KB Linker Section Placement
+- **Date**: 2026-11-18
+- **Component**: `FW-ESP/comp/Comm/ESP-Flash` (`Flash.h`, `Flash.c`, `CMakeLists.txt`)
+- **Symptom**:
+  - Higher-level partition table abstraction (`esp_partition`) was initially used, requiring partition CSV declarations and RAM buffer allocation, conflicting with bare-metal flash requirements where dedicated 64KB flash space is directly reserved in flash memory without partition dependencies.
+- **Root Cause**:
+  - Architectural mismatch between high-level vendor partition frameworks (`esp_partition_*`) and bare-metal embedded storage design where flash blocks are statically placed in DROM linker sections (`.rodata.ze_flash`) and manipulated via low-level ROM SPI Flash APIs.
+- **Fix Applied**:
+  1. Replaced `esp_partition` with low-level `spi_flash` and `esp_rom` components (`esp_rom_spiflash.h`, `spi_flash_mmap.h`).
+  2. Implemented dedicated 64KB block placeholder `g_ze_flash_block` in section `.rodata.ze_flash` with `used` attribute to guarantee the linker retains the 64KB allocation at compile time without being stripped.
+  3. Defined `ZE_PLACE_IN_FLASH` as `__attribute__((section(".rodata.ze_flash"), used, aligned(4)))` allowing user variables to be statically placed contiguously in the 64KB flash block.
+  4. Implemented strict 64KB boundary checks (`prv_is_valid_range`) rejecting any out-of-bounds access with `ZE_ERR_INVALID_SIZE`.
+  5. Built 128-byte line cache `s_cache` (`ze_flash_cache_t`) to accelerate reads and stage unaligned accesses.
+  6. Implemented low-level write mechanism with sector erase (`esp_rom_spiflash_erase_sector`) and word-level bitwise mask merging for unaligned head/tail bytes, matching `Mem.c`.
+- **Key Lesson & Prevention Rule**:
+  - When designing bare-metal flash storage subsystems without partition table dependencies, place reserved flash blocks directly into dedicated `.rodata.*` linker sections and resolve physical addresses via `spi_flash_cache2phys()`. SPI Flash hardware requires 4-byte aligned writes and 4KB sector erasures; unaligned accesses must be staged through a word-merging algorithm.
+
+---
+
+### [ENTRY-017] Task Watchdog Starvation in Spinlocks & ESP32 Hybrid Delay Architecture in ESP-Mutex
+- **Date**: 2026-11-18
+- **Component**: `FW-ESP/comp/Comm/ESP-Mutex`, `FW-ESP/comp/Common/Mutex`
+- **Symptom**:
+  - Standard atomic spinlocks relying solely on `esp_rom_delay_us` and `taskYIELD()` cause Task Watchdog Timer (TWDT) timeout resets (panics) when a high-priority task spins on a lock for extended periods, because `taskYIELD()` does not yield to lower-priority tasks, starving the FreeRTOS `IDLE` task on the core.
+- **Root Cause**:
+  - `esp_rom_delay_us` is a CPU busy-wait loop that burns cycles. In FreeRTOS SMP on ESP32, IDLE tasks feed the Task Watchdog; starving IDLE tasks causes TWDT to trigger after the timeout period (5 seconds).
+- **Fix Applied**:
+  1. Implemented a dual-layer architecture: multi-target atomic spinlock in `comp/Common/Mutex/` with configurable placeholder hooks (`ZE_DISABLE_IRQ`, `ZE_ENABLE_IRQ`, `ZE_YIELD`, `ZE_WATCH_DOG_RESET`, `CPU_DELAY_US`).
+  2. Created hardware-adapted wrapper `comp/Comm/ESP-Mutex` implementing a hybrid delay algorithm:
+     - For short durations ($< 1\text{ ms}$): uses microsecond delay (`esp_rom_delay_us(100)`) and `taskYIELD()` for low latency.
+     - For longer waits ($\ge 1\text{ ms}$): yields CPU via `vTaskDelay(pdMS_TO_TICKS(1))` and explicitly invokes `esp_task_wdt_reset()`, ensuring IDLE tasks get CPU time to feed the TWDT.
+  3. Formatted and verified with `format_rules.py` and `clangd_check.py` (0 errors), compiling into `libCommon.a` and `libESP-Mutex.a`.
+- **Key Lesson & Prevention Rule**:
+  - In RTOS environments on multicore microcontrollers, never use infinite busy-wait spinlocks without yielding to lower-priority tasks. Implement hybrid spin-delay mechanisms where long waits drop back to RTOS tick delays to feed watchdog timers.
+
+---
+
+### [ENTRY-018] Duplicate 'const' Declaration Specifier When Combining `in` / `ro` with `const`
+- **Date**: 2026-11-18
+- **Component**: `FW-ESP/comp/Common/Base/Macros.h`, `FW-ESP/comp/Comm/ESP-Flash/Flash.h`
+- **Symptom**:
+  - Clangd emitted `-Wduplicate-decl-specifier` (`Duplicate 'const' declaration specifier`) on function prototypes:
+    `ze_err_t ZE_Flash_Read(out void rw_ptr p_dest, in const void ro_ptr p_flash_src, in uint32_t size);`
+- **Root Cause**:
+  - In `comp/Common/Base/Macros.h`, attribute macros `IN` and `in` are defined as `const`. Writing `in const void ro_ptr` caused the preprocessor to expand to `const const void *const`, which triggers C11 duplicate type specifier warnings.
+- **Fix Applied**:
+  - Simplified parameter declarations to `in void ro_ptr p_src`, removing the redundant explicit `const`.
+- **Key Lesson & Prevention Rule**:
+  - When using Renesas RA / ZECU parameter direction macros (`in`, `ro`, `IN`, `RO`), never prepend or append raw `const` to the type; the direction macro itself already provides the `const` qualifier.
+
+---
+
+### [ENTRY-019] Void Linux `agetty-ttyUSB0` Daemon Hijacking Serial Port (`Path '/dev/ttyUSB0' is not readable`)
+- **Date**: 2026-11-18
+- **Component**: Linux System / Tooling (`idf.py flash monitor`, `/dev/ttyUSB0`)
+- **Symptom**:
+  - Running `idf.py -p /dev/ttyUSB0 flash monitor` fails with:
+    `Invalid value for '-p' / '--port': Path '/dev/ttyUSB0' is not readable.`
+  - Running `sudo chmod 666 /dev/ttyUSB0` temporarily changes permissions, but the port is immediately reset back to `crw--w---- 1 root tty` (mode 0620), causing `click.Path(readable=True)` in Python to fail validation.
+- **Root Cause**:
+  - Void Linux runit service manager had an active service `/var/service/agetty-ttyUSB0` running `agetty -L -8 ttyUSB0 115200 vt100` (PID 7850) to provide a serial login terminal.
+  - Every time `/dev/ttyUSB0` is opened or resets, `agetty` reclaims exclusive ownership, resets permissions to `0620` (group `tty` write-only, no read permission), and listens on UART RX, interfering with ESP-IDF `esptool.py`.
+- **Fix Applied**:
+  1. Remove the service link from `/var/service/`:
+     ```bash
+     sudo rm -f /var/service/agetty-ttyUSB0
+     ```
+  2. Terminate the active running `agetty` process on ttyUSB0:
+     ```bash
+     sudo pkill -f "agetty.*ttyUSB0"
+     ```
+  3. Re-apply read/write permissions:
+     ```bash
+     sudo chmod 666 /dev/ttyUSB0
+     ```
+- **Key Lesson & Prevention Rule**:
+  - On Linux distributions with minimal init systems (such as Void Linux with runit), ensure no `agetty` or serial login console services are enabled on `/dev/ttyUSB*` ports intended for microcontroller flashing and serial monitoring.
+
+---
+
+### [ENTRY-020] ESP-IDF Bootloader Warning: SPI Flash Detected Size Larger than Binary Header (16MB vs 2MB)
+- **Date**: 2026-11-18
+- **Component**: `FW-ESP/sdkconfig.defaults`, ESP32-S3 Flash SPI Subsystem
+- **Symptom**:
+  - Bootloader output warning on serial console during chip initialization:
+    `W (69) spi_flash: Detected size(16384k) larger than the size in the binary image header(2048k). Using the size in the binary image header.`
+- **Root Cause**:
+  - ESP-IDF defaults `CONFIG_ESPTOOLPY_FLASHSIZE` to `2MB` if unspecified in `sdkconfig.defaults`.
+  - The physical hardware module mounted on the board has a 16MB SPI Flash chip (`16384k`). When the bootloader reads the SPI flash JEDEC ID and compares it to the image header, it detects the mismatch and limits flash accessibility to 2MB.
+- **Fix Applied**:
+  - Declared 16MB SPI flash configuration in `FW-ESP/sdkconfig.defaults`:
+    ```ini
+    CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+    CONFIG_ESPTOOLPY_FLASHSIZE="16MB"
+    ```
+  - Ran `idf.py reconfigure` and re-built binary images with correct 16MB flash header flags.
+- **Key Lesson & Prevention Rule**:
+  - Always verify physical flash memory capacity from bootloader runtime logs and align `CONFIG_ESPTOOLPY_FLASHSIZE` in `sdkconfig.defaults` with hardware specifications to prevent bootloader warnings and unlock maximum storage space.
+
+
+
+
+
+
+
+
+

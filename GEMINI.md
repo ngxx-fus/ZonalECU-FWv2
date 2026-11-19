@@ -22,7 +22,7 @@ This document persists repository-level rules, multi-target architecture definit
 
 | Directory | Target Hardware | Purpose | Build System |
 | :--- | :--- | :--- | :--- |
-| [**FW-ESP/**](FW-ESP/readme.md) | ESP32-WROOM-32 (Xtensa Dual-Core 240MHz) | Core Gateway, Ethernet W5500, SOME/IP Protocol, Lifecycle | ESP-IDF v6.1 (`xtensa-esp32-elf-gcc`) |
+| [**FW-ESP/**](FW-ESP/readme.md) | ESP32-S3 (Xtensa Dual-Core LX7 240MHz) | Core Gateway, Ethernet W5500, SOME/IP Protocol, Lifecycle | ESP-IDF v6.1 (`xtensa-esp32s3-elf-gcc`) |
 | [**FW-STM/**](FW-STM/readme.md) | STM32F103C8T6 (ARM Cortex-M3 72MHz) | Real-time Sub-ECU, Sensor Acquisition, Actuator Control, CAN Node | ARM GCC (`arm-none-eabi-gcc`) |
 | [**FW-Common/**](FW-Common/readme.md) | Multi-target | Shared diagrams (`drawio/`), Cross-target docs & Doxygen (`doc/`) | Doxygen / Graphviz |
 

@@ -6,6 +6,7 @@ Connects to clangd via JSON-RPC, opens target source files, and aggregates Clang
 
 import sys
 import os
+import re
 import subprocess
 import json
 import time
@@ -22,8 +23,9 @@ def main():
     files_to_check = sys.argv[2:]
 
     # Spawn clangd in LSP mode
+    clangd_bin = os.environ.get("CLANGD_PATH", "clangd")
     proc = subprocess.Popen(
-        ["clangd", "--query-driver=**/xtensa-esp32-elf-*,**/riscv32-esp-elf-*,/home/fus/.espressif/**/xtensa-esp32-elf-*,*"],
+        [clangd_bin, "--query-driver=**/xtensa-esp32*-elf-*,**/riscv32-esp-elf-*,**/arm-none-eabi-*,*"],
         cwd=project_root,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
@@ -118,16 +120,35 @@ def main():
     proc.terminate()
 
     # 4. Display results
+    ze_exception_pattern = re.compile(r"/\*\s*ZE_EXCEPTION\s*\((.*?)\)\s*\*/")
     failed_count = 0
     for rel in files_to_check:
         diags = diagnostics_map.get(rel, [])
         # Critical diagnostics: Error (1) or Warning (2)
         critical_diags = [d for d in diags if d.get("severity", 1) in (1, 2) and d.get("code")]
+
+        # Read source file lines to filter out lines exempted with ZE_EXCEPTION
+        src_lines = []
+        if critical_diags and os.path.isfile(rel):
+            try:
+                with open(rel, "r", encoding="utf-8", errors="ignore") as sf:
+                    src_lines = sf.splitlines()
+            except Exception:
+                src_lines = []
+
+        filtered_diags = []
+        for d in critical_diags:
+            line_idx = d["range"]["start"]["line"]
+            if 0 <= line_idx < len(src_lines):
+                if ze_exception_pattern.search(src_lines[line_idx]):
+                    continue
+            filtered_diags.append(d)
+
         print(f"Checking: {rel} ...")
-        if critical_diags:
+        if filtered_diags:
             failed_count += 1
-            print(f"❌ FAILED: {rel} ({len(critical_diags)} issues)")
-            for d in critical_diags:
+            print(f"❌ FAILED: {rel} ({len(filtered_diags)} issues)")
+            for d in filtered_diags:
                 line = d["range"]["start"]["line"] + 1
                 col = d["range"]["start"]["character"] + 1
                 code = d.get("code", "")

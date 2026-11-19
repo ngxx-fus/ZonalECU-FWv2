@@ -12,7 +12,7 @@
 /* PRIVATE FUNCTIONS *************************************************************************************************************
  ********************************************************************************************************************************/
 
-static bool prv_is_type_supported(IN someip_message_type_t msg_type);
+static bool prv_is_type_supported    (IN someip_message_type_t msg_type);
 static bool prv_is_type_as_configured(IN someip_message_type_t msg_type, IN someip_message_type_t expected_type);
 static someip_service_cfg_t const *prv_find_service(IN someip_service_cfg_t *p_services, IN uint16_t service_len,
                                                     IN someip_service_id_t service_id);

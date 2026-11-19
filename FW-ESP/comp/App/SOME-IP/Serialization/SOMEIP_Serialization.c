@@ -38,11 +38,11 @@ static const uint8_t s_bom_utf16_le[SOMEIP_BOM_UTF16_SIZE] = {SOMEIP_BOM_UTF16LE
 /* PRIVATE FUNCTIONS *************************************************************************************************************
  ********************************************************************************************************************************/
 
-static someip_result_t prv_ser_reserve(INOUT someip_ser_cursor_t *p_cur, IN uint32_t len);
-static someip_result_t prv_deser_require(INOUT someip_deser_cursor_t *p_cur, IN uint32_t len);
-static uint32_t prv_padding_size(IN uint32_t abs_pos, IN uint16_t align_bits);
-static bool prv_is_align_valid(IN uint16_t align_bits);
-static bool prv_is_length_field_valid(IN someip_length_field_size_t lf_size);
+static someip_result_t prv_ser_reserve          (INOUT someip_ser_cursor_t *p_cur, IN uint32_t len);
+static someip_result_t prv_deser_require        (INOUT someip_deser_cursor_t *p_cur, IN uint32_t len);
+static uint32_t        prv_padding_size         (IN uint32_t abs_pos, IN uint16_t align_bits);
+static bool            prv_is_align_valid       (IN uint16_t align_bits);
+static bool            prv_is_length_field_valid(IN someip_length_field_size_t lf_size);
 static uint8_t const *prv_get_bom(IN someip_string_encoding_t enc, OUT uint32_t *p_bom_size);
 static uint32_t prv_get_terminator_size(IN someip_string_encoding_t enc);
 
@@ -398,7 +398,7 @@ someip_result_t SOMEIP_SerWriteU16(INOUT someip_ser_cursor_t *p_cur, IN uint16_t
     }
 
     /* uint16 in configured byte order [PRS_SOMEIP_00369] */
-    SOMEIP_WriteU16(&p_cur->p_buf[p_cur->pos], value, p_cur->order);
+   SOMEIP_WriteU16(&p_cur->p_buf[p_cur->pos], value, p_cur->order);
     p_cur->pos += SOMEIP_U16_SIZE;
 
     /* Written */
@@ -424,7 +424,7 @@ someip_result_t SOMEIP_SerWriteU32(INOUT someip_ser_cursor_t *p_cur, IN uint32_t
     }
 
     /* uint32 in configured byte order [PRS_SOMEIP_00369] */
-    SOMEIP_WriteU32(&p_cur->p_buf[p_cur->pos], value, p_cur->order);
+   SOMEIP_WriteU32(&p_cur->p_buf[p_cur->pos], value, p_cur->order);
     p_cur->pos += SOMEIP_U32_SIZE;
 
     /* Written */
@@ -450,7 +450,7 @@ someip_result_t SOMEIP_SerWriteU64(INOUT someip_ser_cursor_t *p_cur, IN uint64_t
     }
 
     /* uint64 in configured byte order [PRS_SOMEIP_00369] */
-    SOMEIP_WriteU64(&p_cur->p_buf[p_cur->pos], value, p_cur->order);
+   SOMEIP_WriteU64(&p_cur->p_buf[p_cur->pos], value, p_cur->order);
     p_cur->pos += SOMEIP_U64_SIZE;
 
     /* Written */
@@ -689,14 +689,14 @@ someip_result_t SOMEIP_SerLengthEnd(INOUT someip_ser_cursor_t *p_cur, IN someip_
                 return p_cur->status;
             }
 
-            SOMEIP_WriteU16(&p_cur->p_buf[mark], (uint16_t)len, p_cur->order);
+           SOMEIP_WriteU16(&p_cur->p_buf[mark], (uint16_t)len, p_cur->order);
 
             /* 16 bit length written */
             break;
 
         case SOMEIP_LENGTH_FIELD_32BIT:
             /* pos is uint32_t: the length always fits */
-            SOMEIP_WriteU32(&p_cur->p_buf[mark], len, p_cur->order);
+           SOMEIP_WriteU32(&p_cur->p_buf[mark], len, p_cur->order);
 
             /* 32 bit length written */
             break;

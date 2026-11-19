@@ -35,3 +35,31 @@ idf_build_set_property(COMPILE_OPTIONS "-Werror=unused-function" APPEND)
 idf_build_set_property(COMPILE_OPTIONS "-Werror=unused-variable" APPEND)
 
 project(ZonalECU-FWv2)
+
+# ==============================================================================
+# Auto-generate ZE_FILE_ID and SourceLists.txt for all C sources (Column 130)
+# ==============================================================================
+set(SOURCE_LIST_FILE "${CMAKE_CURRENT_LIST_DIR}/main/SourceLists.txt")
+file(WRITE "${SOURCE_LIST_FILE}" "# ZE File ID Lookup Table (Auto-generated) #######################################################################################\n\n")
+
+set(ALL_PROJECT_DIRS "${CMAKE_CURRENT_LIST_DIR}/main" ${EXTRA_COMPONENT_DIRS})
+
+foreach(proj_dir ${ALL_PROJECT_DIRS})
+    file(GLOB_RECURSE dir_srcs LIST_DIRECTORIES false "${proj_dir}/*.c")
+    list(FILTER dir_srcs EXCLUDE REGEX "/\\.template/")
+
+    foreach(src_file ${dir_srcs})
+        file(RELATIVE_PATH rel_path "${CMAKE_CURRENT_LIST_DIR}" "${src_file}")
+        string(SHA256 file_hash "${rel_path}")
+        string(SUBSTRING "${file_hash}" 0 4 file_id_hex)
+
+        set_source_files_properties("${src_file}"
+            DIRECTORY "${proj_dir}"
+            PROPERTIES
+            COMPILE_DEFINITIONS "ZE_FILE_ID=0x${file_id_hex}"
+        )
+
+        file(APPEND "${SOURCE_LIST_FILE}" "0x${file_id_hex} : ${rel_path}\n")
+    endforeach()
+endforeach()
+
