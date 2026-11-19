@@ -5,8 +5,10 @@
 0x01e5 : comp/App/SOME-IP/Core/SOMEIP_Endian.c
 0x53ed : comp/App/SOME-IP/Core/SOMEIP_Header.c
 0x6818 : comp/App/SOME-IP/Core/SOMEIP_Session.c
+0xa43a : comp/App/SOME-IP/Event/SOMEIP_Event.c
 0x8c5d : comp/App/SOME-IP/Message/SOMEIP_Message.c
 0x2c7a : comp/App/SOME-IP/Serialization/SOMEIP_Serialization.c
+0xf2c4 : comp/App/SOME-IP/Server/SOMEIP_Server.c
 0x7e0b : comp/Comm/ESP-Assert/Assert.c
 0x7e3c : comp/Comm/ESP-Flash/Flash.c
 0x8abb : comp/Comm/ESP-Logger/SysLog.c

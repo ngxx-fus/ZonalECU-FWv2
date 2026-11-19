@@ -20,7 +20,9 @@ static someip_handler_cfg_t const *prv_find_handler(IN someip_server_t *p_server
 static someip_result_t prv_send_message(IN someip_server_t *p_server, IN someip_endpoint_t *p_peer, IN someip_header_t *p_hdr);
 static someip_result_t prv_reply_error(IN someip_server_t *p_server, IN someip_endpoint_t *p_peer, IN someip_header_t *p_rx,
                                        IN someip_method_cfg_t *p_method, IN someip_return_code_t return_code);
-static someip_result_t prv_handle_message(IN someip_server_t *p_server, IN someip_endpoint_t *p_peer, IN someip_message_t *p_msg);
+static someip_result_t prv_handle_message(IN someip_server_t *p_server,                                                          \
+                                          IN someip_endpoint_t *p_peer,                                                          \
+                                          IN someip_message_t *p_msg  );
 
 static someip_handler_cfg_t const *prv_find_handler(IN someip_server_t *p_server, IN someip_service_id_t service_id,
                                                     IN someip_method_id_t method_id) {

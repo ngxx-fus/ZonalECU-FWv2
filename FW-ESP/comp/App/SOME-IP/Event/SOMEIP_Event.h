@@ -44,26 +44,26 @@ typedef someip_result_t (*someip_event_serialize_t)(INOUT someip_ser_cursor_t *p
 
 /** @brief Configuration of one event or field notifier */
 typedef struct st_someip_event_cfg {
-    someip_event_serialize_t serialize;
-    uint32_t cycle_ms; /*!< 0 = no cyclic update, else period of the cyclic update (chapter 4.2.4.1) */
-    someip_service_id_t service_id;
-    someip_event_id_t event_id;                   /*!< Bit 15 = 1, see SOMEIP_EVENT_ID_FLAG */
+    someip_event_serialize_t   serialize;
+    uint32_t                   cycle_ms; /*!< 0 = no cyclic update, else period of the cyclic update (chapter 4.2.4.1) */
+    someip_service_id_t        service_id;
+    someip_event_id_t          event_id; /*!< Bit 15 = 1, see SOMEIP_EVENT_ID_FLAG */
     someip_interface_version_t interface_version; /*!< Major version of the service [PRS_SOMEIP_00925] */
-    uint8_t is_field;                             /*!< 1 = notifier of a field: send the value on subscribe [PRS_SOMEIP_00909] */
-    uint8_t session_active;                       /*!< 1 = Session ID + 1 per transmission [PRS_SOMEIP_00925], 0 = always 0 */
+    uint8_t                    is_field; /*!< 1 = notifier of a field: send the value on subscribe [PRS_SOMEIP_00909] */
+    uint8_t                    session_active; /*!< 1 = Session ID + 1 per transmission [PRS_SOMEIP_00925], 0 = always 0 */
 } someip_event_cfg_t;
 
 /** @brief Run time state of one event, one entry per someip_event_cfg_t */
 typedef struct st_someip_event_state {
     someip_session_t session;
-    uint32_t last_cycle_ms; /*!< Time of the last cyclic update */
+    uint32_t         last_cycle_ms; /*!< Time of the last cyclic update */
 } someip_event_state_t;
 
 /** @brief One subscription: one peer receives one event */
 typedef struct st_someip_subscriber {
     someip_endpoint_t peer;
-    uint16_t event_idx; /*!< Index in someip_publisher_cfg_t.p_events */
-    uint8_t used;       /*!< 1 = entry holds a subscription, 0 = free */
+    uint16_t          event_idx; /*!< Index in someip_publisher_cfg_t.p_events */
+    uint8_t           used; /*!< 1 = entry holds a subscription, 0 = free */
 } someip_subscriber_t;
 
 /** @brief   Configuration of a publisher
@@ -76,9 +76,9 @@ typedef struct st_someip_publisher_cfg {
     uint8_t *p_tx_buf;              /*!< Holds one notification: header + payload */
     someip_server_send_t send;
     void *p_ctx;          /*!< Passed to send() and to every serialize() */
-    uint32_t tx_buf_size; /*!< At least SOMEIP_HEADER_SIZE */
-    uint16_t event_len;   /*!< Number of entries in p_events and p_states */
-    uint16_t sub_len;     /*!< Number of entries in p_subs */
+    uint32_t             tx_buf_size; /*!< At least SOMEIP_HEADER_SIZE */
+    uint16_t             event_len; /*!< Number of entries in p_events and p_states */
+    uint16_t             sub_len; /*!< Number of entries in p_subs */
 } someip_publisher_cfg_t;
 
 /** @brief Publisher instance */

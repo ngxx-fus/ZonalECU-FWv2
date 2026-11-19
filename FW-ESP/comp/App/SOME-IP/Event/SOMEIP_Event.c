@@ -16,9 +16,11 @@
 /* PRIVATE FUNCTIONS *************************************************************************************************************
  ********************************************************************************************************************************/
 
-static uint16_t prv_find_event(IN someip_publisher_t *p_pub, IN someip_service_id_t service_id, IN someip_event_id_t event_id);
-static bool prv_is_same_peer(IN someip_endpoint_t *p_a, IN someip_endpoint_t *p_b);
-static someip_result_t prv_send_event(INOUT someip_publisher_t *p_pub, IN uint16_t event_idx, IN someip_endpoint_t *p_peer);
+static uint16_t        prv_find_event  (   IN someip_publisher_t *p_pub,                                                         \
+                                        IN someip_service_id_t          service_id,                                              \
+                                        IN someip_event_id_t            event_id);
+static bool            prv_is_same_peer(IN someip_endpoint_t *p_a, IN someip_endpoint_t *p_b);
+static someip_result_t prv_send_event  (INOUT someip_publisher_t *p_pub, IN uint16_t event_idx, IN someip_endpoint_t *p_peer);
 
 static uint16_t prv_find_event(IN someip_publisher_t *p_pub, IN someip_service_id_t service_id, IN someip_event_id_t event_id) {
     someip_event_cfg_t const *p_event = NULL;
