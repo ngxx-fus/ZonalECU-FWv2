@@ -23,8 +23,9 @@ def main():
     files_to_check = sys.argv[2:]
 
     # Spawn clangd in LSP mode
+    clangd_bin = os.environ.get("CLANGD_PATH", "clangd")
     proc = subprocess.Popen(
-        ["clangd", "--query-driver=**/xtensa-esp32-elf-*,**/riscv32-esp-elf-*,/home/fus/.espressif/**/xtensa-esp32-elf-*,*"],
+        [clangd_bin, "--query-driver=**/xtensa-esp32*-elf-*,**/riscv32-esp-elf-*,**/arm-none-eabi-*,*"],
         cwd=project_root,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,

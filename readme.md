@@ -180,19 +180,22 @@ sudo apt-get install -y gcc-arm-none-eabi
 
 Before creating a commit or opening a Pull Request, run the local pre-commit script. It ports **Job 0 (Formatting & Conventions)** and **Job 1 (Clangd Static Analysis & Strict Compiler Checks)** into a single local command that auto-formats your working tree, verifies Git conventions, and checks for static errors.
 
-#### Windows (PowerShell)
+#### Windows (PowerShell / Terminal)
 ```powershell
-# Standard run: auto-formats code, verifies branch/commit format, and runs static analysis:
+# Standard run using built-in Windows PowerShell (no setup needed):
+powershell -ExecutionPolicy Bypass -File .\FW-Common\scripts\working_tree_update.ps1
+
+# Or with PowerShell 7+ (pwsh):
 pwsh -File .\FW-Common\scripts\working_tree_update.ps1
 
 # Strict check-only mode (fails with exit 1 if any unformatted code is detected):
-pwsh -File .\FW-Common\scripts\working_tree_update.ps1 -CheckOnly
+powershell -ExecutionPolicy Bypass -File .\FW-Common\scripts\working_tree_update.ps1 -CheckOnly
 
 # Skip Git branch and commit conventions check:
-pwsh -File .\FW-Common\scripts\working_tree_update.ps1 -SkipGitConventions
+powershell -ExecutionPolicy Bypass -File .\FW-Common\scripts\working_tree_update.ps1 -SkipGitConventions
 
 # Analyze only specific files:
-pwsh -File .\FW-Common\scripts\working_tree_update.ps1 -Files "FW-ESP\main\ZonalECU-FWv2.c"
+powershell -ExecutionPolicy Bypass -File .\FW-Common\scripts\working_tree_update.ps1 -Files "FW-ESP\main\ZonalECU-FWv2.c"
 ```
 
 #### Linux / WSL / macOS (Bash)
