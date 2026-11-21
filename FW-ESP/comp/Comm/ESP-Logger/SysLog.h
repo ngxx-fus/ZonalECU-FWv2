@@ -45,9 +45,9 @@ ZE_HEADER
         #define __FILE_NAME__           (__builtin_strrchr("/" __FILE__, '/') + 1)
     #endif
 
-    #define ZE_LOGI(p_fmt, ...)     ZE_CORE_LOG("[I] %s: " p_fmt "\n", __FILE_NAME__, ##__VA_ARGS__)
-    #define ZE_LOGE(p_fmt, ...)     ZE_CORE_LOG("[E] %s: " p_fmt "\n", __FILE_NAME__, ##__VA_ARGS__)
-    #define ZE_LOGW(p_fmt, ...)     ZE_CORE_LOG("[W] %s: " p_fmt "\n", __FILE_NAME__, ##__VA_ARGS__)
+    #define ZE_LOGI(p_fmt, ...)     ZE_CORE_LOG("[I] %s: "%u: p_fmt "\n", __FILE_NAME__, ##__VA_ARGS__)
+    #define ZE_LOGE(p_fmt, ...)     ZE_CORE_LOG("[E] %s: "%u: p_fmt "\n", __FILE_NAME__, ##__VA_ARGS__)
+    #define ZE_LOGW(p_fmt, ...)     ZE_CORE_LOG("[W] %s: "%u: p_fmt "\n", __FILE_NAME__, ##__VA_ARGS__)
 
 #else
 
