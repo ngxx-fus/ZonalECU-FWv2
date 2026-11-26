@@ -166,6 +166,97 @@ TYPE_DECL_PATTERN = re.compile(
 ZE_EXCEPTION_PATTERN = re.compile(r"/\*\s*ZE_EXCEPTION\s*\((.*?)\)\s*\*/")
 
 EXCLUDE_DIRS = {"build", ".template", ".git", "doxygen_html", ".cache", "unitytest"}
+HEADER_GUARD_REGISTRY = {}
+
+
+def compute_header_guards():
+    """
+    Scan all .h files across the repository and assign minimal unique header guards:
+    - Default 1 level: __<FILENAME>_H__ (e.g. __GPIO_H__)
+    - On collision, expand 1 parent directory level at a time until unique
+      (e.g. __ESP_GPIO_ALL_H__, __COMM_ESP_GPIO_ALL_H__).
+    """
+    HEADER_GUARD_REGISTRY.clear()
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    scan_roots = [os.path.join(repo_root, d) for d in ("FW-Common", "FW-ESP", "FW-STM")]
+    scan_roots = [d for d in scan_roots if os.path.isdir(d)] or [repo_root]
+
+    header_parts = {}
+    for sroot in scan_roots:
+        for root, dirs, files in os.walk(sroot):
+            dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS and not d.startswith(".")]
+            for f in files:
+                if f.endswith(".h"):
+                    abs_p = os.path.normpath(os.path.abspath(os.path.join(root, f))).lower()
+                    rel_p = os.path.relpath(os.path.join(root, f), repo_root)
+                    raw_parts = rel_p.replace("\\", "/").split("/")
+                    norm_parts = [re.sub(r"[^A-Za-z0-9]+", "_", p).strip("_").upper() for p in raw_parts if p]
+                    if norm_parts:
+                        header_parts[abs_p] = norm_parts
+
+    levels = {p: 1 for p in header_parts}
+    while True:
+        groups = {}
+        for p, parts in header_parts.items():
+            lvl = min(levels[p], len(parts))
+            guard = "__" + "_".join(parts[-lvl:]) + "__"
+            groups.setdefault(guard, []).append(p)
+
+        changed = False
+        for guard, paths in groups.items():
+            if len(paths) > 1:
+                for p in paths:
+                    if levels[p] < len(header_parts[p]):
+                        levels[p] += 1
+                        changed = True
+        if not changed:
+            for guard, paths in groups.items():
+                for p in paths:
+                    HEADER_GUARD_REGISTRY[p] = guard
+            break
+
+
+def sync_header_guards(text: str, file_path: str) -> str:
+    """Update #ifndef / #define / #endif header guard in a .h file to its unique minimal guard."""
+    if not file_path.endswith(".h"):
+        return text
+    abs_p = os.path.normpath(os.path.abspath(file_path)).lower()
+    target_guard = HEADER_GUARD_REGISTRY.get(abs_p)
+    if not target_guard:
+        return text
+
+    lines = text.splitlines()
+    ifndef_idx = -1
+    define_idx = -1
+    old_guard = None
+    guard_re = re.compile(r"^([ \t]*)#ifndef\s+(?:__[A-Za-z0-9_]+__|[A-Za-z0-9_]+_H(?:__)?)\s*$")
+    for idx, line in enumerate(lines):
+        m_if = re.match(r"^[ \t]*#ifndef\s+(__?[A-Za-z0-9_]+_H__?)\s*$", line)
+        if m_if:
+            candidate = m_if.group(1)
+            for j in range(idx + 1, min(idx + 4, len(lines))):
+                if re.match(rf"^[ \t]*#define\s+{re.escape(candidate)}\s*$", lines[j]):
+                    ifndef_idx = idx
+                    define_idx = j
+                    old_guard = candidate
+                    break
+            if old_guard:
+                break
+
+    if not old_guard or old_guard == target_guard:
+        return text
+
+    lines[ifndef_idx] = f"#ifndef {target_guard}"
+    lines[define_idx] = f"#define {target_guard}"
+    for idx in range(len(lines) - 1, define_idx, -1):
+        if re.match(rf"^[ \t]*#endif\s*/\*\s*{re.escape(old_guard)}\s*\*/\s*$", lines[idx]):
+            lines[idx] = f"#endif /* {target_guard} */"
+            break
+        if re.match(rf"^[ \t]*#endif\s*//\s*{re.escape(old_guard)}\s*$", lines[idx]):
+            lines[idx] = f"#endif /* {target_guard} */"
+            break
+
+    return "\n".join(lines)
 
 
 def preindex_declarations(targets: list):
@@ -1814,8 +1905,9 @@ def format_file(file_path: str) -> bool:
 
     file_name = os.path.basename(file_path)
 
-    # 1. Standardize 130-character section banners
+    # 1. Standardize 130-character section banners & unique minimal header guards
     transformed = format_section_banners(original_content)
+    transformed = sync_header_guards(transformed, file_path)
 
     # 2. Rename pointers and types in place while appending inline tracking comments
     transformed = apply_naming_transformations(transformed, file_name)
@@ -1867,7 +1959,8 @@ def main():
 
     targets = sys.argv[1:]
 
-    # Pass 1: Pre-index declarations across all target header files
+    # Pass 1: Pre-index declarations and compute unique minimal header guards across repo
+    compute_header_guards()
     preindex_declarations(targets)
 
     # Pass 2: Format files and resolve declaration origins

@@ -52,9 +52,11 @@ ze_err_t ZE_RTOS_Start(void) {
     return ZE_SUCCESS;
 }
 
-/** @brief   Shutdown/exit hook executed right before system restart or exit */
-void ZE_System_AtExit(void) {
-   ZE_LOGW("Zonal ECU Firmware v2: Executing pre-shutdown/exit handler...");
+/** @brief   Stop BareMetal services/hardware safely before system shutdown or exit
+ *  @return  ZE_SUCCESS on success, or error code */
+ze_err_t ZE_BareMetal_Stop(void) {
+   ZE_LOGW("Zonal ECU Firmware v2: Stopping BareMetal hardware/services...");
+    return ZE_SUCCESS;
 }
 
 /* EOF ***************************************************************************************************************************
