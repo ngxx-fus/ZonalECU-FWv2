@@ -81,7 +81,12 @@ static const someip_method_cfg_t s_light_methods[] = {
 };
 
 static const someip_service_cfg_t s_services[] = {
-    {.p_methods = s_light_methods,.method_len = (uint16_t)(sizeof(s_light_methods) / sizeof(s_light_methods[0])),.service_id = DEMO_SERVICE_ID,.interface_version = DEMO_INTERFACE_VERSION},
+    {
+        .p_methods         = s_light_methods,
+        .method_len        = (uint16_t)(sizeof(s_light_methods) / sizeof(s_light_methods[0])),
+        .service_id        = DEMO_SERVICE_ID,
+        .interface_version = DEMO_INTERFACE_VERSION,
+    },
 };
 
 /** @brief  Application function of every method */
@@ -92,8 +97,24 @@ static const someip_handler_cfg_t s_handlers[] = {
 
 /** @brief  Events of the Light service */
 static const someip_event_cfg_t s_events[] = {
-    {.serialize = prv_ser_brightness,.cycle_ms = 0U,.service_id = DEMO_SERVICE_ID,.event_id = DEMO_EVENT_BRIGHTNESS,.interface_version = DEMO_INTERFACE_VERSION,.is_field = 1U,.session_active = 1U},
-    {.serialize = prv_ser_distance,.cycle_ms = DEMO_DISTANCE_CYCLE_MS,.service_id = DEMO_SERVICE_ID,.event_id = DEMO_EVENT_DISTANCE,.interface_version = DEMO_INTERFACE_VERSION,.is_field = 0U,.session_active = 1U},
+    {
+        .serialize         = prv_ser_brightness,
+        .cycle_ms          = 0U,
+        .service_id        = DEMO_SERVICE_ID,
+        .event_id          = DEMO_EVENT_BRIGHTNESS,
+        .interface_version = DEMO_INTERFACE_VERSION,
+        .is_field          = 1U,
+        .session_active    = 1U,
+    },
+    {
+        .serialize         = prv_ser_distance,
+        .cycle_ms          = DEMO_DISTANCE_CYCLE_MS,
+        .service_id        = DEMO_SERVICE_ID,
+        .event_id          = DEMO_EVENT_DISTANCE,
+        .interface_version = DEMO_INTERFACE_VERSION,
+        .is_field          = 0U,
+        .session_active    = 1U,
+    },
 };
 
 #define DEMO_EVENT_LEN (sizeof(s_events) / sizeof(s_events[0]))

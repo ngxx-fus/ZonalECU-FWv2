@@ -54,7 +54,7 @@ ze_err_t ZE_RTOS_Start(void) {
 
 /** @brief   Shutdown/exit hook executed right before system restart or exit */
 void ZE_System_AtExit(void) {
-    ZE_LOGW("Zonal ECU Firmware v2: Executing pre-shutdown/exit handler...");
+   ZE_LOGW("Zonal ECU Firmware v2: Executing pre-shutdown/exit handler...");
 }
 
 /* EOF ***************************************************************************************************************************
