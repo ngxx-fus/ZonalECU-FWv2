@@ -29,9 +29,9 @@ else()
     set(component_include_dirs ".")
 endif()
 
-# 3. Register the 'Common' component with ESP-IDF
+# 3. Register the 'ZE-Services' component with ESP-IDF
 idf_component_register(
     SRCS ${component_srcs}
     INCLUDE_DIRS ${component_include_dirs}
-    REQUIRES esp_system log
+    REQUIRES esp_system log freertos Common ESP-Logger SOME-IP esp_driver_gpio esp_timer ESP-FreeRTOS ESP-Mem
 )

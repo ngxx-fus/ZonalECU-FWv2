@@ -16,7 +16,7 @@
 /* MACROS ************************************************************************************************************************
  ********************************************************************************************************************************/
 
-/** @brief Threshold in microseconds above which FreeRTOS tick delay is used to prevent watchdog starvation */
+/** @brief  Threshold in microseconds above which FreeRTOS tick delay is used to prevent watchdog starvation */
 #define PRV_RTOS_YIELD_THRESHOLD_US (1000U)
 #define PRV_MUTEX_BATCH_WAIT_US     (100U)
 
@@ -40,13 +40,13 @@ static portMUX_TYPE s_critical_mux = portMUX_INITIALIZER_UNLOCKED;
 /* PUBLIC FUNCTIONS **************************************************************************************************************
  ********************************************************************************************************************************/
 
-/** @brief   Begin critical section with FreeRTOS SMP portMUX spinlock and interrupt masking */
+/** @brief  Begin critical section with FreeRTOS SMP portMUX spinlock and interrupt masking */
 ze_err_t ZE_ESP_Mutex_CriticalSectionBegin(void) {
    taskENTER_CRITICAL(&s_critical_mux);
     return ZE_SUCCESS;
 }
 
-/** @brief   End critical section restoring FreeRTOS SMP portMUX spinlock and interrupts */
+/** @brief  End critical section restoring FreeRTOS SMP portMUX spinlock and interrupts */
 ze_err_t ZE_ESP_Mutex_CriticalSectionEnd(void) {
    taskEXIT_CRITICAL(&s_critical_mux);
     return ZE_SUCCESS;

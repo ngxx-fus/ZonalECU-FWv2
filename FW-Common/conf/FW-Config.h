@@ -14,6 +14,8 @@
  ********************************************************************************************************************************/
 
 #define DISABLED      (0U)
+#define INVALID       (0U)
+#define VALID         (1U)
 #define ENABLED       (1U)
 #define FALSE         (0U)
 #define TRUE          (1U)

@@ -36,9 +36,9 @@
  ********************************************************************************************************************************/
 
 typedef struct ze_flash_cache_st {
-    uint32_t tag; /* 128-byte aligned physical base address */
-    uint8_t  valid; /* Cache valid flag */
-    uint8_t  dirty; /* Cache dirty flag */
+    uint32_t tag;                                               /* 128-byte aligned physical base address */
+    uint8_t  valid;                                             /* Cache valid flag */
+    uint8_t  dirty;                                             /* Cache dirty flag */
     uint8_t  reserved [2];
     uint32_t data     [ZE_FLASH_CACHE_SIZE / sizeof(uint32_t)]; /* 128-byte cache line (32 words) */
 } ze_flash_cache_t;

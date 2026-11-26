@@ -1,6 +1,6 @@
 # ==============================================================================
-# Component: Common
-# Contains shared definitions: Error codes, Macros, Atomic types, Shared APIs
+# Component: ESP-GPIO
+# Contains GPIO hardware abstraction, direct register manipulation, and state access
 # ==============================================================================
 
 # 1. Collect all C source files in this component
@@ -29,9 +29,9 @@ else()
     set(component_include_dirs ".")
 endif()
 
-# 3. Register the 'Common' component with ESP-IDF
+# 3. Register the 'ESP-GPIO' component with ESP-IDF
 idf_component_register(
-    SRCS ${component_srcs}
+    SRCS         ${component_srcs}
     INCLUDE_DIRS ${component_include_dirs}
-    REQUIRES esp_system log
+    REQUIRES     Common esp_system log esp_driver_gpio esp_rom soc hal
 )

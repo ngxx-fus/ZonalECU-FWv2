@@ -88,10 +88,10 @@ typedef ze_mutex_t ze_esp_mutex_t;
 /* SHARED FUNCTIONS **************************************************************************************************************
  ********************************************************************************************************************************/
 
-/** @brief   Begin critical section with FreeRTOS SMP portMUX spinlock and interrupt masking */
+/** @brief  Begin critical section with FreeRTOS SMP portMUX spinlock and interrupt masking */
 ze_err_t ZE_ESP_Mutex_CriticalSectionBegin(void);
 
-/** @brief   End critical section restoring FreeRTOS SMP portMUX spinlock and interrupts */
+/** @brief  End critical section restoring FreeRTOS SMP portMUX spinlock and interrupts */
 ze_err_t ZE_ESP_Mutex_CriticalSectionEnd(void);
 
 /** @brief   Attempt to take mutex lock with ESP32 hybrid delay to prevent watchdog starvation

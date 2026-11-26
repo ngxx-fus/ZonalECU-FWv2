@@ -125,13 +125,13 @@
  *  - "ro TYPE"       : Write operation is PROHIBITED for the pointed region. */
 
 #ifndef ro_ptr
-    #define ro_ptr         * const /* Read only pointer address */
+    #define ro_ptr         * const /** Read only pointer address */
 #endif
 #ifndef wo_ptr
-    #define wo_ptr         *       /* Write only pointer address */
+    #define wo_ptr         *       /** Write only pointer address */
 #endif
 #ifndef rw_ptr
-    #define rw_ptr         *       /* Read/Write pointer address */
+    #define rw_ptr         *       /** Read/Write pointer address */
 #endif
 
 #ifndef shared
@@ -204,24 +204,6 @@
 
 #ifndef __shared
     #define __shared       extern
-#endif
-
-/* Generic pointer macro (rw) **************************************************************************************************/
-
-#ifndef __ptr
-    #define __ptr          *
-#endif
-
-#ifndef ptr
-    #define ptr            *
-#endif
-
-#ifndef PTR
-    #define PTR            *
-#endif
-
-#ifndef __PTR
-    #define __PTR          *
 #endif
 
 /* Readable check macros *******************************************************************************************************/

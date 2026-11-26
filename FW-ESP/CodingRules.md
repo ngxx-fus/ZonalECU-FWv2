@@ -247,6 +247,15 @@ typedef enum e_eth_speed {
 ```
 
   - Enum labels must be `UPPER_SNAKE_CASE` prefixed with the module name.
+  - **Service & Priority Naming Convention**:
+    - **FORBIDDEN (`NO`)**: Never use `ZE_TASK_*` prefix for service or task priorities.
+    - **MANDATORY (`YES`)**: Bắt buộc sử dụng tiền tố **`ZE_SERVICE_*`** hoặc dạng rút gọn chuẩn **`ZE_SRV_PRIO_*`** cho các mức ưu tiên của Service:
+      - `ZE_SRV_PRIO_BACKGROUND` (Lowest: IDLE + 1, Logging, System monitor)
+      - `ZE_SRV_PRIO_LOW` (Low: Status LEDs, Non-critical services)
+      - `ZE_SRV_PRIO_NORMAL` (Standard: UI, General application logic)
+      - `ZE_SRV_PRIO_HIGH` (High: Sensor sampling, Motor control)
+      - `ZE_SRV_PRIO_URGENCY` (Critical: Safety checks, Comms heartbeats)
+      - `ZE_SRV_PRIO_REALTIME` (Maximum: Immediate hardware response)
   - For state enums, include an explicit uninitialized, closed, or error state as the first label (e.g., `ETH_STATE_CLOSED = 0`, `ETH_STATE_OPEN`, `ETH_STATE_ERR`).
   - **Size Caveat**: Because `enum` storage size is implementation-defined, never use an `enum` type directly as a field inside packed wire protocols, CAN frames, or NVS binary blobs; store the value in an explicit fixed-width integer field (`uint8_t`, `uint16_t`, `uint32_t`).
 

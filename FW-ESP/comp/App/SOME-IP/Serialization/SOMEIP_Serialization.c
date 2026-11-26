@@ -20,7 +20,7 @@
 /* DEFINITIONS *******************************************************************************************************************
  ********************************************************************************************************************************/
 
-/** @brief Size of the "\0" terminator per string encoding [PRS_SOMEIP_00948] [PRS_SOMEIP_00084] */
+/** @brief  Size of the "\0" terminator per string encoding [PRS_SOMEIP_00948] [PRS_SOMEIP_00084] */
 enum e_someip_str_term_size {
     SOMEIP_STR_TERM_NONE_SIZE  = 0,
     SOMEIP_STR_TERM_UTF8_SIZE  = 1,

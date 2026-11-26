@@ -16,7 +16,7 @@
 /* MACROS ************************************************************************************************************************
  ********************************************************************************************************************************/
 
-/** @brief Batch wait time between retry checks */
+/** @brief  Batch wait time between retry checks */
 #define PRV_MUTEX_BATCH_WAIT_US (100U)
 
 /* DEFINITIONS *******************************************************************************************************************
@@ -37,13 +37,13 @@
 /* PUBLIC FUNCTIONS **************************************************************************************************************
  ********************************************************************************************************************************/
 
-/** @brief   Begin critical section by disabling hardware interrupts */
+/** @brief  Begin critical section by disabling hardware interrupts */
 ze_err_t ZE_Mutex_CriticalSectionBegin(void) {
    ZE_MUTEX_DISABLE_IRQ();
     return ZE_SUCCESS;
 }
 
-/** @brief   End critical section by restoring/enabling hardware interrupts */
+/** @brief  End critical section by restoring/enabling hardware interrupts */
 ze_err_t ZE_Mutex_CriticalSectionEnd(void) {
    ZE_MUTEX_ENABLE_IRQ();
     return ZE_SUCCESS;

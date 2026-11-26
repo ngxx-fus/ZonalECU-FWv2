@@ -418,7 +418,7 @@ def align_enum_block(body_lines: list) -> list:
        Align all trailing comments after the longest code part + 1 space.
     """
     member_pattern = re.compile(
-        r"^(\s*)([A-Za-z0-9_]+)\s*(?:=\s*([^,/\n]+?))?\s*(,)?\s*(/\*.*?\*/|//.*)?$"
+        r"^(\s*)([A-Za-z0-9_]+)\s*(?:=\s*(.+?))?\s*(,)?\s*(/\*.*?\*/|//.*)?$"
     )
     divider_pattern = re.compile(r"^\s*/\*(?!\*).*\*/\s*$")
 
@@ -819,10 +819,10 @@ def align_struct_block(body_lines: list) -> list:
     has_arr = any(p["arr"] for p in members)
     max_name_len = max(len(p["name"]) for p in members if p["arr"]) if has_arr else 0
 
-    out = []
+    code_lines = []
     for p in parsed_lines:
         if not p["is_member"]:
-            out.append(p["raw"])
+            code_lines.append(None)
             continue
 
         parts = [p["indent"]]
@@ -842,9 +842,21 @@ def align_struct_block(body_lines: list) -> list:
             name_str = p["name"] + ";"
 
         parts.append(name_str)
+        code_lines.append("".join(parts))
+
+    has_comments = any(p["cmt"] for p in members)
+    max_code_len = max(len(code) for code, p in zip(code_lines, parsed_lines) if p.get("cmt")) if has_comments else 0
+
+    out = []
+    for p, code in zip(parsed_lines, code_lines):
+        if not p["is_member"]:
+            out.append(p["raw"])
+            continue
+
         if p["cmt"]:
-            parts.append(" " + p["cmt"])
-        out.append("".join(parts))
+            out.append(f"{code.ljust(max_code_len)} {p['cmt']}")
+        else:
+            out.append(code)
 
     return out
 
@@ -1052,6 +1064,106 @@ def align_all_typedefs(text: str) -> str:
             else:
                 out.append(line)
                 i += 1
+        else:
+            out.append(line)
+            i += 1
+
+    return "\n".join(out)
+
+
+def align_all_alias_blocks(text: str) -> str:
+    """
+    Find and align mixed blocks of single-line typedef and #define alias declarations:
+    Aligns Column 2 (type / macro name), Column 3 (alias / macro value), and Column 4 (comments).
+    """
+    typedef_pat = re.compile(
+        r"^(\s*)typedef\s+([A-Za-z0-9_]+(?:\s*\*|\*\s*)?)\s+([A-Za-z0-9_]+;)(?:\s*(/\*.*?\*/|//.*))?$"
+    )
+    define_pat = re.compile(
+        r"^(\s*)#\s*define\s+([A-Za-z0-9_]+)\s+([A-Za-z0-9_]+)(?:\s*(/\*.*?\*/|//.*))?$"
+    )
+
+    lines = text.splitlines()
+    out = []
+    i = 0
+    n = len(lines)
+
+    while i < n:
+        line = lines[i]
+        m_t = typedef_pat.match(line)
+        m_d = define_pat.match(line)
+
+        if m_t or m_d:
+            block_lines = []
+            has_t = bool(m_t)
+            has_d = bool(m_d)
+
+            while i < n:
+                cur = lines[i]
+                cur_str = cur.strip()
+                cur_m_t = typedef_pat.match(cur)
+                cur_m_d = define_pat.match(cur)
+
+                if cur_m_t or cur_m_d:
+                    if cur_m_t:
+                        has_t = True
+                    if cur_m_d:
+                        has_d = True
+                    block_lines.append((cur, cur_m_t, cur_m_d))
+                    i += 1
+                elif not cur_str and block_lines:
+                    j = i + 1
+                    while j < n and not lines[j].strip():
+                        j += 1
+                    if j < n and (typedef_pat.match(lines[j]) or define_pat.match(lines[j]) or lines[j].strip().startswith("/**") or lines[j].strip().startswith("/*")):
+                        if lines[j].strip().startswith("/*") and "***" in lines[j] and "Wrap" not in lines[j] and ("EXPORTED" in lines[j] or "SHARED" in lines[j]):
+                            break
+                        block_lines.append((cur, None, None))
+                        i += 1
+                    else:
+                        break
+                elif cur_str.startswith("/**") or (cur_str.startswith("/*") and not ("***" in cur_str and len(cur_str) > 50)):
+                    block_lines.append((cur, None, None))
+                    i += 1
+                else:
+                    break
+
+            valid = [b for b in block_lines if b[1] or b[2]]
+            if (has_t and has_d) or len(valid) > 2:
+                max_col2 = 0
+                for b in valid:
+                    if b[1]:
+                        max_col2 = max(max_col2, len(b[1].group(2).strip()))
+                    else:
+                        max_col2 = max(max_col2, len(b[2].group(2).strip()))
+
+                code_parts = []
+                max_code_len = 0
+                for b in block_lines:
+                    if not b[1] and not b[2]:
+                        code_parts.append((b[0], None))
+                        continue
+                    if b[1]:
+                        indent, c2, c3, cmt = b[1].groups()
+                        code = f"{indent}typedef {c2.strip().ljust(max_col2)} {c3.strip()}"
+                    else:
+                        indent, c2, c3, cmt = b[2].groups()
+                        code = f"{indent}#define {c2.strip().ljust(max_col2)} {c3.strip()}"
+                    cmt_clean = cmt.strip() if cmt else ""
+                    if cmt_clean:
+                        max_code_len = max(max_code_len, len(code))
+                    code_parts.append((code, cmt_clean))
+
+                for code, cmt in code_parts:
+                    if cmt is None:
+                        out.append(code)
+                    elif cmt:
+                        out.append(f"{code.ljust(max_code_len)} {cmt}")
+                    else:
+                        out.append(code)
+            else:
+                for b in block_lines:
+                    out.append(b[0])
         else:
             out.append(line)
             i += 1
@@ -1710,6 +1822,7 @@ def format_file(file_path: str) -> bool:
     #    - Align macro trailing backslashes '\'
     formatted_content = align_all_macros(formatted_content, BANNER_WIDTH)
     formatted_content = align_all_typedefs(formatted_content)
+    formatted_content = align_all_alias_blocks(formatted_content)
     formatted_content = align_all_enums(formatted_content)
     formatted_content = align_all_structs(formatted_content)
     formatted_content = align_all_designated_initializers(formatted_content)

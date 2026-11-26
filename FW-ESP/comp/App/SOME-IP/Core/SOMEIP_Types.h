@@ -23,7 +23,7 @@ HEADER_CPP
 /* MACROS ************************************************************************************************************************
  ********************************************************************************************************************************/
 
-/** @brief Supported protocol version [PRS_SOMEIP_00051] */
+/** @brief  Supported protocol version [PRS_SOMEIP_00051] */
 #define SOMEIP_PROTOCOL_VERSION      (0x01U)
 
 /** @brief   Build Message ID (Service ID << 16 | Method ID) and Request ID (Client ID << 16 | Session ID)
@@ -34,7 +34,7 @@ HEADER_CPP
 #define SOMEIP_REQUEST_ID(client_id, session_id)                                                                                 \
     ((someip_request_id_t)(((uint32_t)(client_id) << SOMEIP_ID_HIGH_SHIFT) | (uint32_t)(session_id)))
 
-/** @brief Message Type flag bits: response bit and "TP-Flag"                  [PRS_SOMEIP_00055] [00367] */
+/** @brief  Message Type flag bits: response bit and "TP-Flag"                  [PRS_SOMEIP_00055] [00367] */
 #define SOMEIP_MT_FLAG_RESPONSE      (0x80U)
 #define SOMEIP_MT_FLAG_TP            (0x20U)
 
@@ -45,10 +45,10 @@ HEADER_CPP
 #define SOMEIP_TP_RESERVED_MASK      (0x0000000EU) /*!< Sender writes 0, receiver ignores */
 #define SOMEIP_TP_MORE_SEGMENTS_MASK (0x00000001U)
 
-/** @brief Boolean on the wire is 8 bit, only bit 0 is evaluated [PRS_SOMEIP_00615] */
+/** @brief  Boolean on the wire is 8 bit, only bit 0 is evaluated [PRS_SOMEIP_00615] */
 #define SOMEIP_BOOL_VALUE_MASK       (0x01U)
 
-/** @brief Union type field value reserved for NULL (empty union) [PRS_SOMEIP_00907] */
+/** @brief  Union type field value reserved for NULL (empty union) [PRS_SOMEIP_00907] */
 #define SOMEIP_UNION_TYPE_NULL       (0U)
 
 #define SOMEIP_IPV4_ADDR_SIZE        (4U)
@@ -66,7 +66,7 @@ enum e_someip_header_size {
     SOMEIP_LENGTH_MIN        = SOMEIP_HEADER_PART2_SIZE,
 };
 
-/** @brief Byte offsets of the fields inside the SOME/IP header */
+/** @brief  Byte offsets of the fields inside the SOME/IP header */
 enum e_someip_header_offset {
     SOMEIP_OFS_SERVICE_ID        = 0,
     SOMEIP_OFS_METHOD_ID         = 2,
@@ -80,13 +80,13 @@ enum e_someip_header_offset {
     SOMEIP_OFS_PAYLOAD           = 16,
 };
 
-/** @brief Method ID ranges: bit 15 = 0 method (0x0000-0x7FFF), 1 event/notification (0x8000-0xFFFF) */
+/** @brief  Method ID ranges: bit 15 = 0 method (0x0000-0x7FFF), 1 event/notification (0x8000-0xFFFF) */
 enum e_someip_method_id {
     SOMEIP_METHOD_ID_MAX = 0x7FFF,
     SOMEIP_EVENT_ID_FLAG = 0x8000,
 };
 
-/** @brief Session ID values                                          [PRS_SOMEIP_00932] [00933] [00521] */
+/** @brief  Session ID values                                          [PRS_SOMEIP_00932] [00933] [00521] */
 enum e_someip_session_id {
     SOMEIP_SESSION_ID_INACTIVE = 0x0000, /*!< Session handling not active */
     SOMEIP_SESSION_ID_MIN      = 0x0001, /*!< First value, and value after wrap-around */
@@ -138,7 +138,7 @@ enum e_someip_return_code {
     SOMEIP_E_SERVICE_SPECIFIC_MAX    = 0x5E,
 };
 
-/** @brief Payload and segment size limits                          chapter 4.1.2.9, [PRS_SOMEIP_00730] */
+/** @brief  Payload and segment size limits                          chapter 4.1.2.9, [PRS_SOMEIP_00730] */
 enum e_someip_transport_limit {
     SOMEIP_UDP_PAYLOAD_MAX     = 1400, /*!< SOME/IP payload per message over UDP */
     SOMEIP_UDP_MESSAGE_MAX     = SOMEIP_HEADER_SIZE + SOMEIP_UDP_PAYLOAD_MAX,
@@ -147,13 +147,13 @@ enum e_someip_transport_limit {
     SOMEIP_TP_SEGMENT_MAX      = 1392, /*!< Largest 16-byte aligned segment in 1400 bytes */
 };
 
-/** @brief Boolean wire values [PRS_SOMEIP_00615] */
+/** @brief  Boolean wire values [PRS_SOMEIP_00615] */
 enum e_someip_bool {
     SOMEIP_BOOL_FALSE = 0x00,
     SOMEIP_BOOL_TRUE  = 0x01,
 };
 
-/** @brief String Byte Order Marks, present in fixed and dynamic strings [PRS_SOMEIP_00087] [00372] */
+/** @brief  String Byte Order Marks, present in fixed and dynamic strings [PRS_SOMEIP_00087] [00372] */
 enum e_someip_bom {
     SOMEIP_BOM_UTF8_SIZE  = 3,
     SOMEIP_BOM_UTF8_0     = 0xEF,
@@ -168,22 +168,22 @@ enum e_someip_bom {
 
 /* Identifiers */
 typedef uint16_t someip_service_id_t;
-typedef uint16_t someip_method_id_t;     /*!< Method (bit 15 = 0) or event (bit 15 = 1) */
-typedef uint16_t someip_event_id_t;      /*!< A method ID with bit 15 = 1 */
+typedef uint16_t someip_method_id_t;         /*!< Method (bit 15 = 0) or event (bit 15 = 1) */
+typedef uint16_t someip_event_id_t;          /*!< A method ID with bit 15 = 1 */
 typedef uint16_t someip_eventgroup_id_t;
 typedef uint16_t someip_client_id_t;
 typedef uint16_t someip_session_id_t;
-typedef uint32_t someip_message_id_t;    /*!< Service ID << 16 | Method ID */
-typedef uint32_t someip_request_id_t;    /*!< Client ID << 16 | Session ID */
+typedef uint32_t someip_message_id_t;        /*!< Service ID << 16 | Method ID */
+typedef uint32_t someip_request_id_t;        /*!< Client ID << 16 | Session ID */
 typedef uint32_t someip_length_t;
 
 /* Single-byte header fields, fixed width because they are wire values */
-typedef uint8_t someip_protocol_version_t;
-typedef uint8_t someip_interface_version_t; /*!< Major interface version [PRS_SOMEIP_00053] */
-typedef uint8_t someip_message_type_t;      /*!< Values: enum e_someip_message_type */
-typedef uint8_t someip_return_code_t;       /*!< Values: enum e_someip_return_code */
+typedef uint8_t  someip_protocol_version_t;
+typedef uint8_t  someip_interface_version_t; /*!< Major interface version [PRS_SOMEIP_00053] */
+typedef uint8_t  someip_message_type_t;      /*!< Values: enum e_someip_message_type */
+typedef uint8_t  someip_return_code_t;       /*!< Values: enum e_someip_return_code */
 
-/** @brief Byte order of payload parameters, configurable per parameter [PRS_SOMEIP_00369] */
+/** @brief  Byte order of payload parameters, configurable per parameter [PRS_SOMEIP_00369] */
 typedef enum e_someip_byte_order {
     SOMEIP_BYTE_ORDER_BIG_ENDIAN    = 0, /*!< Default, same as the header */
     SOMEIP_BYTE_ORDER_LITTLE_ENDIAN = 1,
@@ -198,7 +198,7 @@ typedef enum e_someip_length_field_size {
     SOMEIP_LENGTH_FIELD_32BIT = 4, /*!< Default for dynamic arrays and strings */
 } someip_length_field_size_t;
 
-/** @brief String encoding [PRS_SOMEIP_00372] */
+/** @brief  String encoding [PRS_SOMEIP_00372] */
 typedef enum e_someip_string_encoding {
     SOMEIP_STRING_UTF8    = 0,
     SOMEIP_STRING_UTF16BE = 1,
@@ -242,9 +242,9 @@ typedef struct st_someip_message {
     uint32_t        payload_len; /*!< = header.length - SOMEIP_HEADER_PART2_SIZE */
 } someip_message_t;
 
-/** @brief Decoded SOME/IP-TP header */
+/** @brief  Decoded SOME/IP-TP header */
 typedef struct st_someip_tp_header {
-    uint32_t offset; /*!< In bytes, always a multiple of 16 */
+    uint32_t offset;        /*!< In bytes, always a multiple of 16 */
     uint8_t  more_segments; /*!< 1 = more segments follow, 0 = last segment */
 } someip_tp_header_t;
 
@@ -253,11 +253,11 @@ typedef enum e_someip_transport {
     SOMEIP_TRANSPORT_TCP = 1,
 } someip_transport_t;
 
-/** @brief Transport endpoint of a SOME/IP peer */
+/** @brief  Transport endpoint of a SOME/IP peer */
 typedef struct st_someip_endpoint {
     someip_transport_t transport;
     uint8_t            ipv4 [SOMEIP_IPV4_ADDR_SIZE]; /*!< Network order, e.g. {192,168,1,10} */
-    uint16_t           port; /*!< Host order */
+    uint16_t           port;                         /*!< Host order */
 } someip_endpoint_t;
 
 /* FOOTERS ***********************************************************************************************************************

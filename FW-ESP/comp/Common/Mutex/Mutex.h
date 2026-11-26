@@ -83,10 +83,10 @@ typedef ze_atomic (bool) ze_mutex_t;
 /* SHARED FUNCTIONS **************************************************************************************************************
  ********************************************************************************************************************************/
 
-/** @brief   Begin critical section by disabling hardware interrupts */
+/** @brief  Begin critical section by disabling hardware interrupts */
 ze_err_t ZE_Mutex_CriticalSectionBegin(void);
 
-/** @brief   End critical section by restoring/enabling hardware interrupts */
+/** @brief  End critical section by restoring/enabling hardware interrupts */
 ze_err_t ZE_Mutex_CriticalSectionEnd(void);
 
 /** @brief   Attempt to take mutex lock with timeout and periodic batch delay
