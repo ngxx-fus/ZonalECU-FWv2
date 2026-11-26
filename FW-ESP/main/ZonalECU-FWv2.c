@@ -7,20 +7,38 @@
 /* INCLUDES **********************************************************************************************************************
  ********************************************************************************************************************************/
 
-#include <stdbool.h>
-#include <stdint.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "driver/gpio.h"
-#include "Common/All.h"
+#include <stdlib.h>
+#include "esp_system.h"
+#include "esp_private/startup_internal.h"
 #include "Comm/ESP-Logger/SysLog.h"
 #include "App/ZE-Services/Startup.h"
 
-/* MACROS ************************************************************************************************************************
+/* PRIVATE FUNCTIONS *************************************************************************************************************
  ********************************************************************************************************************************/
 
-#define MAIN_HEARTBEAT_LED_GPIO (GPIO_NUM_2)
-#define MAIN_HEARTBEAT_DELAY_MS (500U)
+/** @brief  Wrapper hook for atexit() and esp_register_shutdown_handler() */
+static void prv_atexit_handler(void) {
+    ze_err_t err = ZE_BareMetal_Stop();
+    if (ZE_SUCCESS != err) {
+        ZE_LOGE("BareMetal stop failed (err %d)", err);
+    }
+}
+
+/** @brief   Pre-RTOS hardware and driver initialization hook executed before FreeRTOS scheduler starts
+ *  @return  ESP_OK on success, or ESP_FAIL to abort boot */
+ESP_SYSTEM_INIT_FN(ze_baremetal_init, SECONDARY, BIT(0), 999) {
+    (void)atexit(prv_atexit_handler);
+    (void)esp_register_shutdown_handler(prv_atexit_handler);
+
+    ZE_LOGI("CALL: ZE_BareMetal_Start()");
+    ze_err_t err = ZE_BareMetal_Start();
+    if (ZE_SUCCESS != err) {
+        ZE_LOGE("BareMetal startup aborted (err %d)", err);
+        return ESP_FAIL;
+    }
+
+    return ESP_OK;
+}
 
 /* PUBLIC FUNCTIONS **************************************************************************************************************
  ********************************************************************************************************************************/
@@ -28,26 +46,14 @@
 /** @brief  Application main entry point */
 void app_main(void) {
     ze_err_t err;
-    uint32_t toggle = 0U;
 
-    err = ZE_BareMetal_Start();
-    if (ZE_SUCCESS != err) {
-       ZE_LOGE("BareMetal startup aborted (err %d)", err);
-        return;
-    }
-
+    ZE_LOGI("CALL: ZE_RTOS_Start()");
     err = ZE_RTOS_Start();
     if (ZE_SUCCESS != err) {
-       ZE_LOGE("RTOS startup aborted (err %d)", err);
-        return;
+        ZE_LOGE("RTOS startup aborted (err %d)", err);
     }
 
-    /* Heartbeat loop in background task */
-    while (true) {
-        (void)gpio_set_level(MAIN_HEARTBEAT_LED_GPIO, toggle & 1U);
-        toggle++;
-       vTaskDelay(pdMS_TO_TICKS(MAIN_HEARTBEAT_DELAY_MS));
-    }
+    vTaskDelete(NULL);
 }
 
 /* EOF ***************************************************************************************************************************

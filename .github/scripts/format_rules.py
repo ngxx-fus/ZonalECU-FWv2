@@ -1251,43 +1251,60 @@ def align_designated_initializer_block(lines: list) -> list:
     parsed = []
     for it, cmt in all_items:
         if not it and cmt:
-            parsed.append(("", "", cmt))
+            parsed.append(("CMT", "", "", cmt))
             continue
         it = it.strip().rstrip(",")
+        m_nested = re.match(r"^((?:\[[^\]]+\]|\.[A-Za-z0-9_]+)\s*=\s*)?\{(.*)\}$", it, re.DOTALL)
+        if m_nested and re.search(r"\.[A-Za-z0-9_]+\s*=", m_nested.group(2)):
+            raw_prefix = m_nested.group(1) or ""
+            norm_prefix = re.sub(r"\s*=\s*$", " = ", raw_prefix.strip()) if raw_prefix else ""
+            nested_inner = m_nested.group(2).strip()
+            single_line = f"{field_indent}{norm_prefix}{{{nested_inner}}},"
+            if len(single_line) > BANNER_WIDTH:
+                sub_lines = [f"{field_indent}{norm_prefix}{{", f"{field_indent}    {nested_inner}", f"{field_indent}}},"]
+                aligned_sub = align_designated_initializer_block(sub_lines)
+                parsed.append(("MULTI", aligned_sub, "", cmt))
+                continue
         m_field = re.match(r"^(\.[A-Za-z0-9_]+)\s*=\s*(.*)$", it)
         if m_field:
             fname, fval = m_field.groups()
-            parsed.append((fname, fval.strip(), cmt))
+            parsed.append(("FIELD", fname, fval.strip(), cmt))
         else:
-            parsed.append(("", it, cmt))
+            parsed.append(("RAW", "", it, cmt))
 
     if not parsed:
         return lines
 
-    max_fname_len = max((len(p[0]) for p in parsed if p[0]), default=0)
+    max_fname_len = max((len(p[1]) for p in parsed if p[0] == "FIELD"), default=0)
     rebuilt = []
-    for fname, fval, cmt in parsed:
-        if fname:
+    for kind, fname, fval, cmt in parsed:
+        if kind == "MULTI":
+            rebuilt.append(("MULTI", fname, cmt))
+            continue
+        if kind == "FIELD":
             code_part = f"{field_indent}{fname.ljust(max_fname_len)} = {fval},"
-        elif fval:
+        elif kind == "RAW" and fval:
             code_part = f"{field_indent}{fval},"
         else:
             code_part = ""
 
         if cmt:
             if code_part:
-                rebuilt.append((code_part, cmt))
+                rebuilt.append(("SINGLE", code_part, cmt))
             else:
-                rebuilt.append((f"{field_indent}{cmt}", ""))
+                rebuilt.append(("SINGLE", f"{field_indent}{cmt}", ""))
         else:
-            rebuilt.append((code_part, ""))
+            rebuilt.append(("SINGLE", code_part, ""))
 
-    code_with_cmts = [r[0] for r in rebuilt if r[0] and r[1]]
+    code_with_cmts = [r[1] for r in rebuilt if r[0] == "SINGLE" and r[1] and r[2]]
     comment_col = max((len(c) for c in code_with_cmts), default=0) + 1 if code_with_cmts else 0
 
-    out = [f"{indent}{decl} {{"]
-    for code_part, cmt in rebuilt:
-        if not cmt:
+    header_line = f"{indent}{decl} {{" if decl else f"{indent}{{"
+    out = [header_line]
+    for kind, code_part, cmt in rebuilt:
+        if kind == "MULTI":
+            out.extend(code_part)
+        elif not cmt:
             out.append(code_part)
         elif not code_part:
             out.append(cmt)

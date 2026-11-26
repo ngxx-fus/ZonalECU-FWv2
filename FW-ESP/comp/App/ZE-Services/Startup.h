@@ -13,6 +13,8 @@
 /* INCLUDES **********************************************************************************************************************
  ********************************************************************************************************************************/
 
+#include "esp_private/startup_internal.h"
+
 #include "Common/Base/All.h"
 #include "Common/Error/All.h"
 
@@ -33,6 +35,10 @@ ze_err_t ZE_RTOS_Start();
 /** @brief   API to start BareMetal service (related to driver init, error handler at start)
  *  @return  Return ZE_SUCCESS if there's no error. */
 ze_err_t ZE_BareMetal_Start();
+
+/** @brief   API to stop BareMetal services/hardware before system shutdown or exit
+ *  @return  Return ZE_SUCCESS if there's no error. */
+ze_err_t ZE_BareMetal_Stop(void);
 
 /* FOOTERS ***********************************************************************************************************************
  ********************************************************************************************************************************/

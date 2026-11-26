@@ -2,4 +2,5 @@ idf_component_register(
     SRCS "ZonalECU-FWv2.c"
     INCLUDE_DIRS "."
     REQUIRES Common ESP-Logger ZE-Services esp_driver_gpio freertos
+    WHOLE_ARCHIVE
 )
