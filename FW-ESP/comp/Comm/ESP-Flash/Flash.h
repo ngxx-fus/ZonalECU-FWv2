@@ -7,8 +7,8 @@
 /* GUARD/BEGIN *******************************************************************************************************************
  ********************************************************************************************************************************/
 
-#ifndef __FW_ESP_COMP_COMM_ESP_FLASH_FLASH_H__
-#define __FW_ESP_COMP_COMM_ESP_FLASH_FLASH_H__
+#ifndef __FLASH_H__
+#define __FLASH_H__
 
 /* INCLUDES **********************************************************************************************************************
  ********************************************************************************************************************************/
@@ -71,34 +71,26 @@ extern const ze_fblock_t g_ze_flash_block;
 /* SHARED FUNCTIONS **************************************************************************************************************
  ********************************************************************************************************************************/
 
-/**
- * @brief Open and initialize dedicated 64KB flash block
- * @return ZE_SUCCESS on success, or error code
- */
+/** @brief   Open and initialize dedicated 64KB flash block
+ *  @return  ZE_SUCCESS on success, or error code */
 ze_err_t ZE_Flash_Open(void);
 
-/**
- * @brief Read data from 64KB flash partition into RAM buffer
- * @param[out] p_dest      RAM buffer to store read data
- * @param[in]  p_flash_src Flash variable address (e.g. &ze_var) or byte offset within 64KB
- * @param[in]  size        Number of bytes to read
- * @return ZE_SUCCESS on success, or error code
- */
+/** @brief   Read data from 64KB flash partition into RAM buffer
+ *  @param   p_dest      RAM buffer to store read data
+ *  @param   p_flash_src Flash variable address (e.g. &ze_var) or byte offset within 64KB
+ *  @param   size        Number of bytes to read
+ *  @return  ZE_SUCCESS on success, or error code */
 ze_err_t ZE_Flash_Read(out void rw_ptr p_dest, in void ro_ptr p_flash_src, in uint32_t size);
 
-/**
- * @brief Write data from RAM buffer to 64KB flash partition
- * @param[in]  p_flash_dest Flash variable address (e.g. &ze_var) or byte offset within 64KB
- * @param[in]  p_src        RAM source data buffer
- * @param[in]  size         Number of bytes to write
- * @return ZE_SUCCESS on success, or error code
- */
+/** @brief   Write data from RAM buffer to 64KB flash partition
+ *  @param   p_flash_dest Flash variable address (e.g. &ze_var) or byte offset within 64KB
+ *  @param   p_src        RAM source data buffer
+ *  @param   size         Number of bytes to write
+ *  @return  ZE_SUCCESS on success, or error code */
 ze_err_t ZE_Flash_Write(in void ro_ptr p_flash_dest, in void ro_ptr p_src, in uint32_t size);
 
-/**
- * @brief Close dedicated 64KB flash block
- * @return ZE_SUCCESS on success, or error code
- */
+/** @brief   Close dedicated 64KB flash block
+ *  @return  ZE_SUCCESS on success, or error code */
 ze_err_t ZE_Flash_Close(void);
 
 /* FOOTERS ***********************************************************************************************************************
@@ -109,7 +101,7 @@ ZE_FOOTER
 /* GUARD/END *********************************************************************************************************************
  ********************************************************************************************************************************/
 
-#endif /* __FW_ESP_COMP_COMM_ESP_FLASH_FLASH_H__ */
+#endif /* __FLASH_H__ */
 
 /* EOF ***************************************************************************************************************************
  ********************************************************************************************************************************/

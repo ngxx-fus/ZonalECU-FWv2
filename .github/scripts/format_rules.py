@@ -166,6 +166,97 @@ TYPE_DECL_PATTERN = re.compile(
 ZE_EXCEPTION_PATTERN = re.compile(r"/\*\s*ZE_EXCEPTION\s*\((.*?)\)\s*\*/")
 
 EXCLUDE_DIRS = {"build", ".template", ".git", "doxygen_html", ".cache", "unitytest"}
+HEADER_GUARD_REGISTRY = {}
+
+
+def compute_header_guards():
+    """
+    Scan all .h files across the repository and assign minimal unique header guards:
+    - Default 1 level: __<FILENAME>_H__ (e.g. __GPIO_H__)
+    - On collision, expand 1 parent directory level at a time until unique
+      (e.g. __ESP_GPIO_ALL_H__, __COMM_ESP_GPIO_ALL_H__).
+    """
+    HEADER_GUARD_REGISTRY.clear()
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    scan_roots = [os.path.join(repo_root, d) for d in ("FW-Common", "FW-ESP", "FW-STM")]
+    scan_roots = [d for d in scan_roots if os.path.isdir(d)] or [repo_root]
+
+    header_parts = {}
+    for sroot in scan_roots:
+        for root, dirs, files in os.walk(sroot):
+            dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS and not d.startswith(".")]
+            for f in files:
+                if f.endswith(".h"):
+                    abs_p = os.path.normpath(os.path.abspath(os.path.join(root, f))).lower()
+                    rel_p = os.path.relpath(os.path.join(root, f), repo_root)
+                    raw_parts = rel_p.replace("\\", "/").split("/")
+                    norm_parts = [re.sub(r"[^A-Za-z0-9]+", "_", p).strip("_").upper() for p in raw_parts if p]
+                    if norm_parts:
+                        header_parts[abs_p] = norm_parts
+
+    levels = {p: 1 for p in header_parts}
+    while True:
+        groups = {}
+        for p, parts in header_parts.items():
+            lvl = min(levels[p], len(parts))
+            guard = "__" + "_".join(parts[-lvl:]) + "__"
+            groups.setdefault(guard, []).append(p)
+
+        changed = False
+        for guard, paths in groups.items():
+            if len(paths) > 1:
+                for p in paths:
+                    if levels[p] < len(header_parts[p]):
+                        levels[p] += 1
+                        changed = True
+        if not changed:
+            for guard, paths in groups.items():
+                for p in paths:
+                    HEADER_GUARD_REGISTRY[p] = guard
+            break
+
+
+def sync_header_guards(text: str, file_path: str) -> str:
+    """Update #ifndef / #define / #endif header guard in a .h file to its unique minimal guard."""
+    if not file_path.endswith(".h"):
+        return text
+    abs_p = os.path.normpath(os.path.abspath(file_path)).lower()
+    target_guard = HEADER_GUARD_REGISTRY.get(abs_p)
+    if not target_guard:
+        return text
+
+    lines = text.splitlines()
+    ifndef_idx = -1
+    define_idx = -1
+    old_guard = None
+    guard_re = re.compile(r"^([ \t]*)#ifndef\s+(?:__[A-Za-z0-9_]+__|[A-Za-z0-9_]+_H(?:__)?)\s*$")
+    for idx, line in enumerate(lines):
+        m_if = re.match(r"^[ \t]*#ifndef\s+(__?[A-Za-z0-9_]+_H__?)\s*$", line)
+        if m_if:
+            candidate = m_if.group(1)
+            for j in range(idx + 1, min(idx + 4, len(lines))):
+                if re.match(rf"^[ \t]*#define\s+{re.escape(candidate)}\s*$", lines[j]):
+                    ifndef_idx = idx
+                    define_idx = j
+                    old_guard = candidate
+                    break
+            if old_guard:
+                break
+
+    if not old_guard or old_guard == target_guard:
+        return text
+
+    lines[ifndef_idx] = f"#ifndef {target_guard}"
+    lines[define_idx] = f"#define {target_guard}"
+    for idx in range(len(lines) - 1, define_idx, -1):
+        if re.match(rf"^[ \t]*#endif\s*/\*\s*{re.escape(old_guard)}\s*\*/\s*$", lines[idx]):
+            lines[idx] = f"#endif /* {target_guard} */"
+            break
+        if re.match(rf"^[ \t]*#endif\s*//\s*{re.escape(old_guard)}\s*$", lines[idx]):
+            lines[idx] = f"#endif /* {target_guard} */"
+            break
+
+    return "\n".join(lines)
 
 
 def preindex_declarations(targets: list):
@@ -418,7 +509,7 @@ def align_enum_block(body_lines: list) -> list:
        Align all trailing comments after the longest code part + 1 space.
     """
     member_pattern = re.compile(
-        r"^(\s*)([A-Za-z0-9_]+)\s*(?:=\s*([^,/\n]+?))?\s*(,)?\s*(/\*.*?\*/|//.*)?$"
+        r"^(\s*)([A-Za-z0-9_]+)\s*(?:=\s*(.+?))?\s*(,)?\s*(/\*.*?\*/|//.*)?$"
     )
     divider_pattern = re.compile(r"^\s*/\*(?!\*).*\*/\s*$")
 
@@ -819,10 +910,10 @@ def align_struct_block(body_lines: list) -> list:
     has_arr = any(p["arr"] for p in members)
     max_name_len = max(len(p["name"]) for p in members if p["arr"]) if has_arr else 0
 
-    out = []
+    code_lines = []
     for p in parsed_lines:
         if not p["is_member"]:
-            out.append(p["raw"])
+            code_lines.append(None)
             continue
 
         parts = [p["indent"]]
@@ -842,9 +933,21 @@ def align_struct_block(body_lines: list) -> list:
             name_str = p["name"] + ";"
 
         parts.append(name_str)
+        code_lines.append("".join(parts))
+
+    has_comments = any(p["cmt"] for p in members)
+    max_code_len = max(len(code) for code, p in zip(code_lines, parsed_lines) if p.get("cmt")) if has_comments else 0
+
+    out = []
+    for p, code in zip(parsed_lines, code_lines):
+        if not p["is_member"]:
+            out.append(p["raw"])
+            continue
+
         if p["cmt"]:
-            parts.append(" " + p["cmt"])
-        out.append("".join(parts))
+            out.append(f"{code.ljust(max_code_len)} {p['cmt']}")
+        else:
+            out.append(code)
 
     return out
 
@@ -1059,6 +1162,106 @@ def align_all_typedefs(text: str) -> str:
     return "\n".join(out)
 
 
+def align_all_alias_blocks(text: str) -> str:
+    """
+    Find and align mixed blocks of single-line typedef and #define alias declarations:
+    Aligns Column 2 (type / macro name), Column 3 (alias / macro value), and Column 4 (comments).
+    """
+    typedef_pat = re.compile(
+        r"^(\s*)typedef\s+([A-Za-z0-9_]+(?:\s*\*|\*\s*)?)\s+([A-Za-z0-9_]+;)(?:\s*(/\*.*?\*/|//.*))?$"
+    )
+    define_pat = re.compile(
+        r"^(\s*)#\s*define\s+([A-Za-z0-9_]+)\s+([A-Za-z0-9_]+)(?:\s*(/\*.*?\*/|//.*))?$"
+    )
+
+    lines = text.splitlines()
+    out = []
+    i = 0
+    n = len(lines)
+
+    while i < n:
+        line = lines[i]
+        m_t = typedef_pat.match(line)
+        m_d = define_pat.match(line)
+
+        if m_t or m_d:
+            block_lines = []
+            has_t = bool(m_t)
+            has_d = bool(m_d)
+
+            while i < n:
+                cur = lines[i]
+                cur_str = cur.strip()
+                cur_m_t = typedef_pat.match(cur)
+                cur_m_d = define_pat.match(cur)
+
+                if cur_m_t or cur_m_d:
+                    if cur_m_t:
+                        has_t = True
+                    if cur_m_d:
+                        has_d = True
+                    block_lines.append((cur, cur_m_t, cur_m_d))
+                    i += 1
+                elif not cur_str and block_lines:
+                    j = i + 1
+                    while j < n and not lines[j].strip():
+                        j += 1
+                    if j < n and (typedef_pat.match(lines[j]) or define_pat.match(lines[j]) or lines[j].strip().startswith("/**") or lines[j].strip().startswith("/*")):
+                        if lines[j].strip().startswith("/*") and "***" in lines[j] and "Wrap" not in lines[j] and ("EXPORTED" in lines[j] or "SHARED" in lines[j]):
+                            break
+                        block_lines.append((cur, None, None))
+                        i += 1
+                    else:
+                        break
+                elif cur_str.startswith("/**") or (cur_str.startswith("/*") and not ("***" in cur_str and len(cur_str) > 50)):
+                    block_lines.append((cur, None, None))
+                    i += 1
+                else:
+                    break
+
+            valid = [b for b in block_lines if b[1] or b[2]]
+            if (has_t and has_d) or len(valid) > 2:
+                max_col2 = 0
+                for b in valid:
+                    if b[1]:
+                        max_col2 = max(max_col2, len(b[1].group(2).strip()))
+                    else:
+                        max_col2 = max(max_col2, len(b[2].group(2).strip()))
+
+                code_parts = []
+                max_code_len = 0
+                for b in block_lines:
+                    if not b[1] and not b[2]:
+                        code_parts.append((b[0], None))
+                        continue
+                    if b[1]:
+                        indent, c2, c3, cmt = b[1].groups()
+                        code = f"{indent}typedef {c2.strip().ljust(max_col2)} {c3.strip()}"
+                    else:
+                        indent, c2, c3, cmt = b[2].groups()
+                        code = f"{indent}#define {c2.strip().ljust(max_col2)} {c3.strip()}"
+                    cmt_clean = cmt.strip() if cmt else ""
+                    if cmt_clean:
+                        max_code_len = max(max_code_len, len(code))
+                    code_parts.append((code, cmt_clean))
+
+                for code, cmt in code_parts:
+                    if cmt is None:
+                        out.append(code)
+                    elif cmt:
+                        out.append(f"{code.ljust(max_code_len)} {cmt}")
+                    else:
+                        out.append(code)
+            else:
+                for b in block_lines:
+                    out.append(b[0])
+        else:
+            out.append(line)
+            i += 1
+
+    return "\n".join(out)
+
+
 def align_designated_initializer_block(lines: list) -> list:
     """
     Format a struct designated initializer block (both single-line and multiline):
@@ -1139,43 +1342,60 @@ def align_designated_initializer_block(lines: list) -> list:
     parsed = []
     for it, cmt in all_items:
         if not it and cmt:
-            parsed.append(("", "", cmt))
+            parsed.append(("CMT", "", "", cmt))
             continue
         it = it.strip().rstrip(",")
+        m_nested = re.match(r"^((?:\[[^\]]+\]|\.[A-Za-z0-9_]+)\s*=\s*)?\{(.*)\}$", it, re.DOTALL)
+        if m_nested and re.search(r"\.[A-Za-z0-9_]+\s*=", m_nested.group(2)):
+            raw_prefix = m_nested.group(1) or ""
+            norm_prefix = re.sub(r"\s*=\s*$", " = ", raw_prefix.strip()) if raw_prefix else ""
+            nested_inner = m_nested.group(2).strip()
+            single_line = f"{field_indent}{norm_prefix}{{{nested_inner}}},"
+            if len(single_line) > BANNER_WIDTH:
+                sub_lines = [f"{field_indent}{norm_prefix}{{", f"{field_indent}    {nested_inner}", f"{field_indent}}},"]
+                aligned_sub = align_designated_initializer_block(sub_lines)
+                parsed.append(("MULTI", aligned_sub, "", cmt))
+                continue
         m_field = re.match(r"^(\.[A-Za-z0-9_]+)\s*=\s*(.*)$", it)
         if m_field:
             fname, fval = m_field.groups()
-            parsed.append((fname, fval.strip(), cmt))
+            parsed.append(("FIELD", fname, fval.strip(), cmt))
         else:
-            parsed.append(("", it, cmt))
+            parsed.append(("RAW", "", it, cmt))
 
     if not parsed:
         return lines
 
-    max_fname_len = max((len(p[0]) for p in parsed if p[0]), default=0)
+    max_fname_len = max((len(p[1]) for p in parsed if p[0] == "FIELD"), default=0)
     rebuilt = []
-    for fname, fval, cmt in parsed:
-        if fname:
+    for kind, fname, fval, cmt in parsed:
+        if kind == "MULTI":
+            rebuilt.append(("MULTI", fname, cmt))
+            continue
+        if kind == "FIELD":
             code_part = f"{field_indent}{fname.ljust(max_fname_len)} = {fval},"
-        elif fval:
+        elif kind == "RAW" and fval:
             code_part = f"{field_indent}{fval},"
         else:
             code_part = ""
 
         if cmt:
             if code_part:
-                rebuilt.append((code_part, cmt))
+                rebuilt.append(("SINGLE", code_part, cmt))
             else:
-                rebuilt.append((f"{field_indent}{cmt}", ""))
+                rebuilt.append(("SINGLE", f"{field_indent}{cmt}", ""))
         else:
-            rebuilt.append((code_part, ""))
+            rebuilt.append(("SINGLE", code_part, ""))
 
-    code_with_cmts = [r[0] for r in rebuilt if r[0] and r[1]]
+    code_with_cmts = [r[1] for r in rebuilt if r[0] == "SINGLE" and r[1] and r[2]]
     comment_col = max((len(c) for c in code_with_cmts), default=0) + 1 if code_with_cmts else 0
 
-    out = [f"{indent}{decl} {{"]
-    for code_part, cmt in rebuilt:
-        if not cmt:
+    header_line = f"{indent}{decl} {{" if decl else f"{indent}{{"
+    out = [header_line]
+    for kind, code_part, cmt in rebuilt:
+        if kind == "MULTI":
+            out.extend(code_part)
+        elif not cmt:
             out.append(code_part)
         elif not code_part:
             out.append(cmt)
@@ -1685,8 +1905,9 @@ def format_file(file_path: str) -> bool:
 
     file_name = os.path.basename(file_path)
 
-    # 1. Standardize 130-character section banners
+    # 1. Standardize 130-character section banners & unique minimal header guards
     transformed = format_section_banners(original_content)
+    transformed = sync_header_guards(transformed, file_path)
 
     # 2. Rename pointers and types in place while appending inline tracking comments
     transformed = apply_naming_transformations(transformed, file_name)
@@ -1710,6 +1931,7 @@ def format_file(file_path: str) -> bool:
     #    - Align macro trailing backslashes '\'
     formatted_content = align_all_macros(formatted_content, BANNER_WIDTH)
     formatted_content = align_all_typedefs(formatted_content)
+    formatted_content = align_all_alias_blocks(formatted_content)
     formatted_content = align_all_enums(formatted_content)
     formatted_content = align_all_structs(formatted_content)
     formatted_content = align_all_designated_initializers(formatted_content)
@@ -1737,7 +1959,8 @@ def main():
 
     targets = sys.argv[1:]
 
-    # Pass 1: Pre-index declarations across all target header files
+    # Pass 1: Pre-index declarations and compute unique minimal header guards across repo
+    compute_header_guards()
     preindex_declarations(targets)
 
     # Pass 2: Format files and resolve declaration origins

@@ -58,7 +58,7 @@
  ********************************************************************************************************************************/
 
 #if (defined(ZE_LOG_EN) && (ZE_LOG_EN == 1U))
-    /** @brief Initialize system logger driver */
+    /** @brief  Initialize system logger driver */
     ze_err_t ZE_SysLog_Init(void) {
         ze_err_t err = ZE_Mutex_LockTake(&s_sys_log_mutex, UINT32_MAX);
         if (ZE_SUCCESS != err) {
@@ -77,7 +77,7 @@
         return ZE_SUCCESS;
     }
 
-    /** @brief Print formatted log message to system console */
+    /** @brief  Print formatted log message to system console */
     ze_err_t ZE_SysLog_Printf(const char *p_fmt, ...) {
         if (NULL == p_fmt) {
             return ZE_ERR_INVALID_ARG;
@@ -105,12 +105,12 @@
         return ZE_SUCCESS;
     }
 #else
-    /** @brief Initialize system logger driver (stub when disabled) */
+    /** @brief  Initialize system logger driver (stub when disabled) */
     ze_err_t ZE_SysLog_Init(void) {
         return ZE_SUCCESS;
     }
 
-    /** @brief Print formatted log message to system console (stub when disabled) */
+    /** @brief  Print formatted log message to system console (stub when disabled) */
     ze_err_t ZE_SysLog_Printf(const char *p_fmt, ...) {
         (void)p_fmt;
         return ZE_SUCCESS;

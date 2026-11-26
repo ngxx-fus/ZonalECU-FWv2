@@ -8,7 +8,7 @@
 /* MACROS ************************************************************************************************************************
  ********************************************************************************************************************************/
 
-/** @brief Bit shift that moves a byte to position 1..3 of a uint32, and the high half of a uint64 */
+/** @brief  Bit shift that moves a byte to position 1..3 of a uint32, and the high half of a uint64 */
 #define SOMEIP_SHIFT_BYTE1    (8U)
 #define SOMEIP_SHIFT_BYTE2    (16U)
 #define SOMEIP_SHIFT_BYTE3    (24U)

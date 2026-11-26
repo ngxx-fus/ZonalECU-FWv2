@@ -34,10 +34,10 @@ typedef struct st_someip_method_cfg {
     someip_message_type_t expected_type;
 } someip_method_cfg_t;
 
-/** @brief Configuration of one service */
+/** @brief  Configuration of one service */
 typedef struct st_someip_service_cfg {
     someip_method_cfg_t const *p_methods;
-    uint16_t                   method_len; /*!< Number of entries in p_methods */
+    uint16_t                   method_len;        /*!< Number of entries in p_methods */
     someip_service_id_t        service_id;
     someip_interface_version_t interface_version; /*!< Major interface version [PRS_SOMEIP_00053] */
 } someip_service_cfg_t;

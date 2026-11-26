@@ -26,7 +26,7 @@ HEADER_CPP
 /* DEFINITIONS *******************************************************************************************************************
  ********************************************************************************************************************************/
 
-/** @brief Sizes of the multi-byte integers on the wire */
+/** @brief  Sizes of the multi-byte integers on the wire */
 enum e_someip_int_size {
     SOMEIP_U16_SIZE = 2,
     SOMEIP_U32_SIZE = 4,

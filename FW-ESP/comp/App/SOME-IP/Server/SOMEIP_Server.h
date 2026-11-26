@@ -49,7 +49,7 @@ typedef someip_return_code_t (*someip_method_handler_t)(IN someip_message_t *p_r
 typedef someip_result_t (*someip_server_send_t)(IN someip_endpoint_t *p_peer, IN uint8_t *p_msg, IN uint32_t msg_len,
                                                 INOUT void *p_ctx);
 
-/** @brief Links one configured method to its handler */
+/** @brief  Links one configured method to its handler */
 typedef struct st_someip_handler_cfg {
     someip_method_handler_t handler;
     someip_service_id_t     service_id;
@@ -70,7 +70,7 @@ typedef struct st_someip_server_cfg {
     uint16_t             handler_len; /*!< Number of entries in p_handlers */
 } someip_server_cfg_t;
 
-/** @brief Server instance */
+/** @brief  Server instance */
 typedef struct st_someip_server {
     someip_server_cfg_t cfg;
 } someip_server_t;

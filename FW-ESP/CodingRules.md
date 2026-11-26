@@ -117,7 +117,7 @@ Names must clearly express intent, scope, and type role. Structs and types are *
 | Category | Convention | Prefix / Suffix | Examples |
 | :--- | :--- | :--- | :--- |
 | **Functions (General / Public)** | `<PREFIX>_<PascalCase>()` | `UPPER_` or `Pascal_` prefix + `PascalCase` | `ETH_Open()`, `ZE_ErrToStr()`, `Comm_Init()` |
-| **Private Functions** | `prv_<snake_case>()` / `prv_<PascalCase>()` | `prv_` or `__` lowercase prefix | `prv_update_time()`, `prv_reset_phy()` |
+| **Private Functions** | `prv_<snake_case>()` | `prv_` or `__` lowercase prefix | `prv_update_time()`, `prv_reset_phy()` |
 | **Local Variables** | `snake_case` | None (or unit suffix) | `retry_cnt`, `timeout_ms`, `frame_idx` |
 | **Pointer Variables** | `p_<snake_case>` | `p_` (or `pp_` for double ptr) | `p_ctrl`, `p_cfg`, `p_buf`, `pp_head` |
 | **Global Variables** | `g_<snake_case>` | `g_` (or `gp_` for global ptr) | `g_eth0_ctrl`, `gp_active_log` |
@@ -137,7 +137,7 @@ const char * ZE_ErrToStr(IN ze_err_t err);
 ze_err_t Comm_SendPacket(IN comm_ctrl_t * p_ctrl, IN uint8_t * p_data, IN size_t data_len);
 ```
 
-  - **Private (File-Scope `static`) Functions**: Use a **lowercase** prefix (`prv_` or `__`) separated by `_` (either `prv_<snake_case>()` or `prv_<PascalCase>()`):
+  - **Private (File-Scope `static`) Functions**: Use a **lowercase** prefix (`prv_` or `__`) followed by `snake_case` (`prv_<snake_case>()`):
 
 ```c
 static void prv_update_time(void);
@@ -247,6 +247,15 @@ typedef enum e_eth_speed {
 ```
 
   - Enum labels must be `UPPER_SNAKE_CASE` prefixed with the module name.
+  - **Service & Priority Naming Convention**:
+    - **FORBIDDEN (`NO`)**: Never use `ZE_TASK_*` prefix for service or task priorities.
+    - **MANDATORY (`YES`)**: Bắt buộc sử dụng tiền tố **`ZE_SERVICE_*`** hoặc dạng rút gọn chuẩn **`ZE_SRV_PRIO_*`** cho các mức ưu tiên của Service:
+      - `ZE_SRV_PRIO_BACKGROUND` (Lowest: IDLE + 1, Logging, System monitor)
+      - `ZE_SRV_PRIO_LOW` (Low: Status LEDs, Non-critical services)
+      - `ZE_SRV_PRIO_NORMAL` (Standard: UI, General application logic)
+      - `ZE_SRV_PRIO_HIGH` (High: Sensor sampling, Motor control)
+      - `ZE_SRV_PRIO_URGENCY` (Critical: Safety checks, Comms heartbeats)
+      - `ZE_SRV_PRIO_REALTIME` (Maximum: Immediate hardware response)
   - For state enums, include an explicit uninitialized, closed, or error state as the first label (e.g., `ETH_STATE_CLOSED = 0`, `ETH_STATE_OPEN`, `ETH_STATE_ERR`).
   - **Size Caveat**: Because `enum` storage size is implementation-defined, never use an `enum` type directly as a field inside packed wire protocols, CAN frames, or NVS binary blobs; store the value in an explicit fixed-width integer field (`uint8_t`, `uint16_t`, `uint32_t`).
 

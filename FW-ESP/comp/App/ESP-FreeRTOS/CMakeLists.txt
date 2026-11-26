@@ -1,6 +1,6 @@
 # ==============================================================================
-# Component: Common
-# Contains shared definitions: Error codes, Macros, Atomic types, Shared APIs
+# Component: ESP-FreeRTOS
+# Contains FreeRTOS wrappers and umbrella headers
 # ==============================================================================
 
 # 1. Collect all C source files in this component
@@ -19,7 +19,7 @@ foreach(header ${component_headers})
     list(APPEND component_include_dirs ${header_dir})
 endforeach()
 
-# Append parent directory (comp/) so consumers can use: #include "Common/xxx.h"
+# Append parent directory (comp/) so consumers can use: #include "App/ESP-FreeRTOS/All.h"
 list(APPEND component_include_dirs "${CMAKE_CURRENT_LIST_DIR}/.." "${CMAKE_CURRENT_LIST_DIR}/../..")
 
 if(component_include_dirs)
@@ -29,9 +29,9 @@ else()
     set(component_include_dirs ".")
 endif()
 
-# 3. Register the 'Common' component with ESP-IDF
+# 3. Register the 'ESP-FreeRTOS' component with ESP-IDF
 idf_component_register(
     SRCS ${component_srcs}
     INCLUDE_DIRS ${component_include_dirs}
-    REQUIRES esp_system log
+    REQUIRES Common freertos esp_system log ESP-Mem ESP-Logger
 )

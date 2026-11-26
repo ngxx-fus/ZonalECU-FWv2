@@ -27,6 +27,14 @@ This document records technical issues diagnosed across the project, root causes
 | **017** | RTOS / Concurrency | Spinlock busy-wait causing Task Watchdog starvation | `esp_rom_delay_us` busy-loop does not yield to IDLE task on priority >= 1 tasks. | Implement hybrid spin-delay mechanism yielding to RTOS ticks on longer waits. |
 | **018** | Static Analysis / Macro | Duplicate 'const' specifier with `in` / `ro` macros | Macro `in` / `ro` expands to `const`; writing `in const void ...` causes duplicate `const` compiler warning. | Omit bare `const` when using `in` or `ro` attribute macros; `in` already declares const input parameter. |
 | **019** | Tooling / Flashing | `Path '/dev/ttyUSB0' is not readable` in `idf.py` | Void Linux service `agetty-ttyUSB0` continuously reclaims port as login console with mode `0620 root:tty`. | Disable `agetty-ttyUSB0` service (`rm /var/service/agetty-ttyUSB0`) to free port for esptool/idf.py. |
+| **020** | Build / Flash | SPI Flash size mismatch warning (16MB vs 2MB) | Default flash size set to 2MB in ESP-IDF. | Set `CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y` in `sdkconfig.defaults`. |
+| **021** | Logging / Architecture | `LoadProhibited` CPU panic in `vfprintf`/`strnlen` & shifted log format | `ZE_LOG*` macro prefix `"%s:%d:\t"` omitted `__LINE__`, consuming first variadic argument. | Ensure every format specifier in logger prefix macro has a corresponding argument (`__FILE_NAME__`, `__LINE__`). |
+| **022** | Macro / Architecture | Syntax error in `esp_heap_caps.h` (`expected member name or ';'`) | Bare macro `#define ptr *` in `Macros.h` expanded struct field `void *ptr;` to `void **;`. | Never define bare single-word English nouns as object-like macros; use scoped prefixes (`ro_ptr`, `rw_ptr`). |
+| **023** | Static Analysis / Types | Multilevel pointer conversion warning in RTOS queue & duplicate `const` | `ze_voidptr_t` already contained `*`; combining with `rw_ptr` yielded `void **`; `IN const` duplicated `const`. | Use scalar base type (`ze_generic_data_t`) for buffer pointers; never write `IN const`. |
+| **024** | Formatting | Struct trailing comment alignment collapsed (`p_srv; /*!< ...`) | `align_struct_block()` appended raw `1 space + comment` instead of padding code string to `max_code_len`. | Always calculate `max_code_len` across all member code lines with comments and pad with `code.ljust(max_code_len)`. |
+| **025** | Formatting | Enum members with division operator `/` skipped by `format_rules.py` | `member_pattern` regex used `[^,/\n]+?` which terminated at arithmetic division `/`. | Update regex to `(?:=\s*(.+?))?` allowing arithmetic expressions with division operators. |
+| **026** | Formatting | Mixed `typedef` and `#define` alias blocks had staggered columns in `Service.h` | `align_all_typedefs` and `align_all_macros` operated in isolation, collapsing single-line typedefs and calculating independent column widths. | Implemented `align_all_alias_blocks()` in `format_rules.py` to cross-align mixed typedef and define blocks to uniform type, name, and comment columns. |
+| **027** | Macro / Hardware Abstraction | Compilation error `expected identifier before 'const'` in `GPIO.in` | `#define in const` in `Macros.h` collided with ESP-IDF `gpio_dev_t.in` struct member. | Use direct hardware register read macros (`REG_READ(GPIO_IN_REG)`) for peripheral registers rather than identifiers that collide with language parameter macros. |
 
 ---
 
@@ -535,6 +543,175 @@ This document records technical issues diagnosed across the project, root causes
   - Ran `idf.py reconfigure` and re-built binary images with correct 16MB flash header flags.
 - **Key Lesson & Prevention Rule**:
   - Always verify physical flash memory capacity from bootloader runtime logs and align `CONFIG_ESPTOOLPY_FLASHSIZE` in `sdkconfig.defaults` with hardware specifications to prevent bootloader warnings and unlock maximum storage space.
+
+---
+
+### [ENTRY-021] `LoadProhibited` Panic in `vfprintf`/`strnlen` Caused by Missing `__LINE__` in Logger Macros
+- **Date**: 2026-11-21
+- **Component**: `FW-ESP/comp/Comm/ESP-Logger/SysLog.h` (`ZE_LOGI`, `ZE_LOGE`, `ZE_LOGW`)
+- **Symptom**:
+  - Unhandled exception during SOME/IP transmission log:
+    ```text
+    [I] ZonalECU-FWv2.c:192:        TX -> 168.1.10.30501:4097  srv=0x0002 id=0x0042 client=0x0001 session=0x0080 type=0x00 rc=0x3C0234BC
+    [I] ZonalECU-FWv2.c:1070153872: (null)
+    [I] ZonalECU-FWv2.c:192:        TX -> 168.1.10.30501:4097  srv=0x8002 id=0x0000 client=0x0001 session=0x0002 type=0x00 rc=0x00
+    Guru Meditation Error: Core  0 panic'ed (LoadProhibited). Exception was unhandled.
+    EXCVADDR: 0x0000001c
+    Backtrace: ... strnlen in ROM -> vfprintf -> vsnprintf -> ZE_SysLog_Printf -> prv_print_hex -> prv_demo_send
+    ```
+- **Root Cause**:
+  - In `SysLog.h`, the macro definition was:
+    `#define ZE_LOGI(p_fmt, ...) ZE_CORE_LOG("[I] %s:%d:\t" p_fmt "\n", __FILE_NAME__, ##__VA_ARGS__)`
+  - The format prefix string expects two parameters: `%s` for filename and `%d` for line number.
+  - However, `__LINE__` was omitted from the argument list. As a result:
+    1. The `%d` placeholder consumed the first variable argument from `__VA_ARGS__`. When logging IP addresses (`TX -> 192.168.1.10`), `%d` consumed `192` (displaying line number `192:`), shifting all subsequent parameters by one and corrupting printed values.
+    2. In `prv_print_hex()`, `ZE_LOGI("%s", line)` expanded to `"[I] %s:%d:\t%s\n"`. `%d` printed the stack buffer pointer `line` as an integer (`1070153872`), while the trailing `%s` had no matching argument and read garbage register contents (`0x0000001c`).
+    3. `vfprintf` called `strnlen((const char*)0x0000001c)`, causing a `LoadProhibited` hardware exception when dereferencing invalid address `0x0000001c`.
+- **Fix Applied**:
+  - Added `__LINE__` to `ZE_LOGI`, `ZE_LOGE`, and `ZE_LOGW` in `SysLog.h`:
+    ```c
+    #define ZE_LOGI(p_fmt, ...) ZE_CORE_LOG("[I] %s:%d:\t" p_fmt "\n", __FILE_NAME__, __LINE__, ##__VA_ARGS__)
+    #define ZE_LOGE(p_fmt, ...) ZE_CORE_LOG("[E] %s:%d:\t" p_fmt "\n", __FILE_NAME__, __LINE__, ##__VA_ARGS__)
+    #define ZE_LOGW(p_fmt, ...) ZE_CORE_LOG("[W] %s:%d:\t" p_fmt "\n", __FILE_NAME__, __LINE__, ##__VA_ARGS__)
+    ```
+- **Key Lesson & Prevention Rule**:
+  - Always strictly verify that every format specifier in composite logging macro prefixes has an exact, corresponding macro parameter (`%s` -> `__FILE_NAME__`, `%d` -> `__LINE__`) before forwarding `##__VA_ARGS__`. Mismatched specifiers silently shift variadic arguments, corrupt outputs, and dereference arbitrary memory as pointers.
+
+---
+
+### [ENTRY-022] Macro Collision: Generic `#define ptr *` Corrupted ESP-IDF `esp_heap_caps.h`
+- **Date**: 2026-11-21
+- **Component**: `FW-ESP/comp/Common/Base/Macros.h`, `FW-ESP/comp/App/ZE-Services/Service.h`
+- **Symptom**:
+  - Clangd static analysis and GCC compiler errors when including FreeRTOS headers after `Common/Base/All.h`:
+    ```text
+    In included file: expected member name or ';' after declaration specifiers clang(expected_member_name_or_semi)
+    esp_heap_caps.h(485, 14): Error occurred here
+    ```
+- **Root Cause**:
+  - In `FW-ESP/comp/Common/Base/Macros.h`, the macro `#define ptr *` (and its variations `PTR`, `__ptr`, `__PTR`) was defined as a generic pointer shortcut.
+  - In ESP-IDF's `esp_heap_caps.h` (line 485), the struct `walker_block_info_t` declares a member named `ptr`:
+    ```c
+    typedef struct walker_block_info {
+        void *ptr; ///< Pointer to the block data
+        size_t size;
+        bool used;
+    } walker_block_info_t;
+    ```
+  - When `Common/Base/All.h` was included prior to `ESP-FreeRTOS/All.h`, the macro replaced the identifier `ptr` with `*`, expanding `void *ptr;` into `void **;`, causing an unrecoverable syntax parse error.
+- **Fix Applied**:
+  1. Removed bare single-word pointer macros (`ptr`, `PTR`, `__ptr`, `__PTR`) from `Macros.h`. The project already defines standard prefixed pointer macros (`ro_ptr`, `rw_ptr`, `RO_PTR`, `RW_PTR`).
+  2. Standardized the header inclusion order in `Service.h` to always include system and OS abstractions (`ESP-FreeRTOS/All.h`) before internal project permission headers.
+- **Key Lesson & Prevention Rule**:
+  - Never define generic single-word English words or ubiquitous variable names (such as `ptr`, `size`, `index`, `len`, `data`) as object-like preprocessor macros. Always scope macros with a module prefix (`ZE_`) or role prefix (`rw_ptr`, `ro_ptr`).
+
+---
+
+### [ENTRY-023] Redundant `const` in Prototypes and Multi-Level Pointer Collision in RTOS Queue APIs
+- **Date**: 2026-11-23
+- **Component**: `FW-ESP/comp/App/ESP-FreeRTOS/ESP-FreeRTOS.h`, `FW-ESP/comp/App/ESP-FreeRTOS/ESP-FreeRTOS.c`, `FW-ESP/comp/Common/Base/Types.h`
+- **Symptom**:
+  1. Clang-tidy static analysis warning in `ZE_RTOS_QueuePop`:
+     `Multilevel pointer conversion from 'ze_voidptr_t *' (aka 'void **') to 'void *', please use explicit cast clang-tidy[bugprone-multi-level-implicit-pointer-conversion]`.
+  2. Redundant specifier `IN const ze_task_t ro_ptr p_task_src` in `ZE_RTOS_TaskUpdate`.
+- **Root Cause**:
+  1. `ze_voidptr_t` was defined as `typedef void * ze_voidptr_t;` (already contains `*`). Combining it with `rw_ptr` (`#define rw_ptr *`) produced `void **` (multi-level pointer) instead of a simple buffer pointer `void *`. Passing this into FreeRTOS `xQueueReceive` caused implicit multi-level pointer conversion and potential memory overwrite bugs.
+  2. `IN` is defined as `#define IN const` in `Macros.h`, and `ro_ptr` is defined as `#define ro_ptr const *`. Combining `IN const ... ro_ptr` resulted in duplicated `const const` keywords.
+- **Fix Applied**:
+  1. Defined `ze_generic_data_t` as `typedef void ze_generic_data_t;` (scalar base void without pointer) in `Types.h`. In `ESP-FreeRTOS.h` and `.c`, updated queue buffer parameters to `IN ze_generic_data_t ro_ptr p_data` and `OUT ze_generic_data_t rw_ptr p_data`, ensuring an exact single-level `void *` pointer.
+  2. Cleaned redundant `const` from `ZE_RTOS_TaskUpdate(IN ze_task_t ro_ptr p_task_src, ...)`.
+- **Key Lesson & Prevention Rule**:
+  - When designing type definitions for generic buffer APIs, distinguish between base types (e.g., `ze_generic_data_t` as `void`) and already-pointer types (`ze_voidptr_t` as `void *`). Never append `rw_ptr` or `ro_ptr` to typedefs that already embed a pointer.
+  - Since `IN` already expands to `const`, never write `IN const`. Standard convention is strictly `IN type ro_ptr`.
+
+---
+
+### [ENTRY-024] Struct Trailing Comment Alignment Collapsed by `format_rules.py`
+- **Date**: 2026-11-24
+- **Component**: `.github/scripts/format_rules.py` (`align_struct_block`, `align_all_structs`)
+- **Symptom**:
+  - In `FW-ESP/comp/App/ESP-FreeRTOS/ESP-FreeRTOS.h`, trailing Doxygen comments on struct members (`ze_task_t`) were misaligned across lines:
+    ```c
+    ro ze_task_fn_t         p_srv; /*!< Service task entry function */
+    ro ze_task_stack_size_t stack_size; /*!< Allocated stack size */
+    rw ze_task_stat_t       stat; /*!< Service lifecycle status */
+    ```
+    Comments started immediately 1 space after the semicolon `;`, creating jagged columns since member identifiers had varying lengths.
+- **Root Cause**:
+  - In `align_struct_block()`, member lines were formatted by joining parts:
+    ```python
+    parts.append(name_str)
+    if p["cmt"]:
+        parts.append(" " + p["cmt"])
+    out.append("".join(parts))
+    ```
+  - Unlike `align_enum_block()`, `align_struct_block()` never tracked the maximum code string width (`max_code_len`) across members with comments, appending only a single space before `p["cmt"]`.
+- **Fix Applied**:
+  - Updated `align_struct_block()` to first assemble all member code strings into `code_lines`, determine `max_code_len = max(len(code) for code, p in zip(code_lines, parsed_lines) if p.get("cmt"))`, and format trailing comments using `f"{code.ljust(max_code_len)} {p['cmt']}"`.
+  - Re-ran `format_rules.py` on `ESP-FreeRTOS.h` to align all trailing comments at column 41.
+- **Key Lesson & Prevention Rule**:
+  - Any AST or regex formatter aligning tabular struct or enum definitions must compute the maximum code length across all members that contain trailing comments, padding code with `.ljust(max_code_len)` so all trailing comments share an identical vertical starting column.
+
+---
+
+### [ENTRY-025] Enum Assignment Parser Mangling Expressions Containing Division (`/`)
+- **Date**: 2026-11-24
+- **Component**: `.github/scripts/format_rules.py` (`align_enum_block`, `align_all_enums`)
+- **Symptom**:
+  - In `FW-ESP/comp/App/ESP-FreeRTOS/ESP-FreeRTOS.h`, enum members initialized with arithmetic division (e.g. `1U + ((configMAX_PRIORITIES - 2U) * 1U / 5U)`) had their `=` operators and trailing comments completely ignored by `align_enum_block()`, leaving them unaligned.
+- **Root Cause**:
+  - `member_pattern` regex in `align_enum_block()` captured values using `(?:=\s*([^,/\n]+?))?`.
+  - The character class `[^,/\n]` was intended to avoid matching `//` or `/*` comment delimiters, but erroneously excluded the single forward slash `/` used for C arithmetic division. As a result, any line containing `/` failed regex matching entirely.
+- **Fix Applied**:
+  - Updated `member_pattern` to `r"^(\s*)([A-Za-z0-9_]+)\s*(?:=\s*(.+?))?\s*(,)?\s*(/\*.*?\*/|//.*)?$"`.
+  - Re-ran `format_rules.py` on `ESP-FreeRTOS.h`, aligning all `=` signs and trailing comments across arithmetic enum entries.
+- **Key Lesson & Prevention Rule**:
+  - When writing regular expressions to parse C assignment expressions, never exclude `/` as a delimiter if expressions can contain arithmetic division. Rely on greedy/lazy boundary matching against `,` and comment prefixes `//` / `/*`.
+
+---
+
+### [ENTRY-026] Mixed `typedef` and `#define` Alias Blocks Staggered Alignment in Formatter
+- **Date**: 2026-11-24
+- **Component**: `.github/scripts/format_rules.py` (`align_all_alias_blocks`, `format_file`)
+- **Symptom**:
+  - In `FW-ESP/comp/App/ZE-Services/Service/Service.h`, alias declarations combining `typedef` lines and `#define` lines (e.g. `ze_srv_task_fn_t`, `ZE_SRV_DISABLED`, `ZE_SRV_PRIO_*`, `ZE_SRV_CORE_*`) had staggered indentation. Single-line `typedef` entries collapsed to 1 space while `#define` lines were padded to a wider column, causing identifier values and trailing comments `/*!<` to be misaligned in a zigzag pattern across columns 39, 51, and 56.
+- **Root Cause**:
+  - `align_all_typedefs()` only aligned contiguous `typedef` lines and stopped when encountering `#define` directives, treating single typedefs as 1-line blocks without padding.
+  - `align_all_macros()` only aligned `#define` lines and had no visibility into neighboring `typedef` declarations.
+- **Fix Applied**:
+  - Implemented `align_all_alias_blocks()` in `format_rules.py` to recognize multi-group blocks with mixed `typedef` and `#define` declarations.
+  - Unified Column 2 (type/macro name), Column 3 (alias name/macro value, aligned at column 32), and Column 4 (trailing comments, aligned at column 56) across all entries in the block.
+- **Key Lesson & Prevention Rule**:
+  - When designing code formatters for C headers where type definitions and macro aliases are logically grouped together, provide a cross-alignment pass so both keywords share unified target columns and trailing comment offsets.
+
+---
+
+### [ENTRY-027] Macro Collision Between `#define in const` and Peripheral Struct Member (`GPIO.in`)
+- **Date**: 2026-11-24
+- **Component**: `FW-ESP/comp/Comm/ESP-GPIO/GPOI.c` & `FW-ESP/comp/Common/Base/Macros.h`
+- **Symptom**:
+  - During ESP-IDF build of `FW-ESP/comp/Comm/ESP-GPIO/GPOI.c`, compilation aborted with:
+    ```text
+    Common/Base/Macros.h:113:28: error: expected identifier before 'const'
+      113 |     #define in             const   /* Input parameter */
+    FW-ESP/comp/Comm/ESP-GPIO/GPOI.c:171:30: note: in expansion of macro 'in'
+      171 |     p_ctrl->state.low = GPIO.in & ZE_GPIO_VALID_LOW;
+    ```
+- **Root Cause**:
+  - `Macros.h` defines lowercase parameter direction macro `#define in const`.
+  - When accessing ESP-IDF hardware structure `gpio_dev_t GPIO` via `GPIO.in`, the C preprocessor expands `GPIO.in` into `GPIO.const`, generating invalid C syntax.
+- **Fix Applied**:
+  - Included `soc/gpio_reg.h` and `soc/soc.h`.
+  - Replaced direct struct member reads (`GPIO.in` and `GPIO.in1.data`) with direct atomic hardware register reads using `REG_READ(GPIO_IN_REG)` and `REG_READ(GPIO_IN1_REG)`.
+- **Key Lesson & Prevention Rule**:
+  - In embedded C projects defining generic lowercase parameter decorators (`in`, `out`), avoid accessing vendor struct fields whose member names match decorator tokens. Use direct hardware register read macros (`REG_READ(...)`) or uppercase `IN` to prevent preprocessor expansion collisions.
+
+
+
+
+
+
+
 
 
 

@@ -7,8 +7,8 @@
 /* GUARD/BEGIN *******************************************************************************************************************
  ********************************************************************************************************************************/
 
-#ifndef __FW_ESP_COMP_COMM_ESP_LOGGER_SYSLOG_H__
-#define __FW_ESP_COMP_COMM_ESP_LOGGER_SYSLOG_H__
+#ifndef __SYSLOG_H__
+#define __SYSLOG_H__
 
 /* INCLUDES **********************************************************************************************************************
  ********************************************************************************************************************************/
@@ -45,9 +45,9 @@ ZE_HEADER
         #define __FILE_NAME__           (__builtin_strrchr("/" __FILE__, '/') + 1)
     #endif
 
-    #define ZE_LOGI(p_fmt, ...)     ZE_CORE_LOG("[I] %s: " p_fmt "\n", __FILE_NAME__, ##__VA_ARGS__)
-    #define ZE_LOGE(p_fmt, ...)     ZE_CORE_LOG("[E] %s: " p_fmt "\n", __FILE_NAME__, ##__VA_ARGS__)
-    #define ZE_LOGW(p_fmt, ...)     ZE_CORE_LOG("[W] %s: " p_fmt "\n", __FILE_NAME__, ##__VA_ARGS__)
+    #define ZE_LOGI(p_fmt, ...)     ZE_CORE_LOG("[I] %s:%d:\t" p_fmt "\n", __FILE_NAME__, __LINE__, ##__VA_ARGS__)
+    #define ZE_LOGE(p_fmt, ...)     ZE_CORE_LOG("[E] %s:%d:\t" p_fmt "\n", __FILE_NAME__, __LINE__, ##__VA_ARGS__)
+    #define ZE_LOGW(p_fmt, ...)     ZE_CORE_LOG("[W] %s:%d:\t" p_fmt "\n", __FILE_NAME__, __LINE__, ##__VA_ARGS__)
 
 #else
 
@@ -61,18 +61,14 @@ ZE_HEADER
 /* SHARED FUNCTIONS **************************************************************************************************************
  ********************************************************************************************************************************/
 
-/**
- * @brief Initialize system logger driver
- * @return ZE_SUCCESS on success, or error code
- */
+/** @brief   Initialize system logger driver
+ *  @return  ZE_SUCCESS on success, or error code */
 ze_err_t ZE_SysLog_Init(void);
 
-/**
- * @brief Print formatted log message to system console
- * @param[in] p_fmt Format string
- * @param[in] ...   Variable arguments
- * @return ZE_SUCCESS on success, or error code
- */
+/** @brief   Print formatted log message to system console
+ *  @param   p_fmt Format string
+ *  @param[in] ...   Variable arguments
+ *  @return  ZE_SUCCESS on success, or error code */
 ze_err_t ZE_SysLog_Printf(const char *p_fmt, ...);
 
 /* FOOTERS ***********************************************************************************************************************
@@ -83,7 +79,7 @@ ZE_FOOTER
 /* GUARD/END *********************************************************************************************************************
  ********************************************************************************************************************************/
 
-#endif /* __FW_ESP_COMP_COMM_ESP_LOGGER_SYSLOG_H__ */
+#endif /* __SYSLOG_H__ */
 
 /* EOF ***************************************************************************************************************************
  ********************************************************************************************************************************/
